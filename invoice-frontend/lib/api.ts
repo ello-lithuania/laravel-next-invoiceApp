@@ -49,6 +49,8 @@ export interface User {
   bank_account?: string
   invoice_series?: string
   next_invoice_number?: number
+  signature?: string
+  signature_url?: string
 }
 
 export interface Client {
@@ -121,6 +123,26 @@ export const profile = {
     api<User>('/profile'),
   update: (data: Partial<User>) => 
     api<User>('/profile', { method: 'PUT', body: JSON.stringify(data) }),
+  uploadSignature: async (file: File) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    const formData = new FormData()
+    formData.append('signature', file)
+    const response = await fetch(`${API_URL}/profile/signature`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: formData,
+    })
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.message || 'Upload failed')
+    }
+    return response.json()
+  },
+  deleteSignature: () => 
+    api<{ message: string }>('/profile/signature', { method: 'DELETE' }),
 }
 
 export const clients = {

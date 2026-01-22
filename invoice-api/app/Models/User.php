@@ -22,6 +22,7 @@ class User extends Authenticatable
         'bank_account',
         'invoice_series',
         'next_invoice_number',
+        'signature',
     ];
 
     protected $hidden = [

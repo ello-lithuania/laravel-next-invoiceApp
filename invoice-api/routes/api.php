@@ -18,6 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/signature', [ProfileController::class, 'uploadSignature']);
+    Route::delete('/profile/signature', [ProfileController::class, 'deleteSignature']);
 
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('invoices', InvoiceController::class);

@@ -81,3 +81,27 @@
   background-color: #ffffff !important; 
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
+
+.light .bg-gradient-to-br.from-slate-900.via-blue-900.to-slate-900 {
+  background: linear-gradient(to bottom right, #f8fafc, #e0f2fe, #f8fafc) !important;
+}
+.light .border-slate-600 { border-color: #cbd5e1; }
+.light .hover\:bg-slate-800\/50:hover { background-color: rgba(241, 245, 249, 0.5) !important; }
+.light .bg-slate-800\/80 { background-color: rgba(241, 245, 249, 0.8); }
+.light .border-slate-700\/50 { border-color: rgba(203, 213, 225, 0.5); }
+.light .bg-slate-900\/95 { background-color: rgba(255, 255, 255, 0.95); }
+.light .bg-gradient-to-r.from-white.to-blue-200 { 
+  background: linear-gradient(to right, #0f172a, #1e40af) !important; 
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+.light .from-white.to-blue-200.text-transparent {
+  background: linear-gradient(to right, #0f172a, #3b82f6) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+.light .text-slate-300 { color: #475569; }
+.light .hover\:text-white:hover { color: #0f172a !important; }
+.light .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); }
+.light .border-blue-500\/20 { border-color: rgba(59, 130, 246, 0.2); }
+.light .group:hover .group-hover\:bg-slate-800 { background-color: #f1f5f9 !important; }

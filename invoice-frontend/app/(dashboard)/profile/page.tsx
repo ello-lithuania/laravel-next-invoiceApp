@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { profile } from '@/lib/api'
 
 interface User {
@@ -13,6 +13,9 @@ interface User {
   bank_name: string
   bank_account: string
   invoice_series: string
+  next_invoice_number: number
+  signature?: string
+  signature_url?: string
 }
 
 export default function Profile() {
@@ -20,6 +23,9 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [uploadingSignature, setUploadingSignature] = useState(false)
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadProfile()
@@ -46,6 +52,48 @@ export default function Profile() {
       setMessage('Error saving profile')
     }
     setSaving(false)
+  }
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.includes('png')) {
+      setMessage('Only PNG files allowed')
+      setTimeout(() => setMessage(''), 3000)
+      return
+    }
+    
+    const previewUrl = URL.createObjectURL(file)
+    setSignaturePreview(previewUrl)
+    
+    setUploadingSignature(true)
+    try {
+      const result = await profile.uploadSignature(file)
+      setUser(prev => prev ? { ...prev, signature: result.signature, signature_url: result.signature_url } : null)
+      setSignaturePreview(result.signature_url)
+      setMessage('Signature uploaded!')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (e) {
+      setMessage('Error uploading signature')
+      setSignaturePreview(null)
+      setTimeout(() => setMessage(''), 3000)
+    }
+    setUploadingSignature(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleDeleteSignature = async () => {
+    if (!confirm('Are you sure you want to delete the signature?')) return
+    try {
+      await profile.deleteSignature()
+      setUser(prev => prev ? { ...prev, signature: undefined, signature_url: undefined } : null)
+      setSignaturePreview(null)
+      setMessage('Signature deleted')
+      setTimeout(() => setMessage(''), 3000)
+    } catch (e) {
+      setMessage('Error deleting signature')
+      setTimeout(() => setMessage(''), 3000)
+    }
   }
 
   if (loading) return <div className="text-white p-8">Loading...</div>
@@ -186,6 +234,76 @@ export default function Profile() {
                     />
                     <p className="text-slate-500 text-sm mt-2">This prefix will be used for your invoice numbers</p>
                   </div>
+                  <div>
+                    <label className="block text-slate-400 text-sm mb-2">Next Invoice Number</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={user?.next_invoice_number || 1}
+                      onChange={(e) => setUser({ ...user!, next_invoice_number: parseInt(e.target.value) || 1 })}
+                      className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                      placeholder="e.g., 1"
+                    />
+                    <p className="text-slate-500 text-sm mt-2">The number that will be assigned to your next invoice</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800 mt-8 pt-8">
+                <h3 className="text-lg font-semibold text-white mb-6">Signature</h3>
+                <p className="text-slate-400 text-sm mb-4">Upload your signature PNG file. It will be displayed on invoices.</p>
+                <div className="flex items-start gap-6">
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png"
+                      onChange={handleSignatureUpload}
+                      className="hidden"
+                      id="signature-upload"
+                    />
+                    <label
+                      htmlFor="signature-upload"
+                      className={`inline-flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white cursor-pointer hover:bg-slate-700 transition-colors ${uploadingSignature ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {uploadingSignature ? (
+                        <>
+                          <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          Upload Signature (PNG)
+                        </>
+                      )}
+                    </label>
+                  </div>
+                  {(signaturePreview || user?.signature_url) && (
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white p-2 rounded-lg">
+                        <img
+                          src={signaturePreview || user?.signature_url}
+                          alt="Signature"
+                          className="h-12 w-auto"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleDeleteSignature}
+                        className="text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

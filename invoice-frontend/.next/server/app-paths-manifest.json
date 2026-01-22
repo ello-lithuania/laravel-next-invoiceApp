@@ -1,7 +1,8 @@
 {
-  "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(public)/page": "app/(public)/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/invoices/edit/page": "app/(dashboard)/invoices/edit/page.js",
-  "/(dashboard)/clients/edit/page": "app/(dashboard)/clients/edit/page.js",
-  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js"
+  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js",
+  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js",
+  "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js"
 }

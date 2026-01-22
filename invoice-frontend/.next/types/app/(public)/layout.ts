@@ -1,4 +1,4 @@
-// File: C:\wamp64\www\exercises\invoice\invoice-frontend\app\(public)\layout.tsx
+// File: C:\wamp64\www\exercises\invoice\laravel-next-invoiceApp\invoice-frontend\app\(public)\layout.tsx
 import * as entry from '../../../../app/(public)/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
