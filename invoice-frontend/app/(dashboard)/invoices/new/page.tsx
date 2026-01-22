@@ -27,6 +27,8 @@ const getDefaultDueDate = () => {
 export default function NewInvoice() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
+  const [clientSearch, setClientSearch] = useState('')
+  const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -85,6 +87,12 @@ export default function NewInvoice() {
     return form.items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
   }
 
+  const filteredClients = clients.filter(c => 
+    c.name.toLowerCase().includes(clientSearch.toLowerCase())
+  ).slice(0, 10)
+
+  const selectedClient = clients.find(c => c.id === Number(form.client_id))
+
   if (loading) return <div className="text-white p-8">Loading...</div>
 
   return (
@@ -106,15 +114,48 @@ export default function NewInvoice() {
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
               <label className="block text-slate-400 text-sm mb-2">Client *</label>
-              <select
-                value={form.client_id}
-                onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
-                required
-              >
-                <option value="">Select client...</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search client..."
+                  value={showClientDropdown ? clientSearch : (selectedClient?.name || '')}
+                  onChange={(e) => {
+                    setClientSearch(e.target.value)
+                    setShowClientDropdown(true)
+                    if (!e.target.value) setForm({ ...form, client_id: '' })
+                  }}
+                  onFocus={() => setShowClientDropdown(true)}
+                  className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                  required={!form.client_id}
+                />
+                {showClientDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {filteredClients.length === 0 ? (
+                      <div className="p-3 text-slate-500">No clients found</div>
+                    ) : (
+                      filteredClients.map(c => (
+                        <div
+                          key={c.id}
+                          onClick={() => {
+                            setForm({ ...form, client_id: String(c.id) })
+                            setClientSearch('')
+                            setShowClientDropdown(false)
+                          }}
+                          className="p-3 hover:bg-slate-700 cursor-pointer text-white transition-colors"
+                        >
+                          {c.name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+                {showClientDropdown && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowClientDropdown(false)}
+                  />
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-slate-400 text-sm mb-2">Invoice Date *</label>
@@ -165,7 +206,7 @@ export default function NewInvoice() {
                     className="col-span-2 p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
                   >
                     <option value="h">h</option>
-                    <option value="vnt">vnt</option>
+                    <option value="pcs">pcs</option>
                     <option value="m²">m²</option>
                     <option value="m">m</option>
                     <option value="kg">kg</option>

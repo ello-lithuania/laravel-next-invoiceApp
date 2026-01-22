@@ -105,7 +105,7 @@ export default function Invoices() {
     for (let i = 0; i < 12; i++) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      const label = date.toLocaleDateString('lt-LT', { year: 'numeric', month: 'long' })
+      const label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
       months.push({ value, label })
     }
     return months

@@ -579,6 +579,9 @@ video {
 .z-50{
   z-index: 50;
 }
+.z-40{
+  z-index: 40;
+}
 .col-span-1{
   grid-column: span 1 / span 1;
 }
@@ -700,6 +703,9 @@ video {
 .h-full{
   height: 100%;
 }
+.max-h-60{
+  max-height: 15rem;
+}
 .min-h-screen{
   min-height: 100vh;
 }
@@ -736,11 +742,11 @@ video {
 .w-9{
   width: 2.25rem;
 }
-.w-full{
-  width: 100%;
-}
 .w-auto{
   width: auto;
+}
+.w-full{
+  width: 100%;
 }
 .min-w-0{
   min-width: 0px;
@@ -883,6 +889,9 @@ video {
 }
 .overflow-hidden{
   overflow: hidden;
+}
+.overflow-y-auto{
+  overflow-y: auto;
 }
 .truncate{
   overflow: hidden;
@@ -1305,6 +1314,9 @@ video {
 .opacity-30{
   opacity: 0.3;
 }
+.opacity-50{
+  opacity: 0.5;
+}
 .opacity-60{
   opacity: 0.6;
 }
@@ -1313,9 +1325,6 @@ video {
 }
 .opacity-75{
   opacity: 0.75;
-}
-.opacity-50{
-  opacity: 0.5;
 }
 .shadow-lg{
   --tw-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);

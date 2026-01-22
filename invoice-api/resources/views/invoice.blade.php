@@ -5,91 +5,61 @@
     <title>Invoice {{ $invoice->series }} {{ $invoice->number }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: DejaVu Sans, sans-serif; font-size: 12px; line-height: 1.4; }
-        .page { padding: 0; position: relative; }
-        .header-decoration {
-            width: 100%;
-            height: 100px;
-        }
-        .footer-decoration {
-            width: 100%;
-            height: 80px;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-        }
-        .content { padding: 20px 40px; }
-        .header { margin-bottom: 25px; }
-        .header h1 { font-size: 26px; color: #1e40af; font-weight: bold; }
-        .invoice-info { display: table; width: 100%; margin-bottom: 25px; }
-        .invoice-info-left { display: table-cell; width: 50%; vertical-align: top; }
-        .invoice-info-right { display: table-cell; width: 50%; text-align: right; vertical-align: top; }
-        .invoice-number { font-size: 14px; color: #1e40af; font-weight: bold; }
-        .invoice-date { font-size: 12px; color: #64748b; margin-top: 5px; }
-        .parties { display: table; width: 100%; margin-bottom: 25px; }
-        .party { display: table-cell; width: 50%; padding: 15px; vertical-align: top; background: #f1f5f9; }
-        .party:first-child { border-right: 3px solid #3b82f6; }
-        .party h3 { font-size: 11px; margin-bottom: 10px; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-        .party p { margin-bottom: 4px; color: #334155; }
-        .party strong { color: #0f172a; }
-        table.items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        table.items th { background: #1e40af; color: #fff; padding: 10px 8px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-        table.items td { border-bottom: 1px solid #e2e8f0; padding: 10px 8px; color: #334155; }
-        table.items tr.even td { background: #f8fafc; }
-        table.items .number { width: 50px; text-align: center; }
-        table.items .unit { width: 60px; text-align: center; }
+        body { font-size: 11px; line-height: 1.5; color: #333; font-family: 'Dejavu sans', sans-serif; }
+        .page { position: relative; min-height: 100%; }
+        .header-bar { background: #0054ac; color: #fff; padding: 30px 40px; text-align: center; }
+        .header-title { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+        .header-info { font-size: 11px; margin-top: 10px; opacity: 0.9; }
+        .content { padding: 40px 40px; }
+        .parties { display: table; width: 100%; margin-bottom: 40px; }
+        .party { display: table-cell; width: 50%; vertical-align: top; padding-right: 20px; }
+        .party:last-child { padding-right: 0; padding-left: 20px; }
+        .party-label { font-size: 10px; color: #333; text-transform: uppercase; letter-spacing: 1px; font-weight: bold; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 2px solid #0054ac; display: inline-block; }
+        .party-name { font-size: 13px; color: #000; font-weight: bold; margin-bottom: 5px; }
+        .party p { margin-bottom: 2px; color: #555; font-size: 10px; }
+        table.items { width: 100%; border-collapse: collapse; margin-bottom: 35px; }
+        table.items th { background: #0054ac; color: #fff; padding: 10px 12px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        table.items td { border-bottom: 1px solid #e5e5e5; padding: 10px 12px; color: #333; }
+        table.items tr:nth-child(even) td { background: #f9f9f9; }
+        table.items .number { width: 40px; text-align: center; }
+        table.items .unit { width: 50px; text-align: center; }
         table.items .qty { width: 60px; text-align: center; }
         table.items .price { width: 80px; text-align: right; }
-        table.items .total { width: 80px; text-align: right; }
-        .totals { text-align: right; margin-bottom: 25px; }
-        .totals-box { display: inline-block; background: #eff6ff; padding: 15px 25px; border-left: 4px solid #3b82f6; }
-        .grand-total { font-size: 16px; font-weight: bold; color: #1e40af; }
-        .notes { margin-bottom: 25px; padding: 15px; background: #eff6ff; border-left: 4px solid #3b82f6; }
-        .notes p { color: #334155; margin-bottom: 5px; }
+        table.items .total { width: 90px; text-align: right; }
+        .totals { text-align: right; margin-bottom: 40px; }
+        .totals-box { display: inline-block; text-align: right; }
+        .grand-total { font-size: 14px; font-weight: bold; color: #0054ac; padding-top: 8px; border-top: 2px solid #0054ac; margin-top: 5px; }
+        .notes { margin-bottom: 40px; padding: 12px 15px; background: #f5f7fa; border-left: 3px solid #0054ac; }
+        .notes p { color: #555; margin-bottom: 3px; font-size: 10px; }
         .notes p:last-child { margin-bottom: 0; }
-        .notes strong { color: #1e40af; }
-        .signatures { margin-top: 40px; }
-        .signature-row { margin-bottom: 15px; }
-        .signature-label { color: #334155; }
-        .signature-line { display: inline-block; border-bottom: 1px solid #000; min-width: 350px; position: relative; height: 30px; vertical-align: bottom; }
-        .signature-name { display: inline-block; padding: 0 10px; vertical-align: bottom; }
-        .signature-image { position: absolute; bottom: 0; left: 150px; max-height: 40px; max-width: 150px; }
+        .notes strong { color: #000; }
+        .signatures { margin-top: 50px; }
+        .signature-row { margin-bottom: 15px; display: table; width: 100%; }
+        .signature-label { color: #666; font-size: 10px; display: table-cell; width: 120px; vertical-align: bottom; }
+        .signature-line { display: table-cell; border-bottom: 1px solid #ccc; position: relative; height: 30px; vertical-align: bottom; }
+        .signature-name { position: absolute; bottom: 5px; left: 10px; color: #333; font-size: 10px; }
+        .signature-image { position: absolute; bottom: -5px; left: 120px; max-height: 35px; max-width: 120px; }
+        .footer-bar { background: #0054ac; height: 40px; position: fixed; bottom: 0; left: 0; right: 0; }
     </style>
 </head>
 <body>
     <div class="page">
-        <div class="header-decoration">
-            <svg width="100%" height="100" viewBox="0 0 600 100" preserveAspectRatio="none">
-                <polygon points="0,0 600,0 600,50 400,80 200,50 0,80" fill="#cbd5e1"/>
-                <polygon points="0,0 600,0 600,30 450,60 300,40 150,70 0,50" fill="#1e40af"/>
-                <polygon points="0,0 250,0 200,40 100,25 0,45" fill="#3b82f6"/>
-                <polygon points="600,0 600,35 500,20 400,45 350,25" fill="#3b82f6"/>
-            </svg>
+        @php
+            $months = ['sausio', 'vasario', 'kovo', 'balandžio', 'gegužės', 'birželio', 'liepos', 'rugpjūčio', 'rugsėjo', 'spalio', 'lapkričio', 'gruodžio'];
+            $invoiceMonth = $months[$invoice->invoice_date->format('n') - 1];
+            $dueDate = $invoice->invoice_date->copy()->addMonth();
+            $dueMonth = $months[$dueDate->format('n') - 1];
+        @endphp
+        <div class="header-bar">
+            <div class="header-title">SĄSKAITA FAKTŪRA</div>
+            <div class="header-info">Serija {{ $invoice->series }} Nr. {{ str_pad($invoice->number, 7, '0', STR_PAD_LEFT) }} | {{ $invoice->invoice_date->format('Y') }} m. {{ $invoiceMonth }} {{ $invoice->invoice_date->format('d') }} d.</div>
         </div>
 
         <div class="content">
-            <div class="header">
-                <h1>SĄSKAITA FAKTŪRA</h1>
-            </div>
-
-            <div class="invoice-info">
-                <div class="invoice-info-left">
-                    <div class="invoice-number">Serija {{ $invoice->series }} Nr. {{ str_pad($invoice->number, 7, '0', STR_PAD_LEFT) }}</div>
-                </div>
-                <div class="invoice-info-right">
-                    @php
-                        $months = ['sausio', 'vasario', 'kovo', 'balandžio', 'gegužės', 'birželio', 'liepos', 'rugpjūčio', 'rugsėjo', 'spalio', 'lapkričio', 'gruodžio'];
-                        $invoiceMonth = $months[$invoice->invoice_date->format('n') - 1];
-                        $dueMonth = $months[$invoice->due_date->format('n') - 1];
-                    @endphp
-                    <div class="invoice-date">{{ $invoice->invoice_date->format('Y') }} m. {{ $invoiceMonth }} {{ $invoice->invoice_date->format('d') }} d.</div>
-                </div>
-            </div>
-
             <div class="parties">
                 <div class="party">
-                    <h3>Pardavėjas</h3>
-                    <p><strong>{{ $invoice->user->name }}</strong></p>
+                    <div class="party-label">Pardavėjas</div>
+                    <div class="party-name">{{ $invoice->user->name }}</div>
                     @if($invoice->user->company_code)
                         <p>Įmonės kodas / IV pažyma: {{ $invoice->user->company_code }}</p>
                     @endif
@@ -97,24 +67,21 @@
                         <p>PVM kodas: {{ $invoice->user->vat_code }}</p>
                     @endif
                     @if($invoice->user->address)
-                        <p>Adresas: {{ $invoice->user->address }}</p>
+                        <p>{{ $invoice->user->address }}</p>
                     @endif
                     @if($invoice->user->phone)
                         <p>Tel.: {{ $invoice->user->phone }}</p>
-                    @endif
-                    @if($invoice->user->email)
-                        <p>El. paštas: {{ $invoice->user->email }}</p>
                     @endif
                     @if($invoice->user->bank_name)
                         <p>{{ $invoice->user->bank_name }}</p>
                     @endif
                     @if($invoice->user->bank_account)
-                        <p>A/s: {{ $invoice->user->bank_account }}</p>
+                        <p>{{ $invoice->user->bank_account }}</p>
                     @endif
                 </div>
                 <div class="party">
-                    <h3>Pirkėjas</h3>
-                    <p><strong>{{ $invoice->client->name }}</strong></p>
+                    <div class="party-label">Pirkėjas</div>
+                    <div class="party-name">{{ $invoice->client->name }}</div>
                     @if($invoice->client->company_code)
                         <p>Įmonės kodas / Asmens kodas: {{ $invoice->client->company_code }}</p>
                     @endif
@@ -122,13 +89,10 @@
                         <p>PVM kodas: {{ $invoice->client->vat_code }}</p>
                     @endif
                     @if($invoice->client->address)
-                        <p>Adresas: {{ $invoice->client->address }}</p>
+                        <p>{{ $invoice->client->address }}</p>
                     @endif
                     @if($invoice->client->phone)
                         <p>Tel.: {{ $invoice->client->phone }}</p>
-                    @endif
-                    @if($invoice->client->email)
-                        <p>El. paštas: {{ $invoice->client->email }}</p>
                     @endif
                 </div>
             </div>
@@ -146,7 +110,7 @@
                 </thead>
                 <tbody>
                     @foreach($invoice->items as $index => $item)
-                    <tr class="{{ $index % 2 == 1 ? 'even' : '' }}">
+                    <tr>
                         <td class="number">{{ $index + 1 }}</td>
                         <td>{{ $item->description }}</td>
                         <td class="unit">{{ $item->unit }}</td>
@@ -165,7 +129,7 @@
             </div>
 
             <div class="notes">
-                <p><strong>Apmokėti iki:</strong> {{ $invoice->due_date->format('Y') }} m. {{ $dueMonth }} {{ $invoice->due_date->format('d') }} d.</p>
+                <p><strong>Apmokėti iki:</strong> {{ $dueDate->format('Y') }} m. {{ $dueMonth }} {{ $dueDate->format('d') }} d.</p>
                 @if($invoice->notes)
                     <p><strong>Pastabos:</strong> {{ $invoice->notes }}</p>
                 @endif
@@ -185,7 +149,7 @@
                                 }
                             @endphp
                             @if($signatureData)
-                                <img src="data:image/png;base64,{{ $signatureData }}" class="signature-image" alt="Parašas">
+                                <img src="data:image/png;base64,{{ $signatureData }}" class="signature-image" alt="Parasas">
                             @endif
                         @endif
                     </span>
@@ -197,14 +161,7 @@
             </div>
         </div>
 
-        <div class="footer-decoration">
-            <svg width="100%" height="80" viewBox="0 0 600 80" preserveAspectRatio="none">
-                <polygon points="0,30 150,10 300,40 450,5 600,25 600,80 0,80" fill="#cbd5e1"/>
-                <polygon points="0,50 200,30 350,55 500,25 600,45 600,80 0,80" fill="#1e40af"/>
-                <polygon points="500,50 550,35 600,55 600,80 450,80" fill="#3b82f6"/>
-                <polygon points="0,60 50,45 100,65 0,80" fill="#3b82f6"/>
-            </svg>
-        </div>
+        <div class="footer-bar"></div>
     </div>
 </body>
 </html>
