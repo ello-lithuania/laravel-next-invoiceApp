@@ -30,9 +30,16 @@ jobs:
         run: npm run build
         
       - name: Deploy Frontend
-        run: |
-          sudo apt-get install -y lftp
-          lftp -e "set ftp:ssl-allow yes; set ssl:verify-certificate no; set ftp:passive-mode yes; mirror -R --verbose ./invoice-frontend/out/ /public_html/; quit" -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ${{ secrets.FTP_SERVER }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./invoice-frontend/out/
+          server-dir: /public_html/
+          protocol: ftps
+          port: 21
+          timeout: 60000
 
   deploy-api:
     runs-on: ubuntu-latest
@@ -63,6 +70,19 @@ jobs:
           php artisan key:generate
           
       - name: Deploy API
-        run: |
-          sudo apt-get install -y lftp
-          lftp -e "set ftp:ssl-allow yes; set ssl:verify-certificate no; set ftp:passive-mode yes; mirror -R --verbose --exclude .git/ --exclude node_modules/ --exclude .env.example --exclude tests/ ./invoice-api/ /public_html/; quit" -u ${{ secrets.FTP_API_USERNAME }},${{ secrets.FTP_API_PASSWORD }} ${{ sec
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_API_SERVER }}
+          username: ${{ secrets.FTP_API_USERNAME }}
+          password: ${{ secrets.FTP_API_PASSWORD }}
+          local-dir: ./invoice-api/
+          server-dir: /public_html/
+          protocol: ftps
+          port: 21
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env.example
+            tests/**
