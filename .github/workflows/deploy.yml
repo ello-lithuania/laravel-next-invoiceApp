@@ -33,8 +33,18 @@ jobs:
         run: sudo apt-get install -y lftp
         
       - name: Deploy Frontend
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
         run: |
-          lftp -u ${{ secrets.FTP_USERNAME }},${{ secrets.FTP_PASSWORD }} ftp://${{ secrets.FTP_SERVER }} -e "set ftp:passive-mode yes; mirror -R --verbose ./invoice-frontend/out/ /public_html/; quit"
+          lftp -c "
+          open ftp://$FTP_HOST
+          user $FTP_USER $FTP_PASS
+          set ftp:passive-mode yes
+          mirror -R --verbose ./invoice-frontend/out/ /public_html/
+          quit
+          "
 
   deploy-api:
     runs-on: ubuntu-latest
@@ -68,5 +78,15 @@ jobs:
         run: sudo apt-get install -y lftp
         
       - name: Deploy API
+        env:
+          FTP_USER: ${{ secrets.FTP_API_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_API_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_API_SERVER }}
         run: |
-          lftp -u ${{ secrets.FTP_API_USERNAME }},${{ secrets.FTP_API_PASSWORD }} ftp://${{ secrets.FTP_API_SERVER }} -e "set ftp:passive-mode yes; mirror -R --verbose --exclude .git/ --exclude node_modules/ --exclude .env.example --exclude tests/ ./invoice-api/ /public_html/; quit"
+          lftp -c "
+          open ftp://$FTP_HOST
+          user $FTP_USER $FTP_PASS
+          set ftp:passive-mode yes
+          mirror -R --verbose --exclude .git/ --exclude node_modules/ --exclude .env.example --exclude tests/ ./invoice-api/ /public_html/
+          quit
+          "
