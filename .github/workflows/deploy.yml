@@ -1,14 +1,12 @@
-name: Deploy Frontend
+name: Deploy
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'invoice-frontend/**'
 
 jobs:
-  build-and-deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     
     steps:
@@ -31,7 +29,7 @@ jobs:
         working-directory: ./invoice-frontend
         run: npm run build
         
-      - name: Deploy to Hostinger
+      - name: Deploy Frontend
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -39,3 +37,46 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./invoice-frontend/out/
           server-dir: /public_html/
+
+  deploy-api:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          
+      - name: Install Composer dependencies
+        working-directory: ./invoice-api
+        run: composer install --no-dev --optimize-autoloader
+        
+      - name: Create .env
+        working-directory: ./invoice-api
+        run: |
+          cp .env.example .env
+          sed -i 's|APP_ENV=.*|APP_ENV=production|' .env
+          sed -i 's|APP_DEBUG=.*|APP_DEBUG=false|' .env
+          sed -i 's|APP_URL=.*|APP_URL=${{ secrets.API_APP_URL }}|' .env
+          sed -i 's|DB_HOST=.*|DB_HOST=${{ secrets.DB_HOST }}|' .env
+          sed -i 's|DB_DATABASE=.*|DB_DATABASE=${{ secrets.DB_DATABASE }}|' .env
+          sed -i 's|DB_USERNAME=.*|DB_USERNAME=${{ secrets.DB_USERNAME }}|' .env
+          sed -i 's|DB_PASSWORD=.*|DB_PASSWORD=${{ secrets.DB_PASSWORD }}|' .env
+          php artisan key:generate
+          
+      - name: Deploy API
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_API_SERVER }}
+          username: ${{ secrets.FTP_API_USERNAME }}
+          password: ${{ secrets.FTP_API_PASSWORD }}
+          local-dir: ./invoice-api/
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env.example
+            tests/**
