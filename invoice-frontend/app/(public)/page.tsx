@@ -110,7 +110,7 @@ export default function Home() {
             <span className="text-cyan-400 text-sm font-medium">Now available for freelancers</span>
           </div>
           <h1 className="hero-animate text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Invoicing madee
+            Invoicing made
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> simple</span>
           </h1>
           <p className="hero-animate text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
