@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi } from '@/lib/api'
@@ -18,7 +18,7 @@ interface Client {
 
 const emptyItem: InvoiceItem = { description: '', unit: 'h', quantity: 1, price: 0 }
 
-export default function EditInvoice() {
+function EditInvoiceForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -76,7 +76,7 @@ export default function EditInvoice() {
         const updated = [...new Set([...savedDescriptions, ...newDescriptions])]
         localStorage.setItem('savedDescriptions', JSON.stringify(updated))
       }
-      await invoices.update(Number(id), form)
+      await invoices.update(Number(id), { ...form, client_id: Number(form.client_id) })
       router.push('/invoices')
     } catch (e) {}
     setSaving(false)
@@ -315,5 +315,13 @@ export default function EditInvoice() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function EditInvoice() {
+  return (
+    <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+      <EditInvoiceForm />
+    </Suspense>
   )
 }

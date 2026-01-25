@@ -63,7 +63,7 @@ export default function NewInvoice() {
         const updated = [...new Set([...savedDescriptions, ...newDescriptions])]
         localStorage.setItem('savedDescriptions', JSON.stringify(updated))
       }
-      await invoices.create(form)
+      await invoices.create({ ...form, client_id: Number(form.client_id) })
       router.push('/invoices')
     } catch (e) {}
     setSaving(false)

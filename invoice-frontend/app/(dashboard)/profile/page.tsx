@@ -5,15 +5,15 @@ import { profile } from '@/lib/api'
 interface User {
   name: string
   email: string
-  company_code: string
-  vat_code: string
-  address: string
-  phone: string
-  website: string
-  bank_name: string
-  bank_account: string
-  invoice_series: string
-  next_invoice_number: number
+  company_code?: string
+  vat_code?: string
+  address?: string
+  phone?: string
+  website?: string
+  bank_name?: string
+  bank_account?: string
+  invoice_series?: string
+  next_invoice_number?: number
   signature?: string
   signature_url?: string
 }

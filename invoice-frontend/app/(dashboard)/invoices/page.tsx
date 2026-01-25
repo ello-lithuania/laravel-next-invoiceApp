@@ -11,7 +11,7 @@ interface Client {
 interface Invoice {
   id: number
   series: string
-  number: string
+  number: number
   client_id: number
   client?: Client
   invoice_date: string

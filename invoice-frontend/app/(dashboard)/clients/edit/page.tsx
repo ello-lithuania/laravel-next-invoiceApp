@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { clients } from '@/lib/api'
@@ -14,7 +14,7 @@ interface ClientForm {
   notes: string
 }
 
-export default function EditClient() {
+function EditClientForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -171,5 +171,13 @@ export default function EditClient() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function EditClient() {
+  return (
+    <Suspense fallback={<div className="text-white p-8">Loading...</div>}>
+      <EditClientForm />
+    </Suspense>
   )
 }

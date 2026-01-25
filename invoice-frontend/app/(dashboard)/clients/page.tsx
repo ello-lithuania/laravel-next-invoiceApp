@@ -6,12 +6,12 @@ import { clients } from '@/lib/api'
 interface Client {
   id: number
   name: string
-  company_code: string
-  vat_code: string
-  address: string
-  phone: string
-  email: string
-  notes: string
+  company_code?: string
+  vat_code?: string
+  address?: string
+  phone?: string
+  email?: string
+  notes?: string
 }
 
 export default function Clients() {

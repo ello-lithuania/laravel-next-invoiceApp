@@ -1,0 +1,41 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'invoice-frontend/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install dependencies
+        working-directory: ./invoice-frontend
+        run: npm ci
+        
+      - name: Create .env
+        working-directory: ./invoice-frontend
+        run: echo "NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}" > .env
+        
+      - name: Build
+        working-directory: ./invoice-frontend
+        run: npm run build
+        
+      - name: Deploy to Hostinger
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./invoice-frontend/out/
+          server-dir: /public_html/
