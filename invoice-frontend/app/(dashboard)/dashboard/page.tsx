@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { profile, stats, activity, Activity } from '@/lib/api'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 interface ChartData {
   month?: string
@@ -31,6 +31,7 @@ const periods = [
 export default function Dashboard() {
   const [userName, setUserName] = useState('')
   const [statsData, setStatsData] = useState<StatsData | null>(null)
+  const [clientBreakdown, setClientBreakdown] = useState<{ name: string; total: number; count: number }[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
   const [activePeriod, setActivePeriod] = useState('1m')
   const [loading, setLoading] = useState(true)
@@ -45,12 +46,14 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, activityData] = await Promise.all([
+      const [userData, activityData, breakdownData] = await Promise.all([
         profile.get(),
-        activity.list()
+        activity.list(),
+        stats.clientBreakdown()
       ])
       setUserName(userData.name)
       setActivities(activityData)
+      setClientBreakdown(breakdownData)
     } catch (e) {}
     setLoading(false)
   }
@@ -73,9 +76,9 @@ export default function Dashboard() {
     }
     const [year, m] = value.split('-')
     const date = new Date(parseInt(year), parseInt(m) - 1)
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+    return date.toLocaleDateString('en-US', { month: 'long' })
   }
-
+  
   if (loading) return <div className="text-white p-8">Loading...</div>
 
   return (
@@ -168,6 +171,49 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+            <h2 className="text-xl font-semibold text-white mb-6">Revenue by Client (Top 5)</h2>
+{clientBreakdown.length > 0 ? (
+  <div className="flex items-center justify-center py-4">
+    <PieChart width={400} height={300}>
+      <Pie
+        data={clientBreakdown.map(c => ({ ...c, total: parseFloat(c.total) }))}
+        dataKey="total"
+        nameKey="name"
+        cx={200}
+        cy={130}
+        outerRadius={100}
+      >
+        {clientBreakdown.map((_, index) => (
+          <Cell key={`cell-${index}`} fill={['#3b82f6', '#22d3ee', '#a855f7', '#22c55e', '#f97316'][index % 5]} />
+        ))}
+      </Pie>
+      <Tooltip
+        contentStyle={{
+          backgroundColor: '#1e293b',
+          border: '1px solid #334155',
+          borderRadius: '8px',
+        }}
+        itemStyle={{ color: '#fff' }}
+        labelStyle={{ color: '#fff' }}
+        formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+      />
+      <Legend />
+    </PieChart>
+  </div>
+) : (
+              <div className="h-80 flex items-center justify-center text-slate-500">
+                <div className="text-center">
+                  <svg className="w-16 h-16 mx-auto mb-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                  </svg>
+                  <p>No client data yet</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -185,7 +231,7 @@ export default function Dashboard() {
                   <p className="text-slate-400 text-sm">Create a new invoice</p>
                 </div>
               </Link>
-              <Link href="/clients" className="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 hover:border-slate-600 transition-colors">
+              <Link href="/clients/new" className="flex items-center gap-3 p-3 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 hover:border-slate-600 transition-colors">
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />

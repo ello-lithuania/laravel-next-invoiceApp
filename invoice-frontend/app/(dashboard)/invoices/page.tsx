@@ -17,6 +17,7 @@ interface Invoice {
   invoice_date: string
   due_date: string
   total: number
+  status: string
 }
 
 interface PaginatedResponse {
@@ -27,30 +28,55 @@ interface PaginatedResponse {
   total: number
 }
 
+const statusOptions = [
+  { value: '', label: 'All statuses' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'overdue', label: 'Overdue' },
+]
+
+const statusColors: Record<string, string> = {
+  draft: 'bg-slate-500/20 text-slate-300',
+  sent: 'bg-blue-500/20 text-blue-400',
+  paid: 'bg-green-500/20 text-green-400',
+  overdue: 'bg-red-500/20 text-red-400',
+}
+
 export default function Invoices() {
   const [list, setList] = useState<Invoice[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [monthOptions, setMonthOptions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [filterMonth, setFilterMonth] = useState('')
   const [filterClient, setFilterClient] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
   const [sortBy, setSortBy] = useState('invoice_date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     loadClients()
+    loadMonths()
   }, [])
 
   useEffect(() => {
     loadInvoices()
-  }, [page, filterMonth, filterClient, sortBy, sortDir])
+  }, [page, filterMonth, filterClient, filterStatus, sortBy, sortDir])
 
   const loadClients = async () => {
     try {
       const data = await clientsApi.list()
       setClients(data)
+    } catch (e) {}
+  }
+
+  const loadMonths = async () => {
+    try {
+      const data = await invoices.months()
+      setMonthOptions(data)
     } catch (e) {}
   }
 
@@ -64,6 +90,7 @@ export default function Invoices() {
       params.set('sort_dir', sortDir)
       if (filterMonth) params.set('month', filterMonth)
       if (filterClient) params.set('client_id', filterClient)
+      if (filterStatus) params.set('status', filterStatus)
       
       const data = await invoices.listPaginated(params.toString())
       setList(data.data)
@@ -77,7 +104,13 @@ export default function Invoices() {
     if (confirm('Delete this invoice?')) {
       await invoices.delete(id)
       loadInvoices()
+      loadMonths()
     }
+  }
+
+  const handleStatusChange = async (id: number, status: string) => {
+    await invoices.updateStatus(id, status)
+    loadInvoices()
   }
 
   const downloadPdf = (id: number) => {
@@ -100,15 +133,12 @@ export default function Invoices() {
   }
 
   const getMonthOptions = () => {
-    const months = []
-    const now = new Date()
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    return monthOptions.map(m => {
+      const [year, month] = m.split('-')
+      const date = new Date(parseInt(year), parseInt(month) - 1, 1)
       const label = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-      months.push({ value, label })
-    }
-    return months
+      return { value: m, label }
+    })
   }
 
   const SortIcon = ({ column }: { column: string }) => (
@@ -174,9 +204,20 @@ export default function Invoices() {
             ))}
           </select>
         </div>
-        {(filterMonth || filterClient) && (
+        <div className="flex-1 min-w-[200px]">
+          <select
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); handleFilterChange() }}
+            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+          >
+            {statusOptions.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        {(filterMonth || filterClient || filterStatus) && (
           <button
-            onClick={() => { setFilterMonth(''); setFilterClient(''); handleFilterChange() }}
+            onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); handleFilterChange() }}
             className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
           >
             Clear filters
@@ -212,25 +253,26 @@ export default function Invoices() {
               >
                 Total <SortIcon column="total" />
               </th>
+              <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Status</th>
               <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                   Loading...
                 </td>
               </tr>
             ) : list.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <div className="text-slate-500">
                     <svg className="w-12 h-12 mx-auto mb-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <p>No invoices found</p>
-                    {(filterMonth || filterClient) && (
+                    {(filterMonth || filterClient || filterStatus) && (
                       <p className="text-sm mt-1">Try changing the filters</p>
                     )}
                   </div>
@@ -243,6 +285,18 @@ export default function Invoices() {
                   <td className="px-6 py-4 text-slate-300">{inv.client?.name}</td>
                   <td className="px-6 py-4 text-slate-300">{inv.invoice_date?.split('T')[0]}</td>
                   <td className="px-6 py-4 text-white font-medium">{inv.total} EUR</td>
+                  <td className="px-6 py-4">
+                    <select
+                      value={inv.status || 'draft'}
+                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium border-0 cursor-pointer ${statusColors[inv.status] || statusColors.draft}`}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                      <option value="paid">Paid</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </td>
                   <td className="px-6 py-4">
                     <button 
                       onClick={() => downloadPdf(inv.id)} 

@@ -24,6 +24,10 @@ class InvoiceController extends Controller
             $query->where('client_id', $request->client_id);
         }
 
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
         $sortBy = $request->get('sort_by', 'invoice_date');
         $sortDir = $request->get('sort_dir', 'desc');
 
@@ -53,18 +57,22 @@ class InvoiceController extends Controller
             'items.*.price' => 'required|numeric|min:0',
         ]);
 
-        $lastInvoice = $request->user()->invoices()->orderBy('number', 'desc')->first();
-        $nextNumber = $lastInvoice ? $lastInvoice->number + 1 : 1;
+        $user = $request->user();
+        $series = $user->invoice_series ?? 'INV';
+        $nextNumber = $user->next_invoice_number ?? 1;
 
-        $invoice = $request->user()->invoices()->create([
-            'series' => 'INV',
+        $invoice = $user->invoices()->create([
+            'series' => $series,
             'number' => $nextNumber,
             'client_id' => $request->client_id,
             'invoice_date' => $request->invoice_date,
             'due_date' => $request->due_date,
             'notes' => $request->notes,
             'total' => 0,
+            'status' => 'draft',
         ]);
+
+        $user->update(['next_invoice_number' => $nextNumber + 1]);
 
         $total = 0;
         foreach ($request->items as $item) {
@@ -87,13 +95,17 @@ class InvoiceController extends Controller
 
     public function show(Request $request, Invoice $invoice)
     {
-        $this->authorize('view', $invoice);
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         return $invoice->load('client', 'items');
     }
 
     public function update(Request $request, Invoice $invoice)
     {
-        $this->authorize('update', $invoice);
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $request->validate([
             'client_id' => 'required|exists:clients,id',
@@ -132,11 +144,13 @@ class InvoiceController extends Controller
         $invoice->update(['total' => $total]);
 
         return $invoice->load('client', 'items');
-    }
 
+    }
     public function destroy(Request $request, Invoice $invoice)
     {
-        $this->authorize('delete', $invoice);
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $invoice->items()->delete();
         $invoice->delete();
@@ -144,7 +158,32 @@ class InvoiceController extends Controller
         return response()->json(['message' => 'Invoice deleted']);
     }
 
-        public function pdf(Request $request, Invoice $invoice)
+    public function months(Request $request)
+    {
+        $months = $request->user()->invoices()
+            ->selectRaw("DISTINCT DATE_FORMAT(invoice_date, '%Y-%m') as month")
+            ->orderBy('month', 'desc')
+            ->pluck('month');
+
+        return response()->json($months);
+    }
+
+    public function updateStatus(Request $request, Invoice $invoice)
+    {
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        $request->validate([
+            'status' => 'required|in:draft,sent,paid,overdue'
+        ]);
+
+        $invoice->update(['status' => $request->status]);
+
+        return $invoice->load('client', 'items');
+    }
+
+    public function pdf(Request $request, Invoice $invoice)
     {
         $token = $request->query('token');
         if (!$token) {

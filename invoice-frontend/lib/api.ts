@@ -171,12 +171,16 @@ export const invoices = {
     api<Invoice[]>('/invoices'),
   listPaginated: (params: string) => 
     api<PaginatedResponse<Invoice>>(`/invoices?${params}`),
+  months: () =>
+    api<string[]>('/invoices/months'),
   get: (id: number) => 
     api<Invoice>(`/invoices/${id}`),
   create: (data: { client_id: number; invoice_date: string; due_date: string; notes?: string; items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'total'>[] }) => 
     api<Invoice>('/invoices', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: number, data: { client_id: number; invoice_date: string; due_date: string; notes?: string; items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'total'>[] }) => 
     api<Invoice>(`/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateStatus: (id: number, status: string) =>
+    api<Invoice>(`/invoices/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   delete: (id: number) => 
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
   pdf: (id: number) => 
@@ -186,6 +190,8 @@ export const invoices = {
 export const stats = {
   get: (period: string) => 
     api<StatsData>(`/stats?period=${period}`),
+  clientBreakdown: () =>
+    api<{ name: string; total: number; count: number }[]>('/stats/clients'),
 }
 
 export interface Activity {

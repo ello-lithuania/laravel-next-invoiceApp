@@ -45,4 +45,17 @@ class StatsController extends Controller
             'period' => $period,
         ]);
     }
+
+    public function clientBreakdown(Request $request)
+    {
+        $data = $request->user()->invoices()
+            ->join('clients', 'invoices.client_id', '=', 'clients.id')
+            ->selectRaw('clients.name, SUM(invoices.total) as total, COUNT(*) as count')
+            ->groupBy('clients.id', 'clients.name')
+            ->orderByDesc('total')
+            ->limit(5)
+            ->get();
+
+        return response()->json($data);
+    }
 }

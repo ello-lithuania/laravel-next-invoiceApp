@@ -22,11 +22,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/profile/signature', [ProfileController::class, 'deleteSignature']);
 
     Route::apiResource('clients', ClientController::class);
-    Route::apiResource('invoices', InvoiceController::class);
 
     Route::get('/stats', [StatsController::class, 'index']);
+    Route::get('/stats/clients', [StatsController::class, 'clientBreakdown']);
+
     Route::put('/password', [PasswordController::class, 'update']);
     Route::get('/activity', [ActivityController::class, 'index']);
+
+    Route::get('/invoices/months', [InvoiceController::class, 'months']);
+    Route::apiResource('invoices', InvoiceController::class);
+    Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
 });
 
 Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
