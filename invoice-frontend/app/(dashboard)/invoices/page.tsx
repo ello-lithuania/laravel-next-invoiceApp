@@ -17,7 +17,7 @@ interface Invoice {
   invoice_date: string
   due_date: string
   total: number
-  status: string
+  status?: string
 }
 
 interface PaginatedResponse {
