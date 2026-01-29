@@ -180,7 +180,7 @@ export const invoices = {
   update: (id: number, data: { client_id: number; invoice_date: string; due_date: string; notes?: string; items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'total'>[] }) => 
     api<Invoice>(`/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   updateStatus: (id: number, status: string) =>
-    api<Invoice>(`/invoices/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+    api<Invoice>(`/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   delete: (id: number) => 
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
   pdf: (id: number) => 
