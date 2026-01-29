@@ -178,7 +178,7 @@ export default function Dashboard() {
   <div className="flex items-center justify-center py-4">
     <PieChart width={400} height={300}>
       <Pie
-        data={clientBreakdown.map(c => ({ ...c, total: parseFloat(c.total) }))}
+        data={clientBreakdown.map(c => ({ ...c, total: Number(c.total) }))}
         dataKey="total"
         nameKey="name"
         cx={200}
