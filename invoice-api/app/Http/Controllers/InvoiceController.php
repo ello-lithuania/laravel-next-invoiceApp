@@ -168,9 +168,11 @@ class InvoiceController extends Controller
         return response()->json($months);
     }
 
-    public function updateStatus(Request $request, Invoice $invoice)
+    public function updateStatus(Request $request, $id)
     {
-        if ($invoice->user_id !== $request->user()->id) {
+        $invoice = Invoice::find($id);
+
+        if (!$invoice || $invoice->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
