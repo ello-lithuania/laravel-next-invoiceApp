@@ -168,22 +168,23 @@ class InvoiceController extends Controller
         return response()->json($months);
     }
 
-    public function updateStatus(Request $request, $id)
-    {
+public function updateStatus(Request $request, $id)
+{
+    try {
         $invoice = Invoice::find($id);
 
         if (!$invoice || $invoice->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $request->validate([
-            'status' => 'required|in:draft,sent,paid,overdue'
-        ]);
+        $invoice->status = $request->status;
+        $invoice->save();
 
-        $invoice->update(['status' => $request->status]);
-
-        return $invoice->load('client', 'items');
+        return response()->json($invoice->load('client', 'items'));
+    } catch (\Exception $e) {
+        return response()->json(['message' => $e->getMessage()], 500);
     }
+}
 
     public function pdf(Request $request, Invoice $invoice)
     {
