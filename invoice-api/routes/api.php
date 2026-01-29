@@ -31,7 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/invoices/months', [InvoiceController::class, 'months']);
     Route::apiResource('invoices', InvoiceController::class);
-    Route::patch('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
+    Route::post('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
 });
 
 Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
