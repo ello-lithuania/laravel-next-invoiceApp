@@ -7,10 +7,53 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\StatsController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+
+Route::post('/forgot-password', function (Request $request) {
+    $request->validate(['email' => 'required|email']);
+
+    $status = Password::sendResetLink($request->only('email'));
+
+    if ($status === Password::RESET_LINK_SENT) {
+        return response()->json(['message' => 'Password reset link sent.']);
+    }
+
+    throw ValidationException::withMessages(['email' => [__($status)]]);
+});
+
+Route::post('/reset-password', function (Request $request) {
+    $request->validate([
+        'token' => 'required',
+        'email' => 'required|email',
+        'password' => 'required|min:8|confirmed',
+    ]);
+
+    $status = Password::reset(
+        $request->only('email', 'password', 'password_confirmation', 'token'),
+        function ($user, $password) {
+            $user->forceFill([
+                'password' => Hash::make($password)
+            ])->setRememberToken(Str::random(60));
+            $user->save();
+            event(new PasswordReset($user));
+        }
+    );
+
+    if ($status === Password::PASSWORD_RESET) {
+        return response()->json(['message' => 'Password has been reset.']);
+    }
+
+    throw ValidationException::withMessages(['email' => [__($status)]]);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

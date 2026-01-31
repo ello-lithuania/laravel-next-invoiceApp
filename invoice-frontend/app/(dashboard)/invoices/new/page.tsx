@@ -20,7 +20,7 @@ const emptyItem: InvoiceItem = { description: '', unit: 'h', quantity: 1, price:
 
 const getDefaultDueDate = () => {
   const date = new Date()
-  date.setMonth(date.getMonth() + 1)
+  date.setDate(date.getDate() + 30)
   return date.toISOString().split('T')[0]
 }
 

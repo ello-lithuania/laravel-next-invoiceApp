@@ -26,40 +26,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/layout.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
-    "/(dashboard)/clients/new/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/clients/new/page.js"
-    ],
     "/(dashboard)/clients/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/clients/page.js"
     ],
-    "/(dashboard)/invoices/page": [
+    "/(public)/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/invoices/page.js"
+      "static/chunks/app/(public)/login/page.js"
     ],
-    "/(dashboard)/invoices/new/page": [
+    "/(public)/forgot-password/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/invoices/new/page.js"
+      "static/chunks/app/(public)/forgot-password/page.js"
     ],
-    "/(dashboard)/profile/page": [
+    "/(public)/register/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/profile/page.js"
-    ],
-    "/(dashboard)/invoices/edit/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/invoices/edit/page.js"
+      "static/chunks/app/(public)/register/page.js"
     ]
   }
 }

@@ -116,6 +116,8 @@ export const auth = {
     api<{ message: string }>('/logout', { method: 'POST' }),
   user: () => 
     api<User>('/user'),
+  forgotPassword: (data: { email: string }) =>
+    api<{ message: string }>('/forgot-password', { method: 'POST', body: JSON.stringify(data) }),
 }
 
 export const profile = {

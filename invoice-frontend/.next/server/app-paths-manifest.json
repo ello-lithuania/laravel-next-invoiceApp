@@ -1,7 +1,7 @@
 {
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js",
-  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js",
-  "/(dashboard)/invoices/edit/page": "app/(dashboard)/invoices/edit/page.js",
-  "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js"
+  "/(public)/login/page": "app/(public)/login/page.js",
+  "/(public)/forgot-password/page": "app/(public)/forgot-password/page.js",
+  "/(public)/register/page": "app/(public)/register/page.js",
+  "/(public)/page": "app/(public)/page.js"
 }
