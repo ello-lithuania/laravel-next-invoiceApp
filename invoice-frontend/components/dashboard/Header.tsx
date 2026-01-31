@@ -3,11 +3,17 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { auth } from '@/lib/api'
+import { removeToken } from '@/lib/api'
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-slate-700/50 rounded ${className}`} />
+}
 
 export default function DashboardHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const [user, setUser] = useState<{ name: string; email: string } | null>(null)
+  const [loading, setLoading] = useState(true)
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
@@ -18,6 +24,7 @@ export default function DashboardHeader() {
       } catch (e) {
         router.push('/login')
       }
+      setLoading(false)
     }
     fetchUser()
   }, [router])
@@ -26,7 +33,7 @@ export default function DashboardHeader() {
     try {
       await auth.logout()
     } catch (e) {}
-    localStorage.removeItem('token')
+    removeToken()
     router.push('/login')
   }
 
@@ -81,23 +88,33 @@ export default function DashboardHeader() {
             </Link>
 
             <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
+              {loading ? (
+                <div className="flex items-center gap-3 p-2">
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                  <div className="hidden sm:block">
+                    <Skeleton className="h-4 w-24 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
                 </div>
-                <div className="hidden sm:block text-left">
-                  <div className="text-sm font-medium text-white">{user?.name || 'Loading...'}</div>
-                  <div className="text-xs text-slate-400">{user?.email || ''}</div>
-                </div>
-                <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+              ) : (
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                    {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <div className="text-sm font-medium text-white">{user?.name}</div>
+                    <div className="text-xs text-slate-400">{user?.email}</div>
+                  </div>
+                  <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
 
-              {dropdownOpen && (
+              {dropdownOpen && user && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)}></div>
                   <div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-xl z-20 py-2">

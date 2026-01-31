@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth } from '@/lib/api'
+import { setToken } from '@/lib/api'
 
 export default function Login() {
   const router = useRouter()
@@ -16,7 +17,7 @@ export default function Login() {
     setError('')
     try {
       const data = await auth.login(form)
-      localStorage.setItem('token', data.token)
+      setToken(data.token)
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.message)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Carbon\Carbon;
 
 class PasswordController extends Controller
 {
@@ -15,10 +16,19 @@ class PasswordController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json(['message' => 'Password changed successfully']);
+        $user->tokens()->delete();
+
+        $token = $user->createToken('auth_token', ['*'], Carbon::now()->addDays(7))->plainTextToken;
+
+        return response()->json([
+            'message' => 'Password changed successfully. All other sessions have been logged out.',
+            'token' => $token,
+        ]);
     }
 }

@@ -15,8 +15,8 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
 
 Route::post('/forgot-password', function (Request $request) {
     $request->validate(['email' => 'required|email']);
@@ -28,7 +28,7 @@ Route::post('/forgot-password', function (Request $request) {
     }
 
     throw ValidationException::withMessages(['email' => [__($status)]]);
-});
+})->middleware('throttle:password-reset');
 
 Route::post('/reset-password', function (Request $request) {
     $request->validate([
@@ -53,11 +53,14 @@ Route::post('/reset-password', function (Request $request) {
     }
 
     throw ValidationException::withMessages(['email' => [__($status)]]);
-});
+})->middleware('throttle:password-reset');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/sessions', [AuthController::class, 'sessions']);
+    Route::delete('/sessions/{id}', [AuthController::class, 'destroySession']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);

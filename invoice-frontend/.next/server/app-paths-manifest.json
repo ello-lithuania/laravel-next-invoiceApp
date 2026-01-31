@@ -2,9 +2,8 @@
   "/_not-found/page": "app/_not-found/page.js",
   "/icon.svg/route": "app/icon.svg/route.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(public)/forgot-password/page": "app/(public)/forgot-password/page.js",
-  "/(public)/register/page": "app/(public)/register/page.js",
-  "/(public)/page": "app/(public)/page.js",
-  "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js",
-  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js"
+  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js",
+  "/(public)/login/page": "app/(public)/login/page.js",
+  "/(dashboard)/invoices/new/page": "app/(dashboard)/invoices/new/page.js",
+  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js"
 }

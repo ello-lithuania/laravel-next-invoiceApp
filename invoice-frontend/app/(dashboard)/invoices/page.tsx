@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { invoices, clients as clientsApi } from '@/lib/api'
+import { invoices, clients as clientsApi, getToken } from '@/lib/api'
 
 interface Client {
   id: number
@@ -41,6 +41,57 @@ const statusColors: Record<string, string> = {
   sent: 'bg-blue-500/20 text-blue-400',
   paid: 'bg-green-500/20 text-green-400',
   overdue: 'bg-red-500/20 text-red-400',
+}
+
+function Skeleton({ className }: { className?: string }) {
+  return <div className={`animate-pulse bg-slate-700/50 rounded ${className}`} />
+}
+
+function InvoicesSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <Skeleton className="h-9 w-36 mb-2" />
+          <Skeleton className="h-5 w-56" />
+        </div>
+        <Skeleton className="h-12 w-40 rounded-xl" />
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <Skeleton className="h-12 flex-1 min-w-[200px] rounded-xl" />
+        <Skeleton className="h-12 flex-1 min-w-[200px] rounded-xl" />
+        <Skeleton className="h-12 flex-1 min-w-[200px] rounded-xl" />
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-slate-800">
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-14" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-14" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
+            </tr>
+          </thead>
+          <tbody>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <tr key={i} className="border-b border-slate-800">
+                <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-20" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-7 w-20 rounded-lg" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-28" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
 
 export default function Invoices() {
@@ -114,7 +165,7 @@ export default function Invoices() {
   }
 
   const downloadPdf = (id: number) => {
-    const token = localStorage.getItem('token')
+    const token = getToken()
     window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
   }
 
@@ -160,6 +211,8 @@ export default function Invoices() {
       )}
     </span>
   )
+
+  if (loading && list.length === 0) return <InvoicesSkeleton />
 
   return (
     <div className="space-y-6">
@@ -258,13 +311,7 @@ export default function Invoices() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                  Loading...
-                </td>
-              </tr>
-            ) : list.length === 0 ? (
+            {list.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-6 py-12 text-center">
                   <div className="text-slate-500">
@@ -289,7 +336,7 @@ export default function Invoices() {
                     <select
                       value={inv.status || 'draft'}
                       onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium border-0 cursor-pointer ${statusColors[inv.status] || statusColors.draft}`}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
                     >
                       <option value="draft">Draft</option>
                       <option value="sent">Sent</option>
