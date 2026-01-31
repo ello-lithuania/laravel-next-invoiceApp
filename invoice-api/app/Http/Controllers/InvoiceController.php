@@ -208,4 +208,14 @@ class InvoiceController extends Controller
 
         return $pdf->download("invoice-{$invoice->series}-{$invoice->number}.pdf");
     }
+    public function unpaid(Request $request)
+    {
+        $invoices = $request->user()->invoices()
+            ->with('client')
+            ->where('status', '!=', 'paid')
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        return response()->json($invoices);
+    }
 }

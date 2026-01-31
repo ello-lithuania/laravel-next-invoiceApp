@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/activity', [ActivityController::class, 'index']);
 
     Route::get('/invoices/months', [InvoiceController::class, 'months']);
+    Route::get('/invoices/unpaid', [InvoiceController::class, 'unpaid']);
     Route::apiResource('invoices', InvoiceController::class);
     Route::post('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
 });

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { profile, stats, activity, Activity } from '@/lib/api'
+import { profile, stats, activity, Activity, invoices, Invoice } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 interface ChartData {
@@ -20,6 +20,10 @@ interface StatsData {
   period: string
 }
 
+interface UnpaidInvoice extends Invoice {
+  status?: string
+}
+
 const periods = [
   { value: '1m', label: 'This Month' },
   { value: '3m', label: '3 Months' },
@@ -28,11 +32,19 @@ const periods = [
   { value: '1y', label: 'This Year' },
 ]
 
+const statusColors: Record<string, string> = {
+  draft: 'bg-slate-500/20 text-slate-300',
+  sent: 'bg-blue-500/20 text-blue-400',
+  paid: 'bg-green-500/20 text-green-400',
+  overdue: 'bg-red-500/20 text-red-400',
+}
+
 export default function Dashboard() {
   const [userName, setUserName] = useState('')
   const [statsData, setStatsData] = useState<StatsData | null>(null)
   const [clientBreakdown, setClientBreakdown] = useState<{ name: string; total: number; count: number }[]>([])
   const [activities, setActivities] = useState<Activity[]>([])
+  const [unpaidInvoices, setUnpaidInvoices] = useState<UnpaidInvoice[]>([])
   const [activePeriod, setActivePeriod] = useState('1m')
   const [loading, setLoading] = useState(true)
 
@@ -46,14 +58,16 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, activityData, breakdownData] = await Promise.all([
+      const [userData, activityData, breakdownData, unpaidData] = await Promise.all([
         profile.get(),
         activity.list(),
-        stats.clientBreakdown()
+        stats.clientBreakdown(),
+        invoices.unpaid()
       ])
       setUserName(userData.name)
       setActivities(activityData)
       setClientBreakdown(breakdownData)
+      setUnpaidInvoices(unpaidData)
     } catch (e) {}
     setLoading(false)
   }
@@ -63,6 +77,12 @@ export default function Dashboard() {
       const data = await stats.get(activePeriod)
       setStatsData(data)
     } catch (e) {}
+  }
+
+  const handleStatusChange = async (id: number, status: string) => {
+    await invoices.updateStatus(id, status)
+    const unpaidData = await invoices.unpaid()
+    setUnpaidInvoices(unpaidData)
   }
 
   const formatCurrency = (value: number) => {
@@ -78,6 +98,13 @@ export default function Dashboard() {
     const date = new Date(parseInt(year), parseInt(m) - 1)
     return date.toLocaleDateString('en-US', { month: 'long' })
   }
+
+  const getDaysOverdue = (dueDate: string) => {
+    const due = new Date(dueDate)
+    const today = new Date()
+    const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24))
+    return diff
+  }
   
   if (loading) return <div className="text-white p-8">Loading...</div>
 
@@ -87,6 +114,71 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
         <p className="text-slate-400">Welcome back, {userName}</p>
       </div>
+
+      {unpaidInvoices.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Unpaid Invoices ({unpaidInvoices.length})
+            </h2>
+            <Link href="/invoices" className="text-blue-400 hover:text-blue-300 text-sm">
+              View all →
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-800">
+                  <th className="px-4 py-3 text-left text-slate-400 text-sm font-medium">Invoice</th>
+                  <th className="px-4 py-3 text-left text-slate-400 text-sm font-medium">Client</th>
+                  <th className="px-4 py-3 text-left text-slate-400 text-sm font-medium">Due Date</th>
+                  <th className="px-4 py-3 text-left text-slate-400 text-sm font-medium">Total</th>
+                  <th className="px-4 py-3 text-left text-slate-400 text-sm font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unpaidInvoices.map((inv) => {
+                  const daysOverdue = getDaysOverdue(inv.due_date)
+                  return (
+                    <tr key={inv.id} className="border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <Link href={`/invoices/edit?id=${inv.id}`} className="text-white font-medium hover:text-blue-400">
+                          {inv.series} {inv.number}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 text-slate-300">{inv.client?.name}</td>
+                      <td className="px-4 py-3">
+                        <span className={daysOverdue > 0 ? 'text-red-400' : 'text-slate-300'}>
+                          {inv.due_date?.split('T')[0]}
+                          {daysOverdue > 0 && (
+                            <span className="ml-2 text-xs">({daysOverdue}d overdue)</span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-white font-medium">{inv.total} EUR</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={inv.status || 'draft'}
+                          onChange={(e) => handleStatusChange(inv.id, e.target.value)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                        >
+                          <option value="draft">Draft</option>
+                          <option value="sent">Sent</option>
+                          <option value="paid">Paid</option>
+                          <option value="overdue">Overdue</option>
+                        </select>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -174,35 +266,35 @@ export default function Dashboard() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
             <h2 className="text-xl font-semibold text-white mb-6">Revenue by Client (Top 5)</h2>
-{clientBreakdown.length > 0 ? (
-  <div className="flex items-center justify-center py-4">
-    <PieChart width={400} height={300}>
-      <Pie
-        data={clientBreakdown.map(c => ({ ...c, total: Number(c.total) }))}
-        dataKey="total"
-        nameKey="name"
-        cx={200}
-        cy={130}
-        outerRadius={100}
-      >
-        {clientBreakdown.map((_, index) => (
-          <Cell key={`cell-${index}`} fill={['#3b82f6', '#22d3ee', '#a855f7', '#22c55e', '#f97316'][index % 5]} />
-        ))}
-      </Pie>
-      <Tooltip
-        contentStyle={{
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
-          borderRadius: '8px',
-        }}
-        itemStyle={{ color: '#fff' }}
-        labelStyle={{ color: '#fff' }}
-        formatter={(value: number) => [formatCurrency(value), 'Revenue']}
-      />
-      <Legend />
-    </PieChart>
-  </div>
-) : (
+            {clientBreakdown.length > 0 ? (
+              <div className="flex items-center justify-center py-4">
+                <PieChart width={400} height={300}>
+                  <Pie
+                    data={clientBreakdown.map(c => ({ ...c, total: Number(c.total) }))}
+                    dataKey="total"
+                    nameKey="name"
+                    cx={200}
+                    cy={130}
+                    outerRadius={100}
+                  >
+                    {clientBreakdown.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={['#3b82f6', '#22d3ee', '#a855f7', '#22c55e', '#f97316'][index % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#1e293b',
+                      border: '1px solid #334155',
+                      borderRadius: '8px',
+                    }}
+                    itemStyle={{ color: '#fff' }}
+                    labelStyle={{ color: '#fff' }}
+                    formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                  />
+                  <Legend />
+                </PieChart>
+              </div>
+            ) : (
               <div className="h-80 flex items-center justify-center text-slate-500">
                 <div className="text-center">
                   <svg className="w-16 h-16 mx-auto mb-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -278,7 +370,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {activities.map((item, index) => (
+                {activities.map((item) => (
                   <Link
                     key={`${item.type}-${item.id}`}
                     href={item.type === 'client' ? `/clients/edit?id=${item.id}` : `/invoices/edit?id=${item.id}`}

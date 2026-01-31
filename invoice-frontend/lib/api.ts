@@ -173,6 +173,8 @@ export const invoices = {
     api<Invoice[]>('/invoices'),
   listPaginated: (params: string) => 
     api<PaginatedResponse<Invoice>>(`/invoices?${params}`),
+  unpaid: () =>
+    api<(Invoice & { status?: string })[]>('/invoices/unpaid'),
   months: () =>
     api<string[]>('/invoices/months'),
   get: (id: number) => 
