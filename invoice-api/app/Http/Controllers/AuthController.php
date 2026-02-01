@@ -12,16 +12,16 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
         ]);
 
         $token = $user->createToken('auth_token', ['*'], Carbon::now()->addDays(7))->plainTextToken;
@@ -34,14 +34,14 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($validated['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -63,7 +63,11 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+
+        if (method_exists($token, 'delete')) {
+            $token->delete();
+        }
 
         return response()->json(['message' => 'Logged out']);
     }
@@ -82,7 +86,8 @@ class AuthController extends Controller
 
     public function sessions(Request $request)
     {
-        $currentTokenId = $request->user()->currentAccessToken()->id;
+        $currentToken = $request->user()->currentAccessToken();
+        $currentTokenId = method_exists($currentToken, 'getKey') ? $currentToken->getKey() : null;
 
         $sessions = $request->user()->tokens()
             ->select('id', 'name', 'last_used_at', 'created_at', 'expires_at')
@@ -110,7 +115,9 @@ class AuthController extends Controller
             return response()->json(['message' => 'Session not found'], 404);
         }
 
-        $currentTokenId = $request->user()->currentAccessToken()->id;
+        $currentToken = $request->user()->currentAccessToken();
+        $currentTokenId = method_exists($currentToken, 'getKey') ? $currentToken->getKey() : null;
+
         if ($token->id === $currentTokenId) {
             return response()->json(['message' => 'Cannot delete current session. Use logout instead.'], 400);
         }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, getToken } from '@/lib/api'
+import { toast } from 'react-toastify'
 
 interface Client {
   id: number
@@ -153,15 +154,25 @@ export default function Invoices() {
 
   const handleDelete = async (id: number) => {
     if (confirm('Delete this invoice?')) {
-      await invoices.delete(id)
-      loadInvoices()
-      loadMonths()
+      try {
+        await invoices.delete(id)
+        toast.success('Invoice deleted')
+        loadInvoices()
+        loadMonths()
+      } catch (e: any) {
+        toast.error(e.message || 'Failed to delete invoice')
+      }
     }
   }
 
   const handleStatusChange = async (id: number, status: string) => {
-    await invoices.updateStatus(id, status)
-    loadInvoices()
+    try {
+      await invoices.updateStatus(id, status)
+      toast.success('Status updated')
+      loadInvoices()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update status')
+    }
   }
 
   const downloadPdf = (id: number) => {
@@ -219,11 +230,11 @@ export default function Invoices() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Invoices</h1>
-          <p className="text-slate-400">Create and manage your invoices</p>
+          <p className="text-slate-400">Manage your invoices</p>
         </div>
         <Link
           href="/invoices/new"
-          className="px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:opacity-90"
+          className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

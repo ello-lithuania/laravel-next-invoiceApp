@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi } from '@/lib/api'
+import { toast } from 'react-toastify'
 
 interface InvoiceItem {
   description: string
@@ -50,7 +51,9 @@ export default function NewInvoice() {
     try {
       const data = await clientsApi.list()
       setClients(data)
-    } catch (e) {}
+    } catch (e) {
+      toast.error('Failed to load clients')
+    }
     setLoading(false)
   }
 
@@ -64,8 +67,11 @@ export default function NewInvoice() {
         localStorage.setItem('savedDescriptions', JSON.stringify(updated))
       }
       await invoices.create({ ...form, client_id: Number(form.client_id) })
+      toast.success('Invoice created successfully')
       router.push('/invoices')
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to create invoice')
+    }
     setSaving(false)
   }
 

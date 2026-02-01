@@ -16,16 +16,17 @@ class ClientController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'company_code' => 'nullable|string|max:255',
             'vat_code' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
+            'notes' => 'nullable|string',
         ]);
 
-        $client = $request->user()->clients()->create($request->all());
+        $client = $request->user()->clients()->create($validated);
 
         return response()->json($client, 201);
     }
@@ -45,16 +46,17 @@ class ClientController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
             'company_code' => 'nullable|string|max:255',
             'vat_code' => 'nullable|string|max:255',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
+            'notes' => 'nullable|string',
         ]);
 
-        $client->update($request->all());
+        $client->update($validated);
 
         return response()->json($client);
     }
@@ -63,6 +65,10 @@ class ClientController extends Controller
     {
         if ($client->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
+        }
+
+        if ($client->invoices()->exists()) {
+            return response()->json(['message' => 'Cannot delete client with invoices'], 400);
         }
 
         $client->delete();

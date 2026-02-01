@@ -36,6 +36,17 @@ export function removeToken(): void {
   deleteCookie('token')
 }
 
+export class ApiError extends Error {
+  status: number
+  errors?: Record<string, string[]>
+  
+  constructor(message: string, status: number, errors?: Record<string, string[]>) {
+    super(message)
+    this.status = status
+    this.errors = errors
+  }
+}
+
 export async function api<T = unknown>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken()
   
@@ -56,13 +67,13 @@ export async function api<T = unknown>(endpoint: string, options: RequestOptions
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
-    throw new Error('Unauthorized')
+    throw new ApiError('Unauthorized', 401)
   }
 
   const data = await response.json()
   
   if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong')
+    throw new ApiError(data.message || 'Something went wrong', response.status, data.errors)
   }
 
   return data
@@ -186,7 +197,7 @@ export const profile = {
     })
     if (!response.ok) {
       const data = await response.json()
-      throw new Error(data.message || 'Upload failed')
+      throw new ApiError(data.message || 'Upload failed', response.status, data.errors)
     }
     return response.json()
   },

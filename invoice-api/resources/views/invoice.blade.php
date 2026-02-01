@@ -47,8 +47,7 @@
         @php
             $months = ['sausio', 'vasario', 'kovo', 'balandžio', 'gegužės', 'birželio', 'liepos', 'rugpjūčio', 'rugsėjo', 'spalio', 'lapkričio', 'gruodžio'];
             $invoiceMonth = $months[$invoice->invoice_date->format('n') - 1];
-            $dueDate = $invoice->invoice_date->copy()->addMonth();
-            $dueMonth = $months[$dueDate->format('n') - 1];
+            $dueMonth = $months[$invoice->due_date->format('n') - 1];
         @endphp
         <div class="header-bar">
             <div class="header-title">SĄSKAITA FAKTŪRA</div>
@@ -129,7 +128,7 @@
             </div>
 
             <div class="notes">
-                <p><strong>Apmokėti iki:</strong> {{ $dueDate->format('Y') }} m. {{ $dueMonth }} {{ $dueDate->format('d') }} d.</p>
+                <p><strong>Apmokėti iki:</strong> {{ $invoice->due_date->format('Y') }} m. {{ $dueMonth }} {{ $invoice->due_date->format('d') }} d.</p>
                 @if($invoice->notes)
                     <p><strong>Pastabos:</strong> {{ $invoice->notes }}</p>
                 @endif

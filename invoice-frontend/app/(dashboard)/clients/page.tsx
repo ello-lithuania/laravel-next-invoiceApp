@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { clients } from '@/lib/api'
+import { toast } from 'react-toastify'
 
 interface Client {
   id: number
   name: string
+  company_code?: string
   email?: string
   phone?: string
-  company_code?: string
 }
 
 function Skeleton({ className }: { className?: string }) {
@@ -25,26 +26,25 @@ function ClientsSkeleton() {
         </div>
         <Skeleton className="h-12 w-36 rounded-xl" />
       </div>
-
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-slate-800">
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-24" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-24" /></th>
               <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-24" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
+              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
             </tr>
           </thead>
           <tbody>
             {[1, 2, 3, 4, 5].map((i) => (
               <tr key={i} className="border-b border-slate-800">
                 <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
+                <td className="px-6 py-4"><Skeleton className="h-5 w-28" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-40" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-28" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
-                <td className="px-6 py-4"><Skeleton className="h-5 w-20" /></td>
               </tr>
             ))}
           </tbody>
@@ -66,14 +66,21 @@ export default function Clients() {
     try {
       const data = await clients.list()
       setList(data)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load clients')
+    }
     setLoading(false)
   }
 
   const handleDelete = async (id: number) => {
     if (confirm('Delete this client?')) {
-      await clients.delete(id)
-      loadClients()
+      try {
+        await clients.delete(id)
+        toast.success('Client deleted')
+        loadClients()
+      } catch (e: any) {
+        toast.error(e.message || 'Failed to delete client')
+      }
     }
   }
 
@@ -88,7 +95,7 @@ export default function Clients() {
         </div>
         <Link
           href="/clients/new"
-          className="px-6 py-3 rounded-xl font-medium transition-all flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-400 text-white hover:opacity-90"
+          className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -102,9 +109,9 @@ export default function Clients() {
           <thead>
             <tr className="border-b border-slate-800">
               <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Name</th>
+              <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Company Code</th>
               <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Email</th>
               <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Phone</th>
-              <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Company Code</th>
               <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Actions</th>
             </tr>
           </thead>
@@ -125,18 +132,18 @@ export default function Clients() {
               list.map((client) => (
                 <tr key={client.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
                   <td className="px-6 py-4 text-white font-medium">{client.name}</td>
+                  <td className="px-6 py-4 text-slate-300">{client.company_code || '-'}</td>
                   <td className="px-6 py-4 text-slate-300">{client.email || '-'}</td>
                   <td className="px-6 py-4 text-slate-300">{client.phone || '-'}</td>
-                  <td className="px-6 py-4 text-slate-300">{client.company_code || '-'}</td>
                   <td className="px-6 py-4">
-                    <Link
+                    <Link 
                       href={`/clients/edit?id=${client.id}`}
                       className="text-blue-400 hover:text-blue-300 mr-4 transition-colors"
                     >
                       Edit
                     </Link>
-                    <button
-                      onClick={() => handleDelete(client.id)}
+                    <button 
+                      onClick={() => handleDelete(client.id)} 
                       className="text-red-400 hover:text-red-300 transition-colors"
                     >
                       Delete

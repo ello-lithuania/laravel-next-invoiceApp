@@ -10,6 +10,14 @@
   --text-primary: #ffffff;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
+  --toastify-color-light: #f8fafc;
+  --toastify-color-dark: #1e293b;
+  --toastify-color-success: #22c55e;
+  --toastify-color-error: #ef4444;
+  --toastify-color-warning: #f59e0b;
+  --toastify-color-info: #3b82f6;
+  --toastify-text-color-light: #0f172a;
+  --toastify-text-color-dark: #f1f5f9;
 }
 
 :root.light {
@@ -92,3 +100,44 @@
 .light .bg-blue-500\/10 { background-color: rgba(59, 130, 246, 0.1); }
 .light .border-blue-500\/20 { border-color: rgba(59, 130, 246, 0.2); }
 .light .group:hover .group-hover\:bg-slate-800 { background-color: #f1f5f9 !important; }
+
+
+.Toastify__toast {
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+html:not(.light) .Toastify__toast {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+html:not(.light) .Toastify__close-button {
+  color: #94a3b8;
+}
+
+html:not(.light) .Toastify__progress-bar {
+  background: linear-gradient(to right, #3b82f6, #22d3ee);
+}
+
+html.light .Toastify__toast {
+  background: #f8fafc;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+html.light .Toastify__close-button {
+  color: #64748b;
+}
+
+html.light .Toastify__progress-bar {
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+}
+
+.Toastify__toast--success .Toastify__progress-bar {
+  background: #22c55e;
+}
+
+.Toastify__toast--error .Toastify__progress-bar {
+  background: #ef4444;
+}
