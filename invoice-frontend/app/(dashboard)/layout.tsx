@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 import Breadcrumbs from '@/components/Breadcrumbs'
@@ -38,7 +38,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <main className="grow">
           <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
-            <Breadcrumbs />
+            <Suspense fallback={null}>
+              <Breadcrumbs />
+            </Suspense>
             {children}
           </div>
         </main>
