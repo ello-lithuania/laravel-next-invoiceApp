@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { clients, getToken } from '@/lib/api'
@@ -41,7 +41,7 @@ function Skeleton({ className }: { className?: string }) {
   return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700/50 rounded ${className}`} />
 }
 
-export default function ClientView() {
+function ClientViewContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
   const [client, setClient] = useState<ClientDetail | null>(null)
@@ -259,5 +259,13 @@ export default function ClientView() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ClientView() {
+  return (
+    <Suspense fallback={<div className="text-gray-800 dark:text-gray-100 p-8">Loading...</div>}>
+      <ClientViewContent />
+    </Suspense>
   )
 }

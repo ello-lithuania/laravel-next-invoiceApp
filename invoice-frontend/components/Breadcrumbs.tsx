@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 
 interface BreadcrumbOverride {
   label: string
@@ -8,7 +8,6 @@ interface BreadcrumbOverride {
 
 export default function Breadcrumbs({ override }: { override?: BreadcrumbOverride }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   const segments = pathname.split('/').filter(Boolean)
 
