@@ -16,17 +16,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'light') {
-                    document.documentElement.classList.add('light');
+                  var darkMode = localStorage.getItem('dark-mode');
+                  if (darkMode === null || darkMode === 'true') {
+                    document.documentElement.classList.add('dark');
                   }
-                } catch (e) {}
+                } catch (e) {
+                  document.documentElement.classList.add('dark');
+                }
               })();
             `,
           }}
         />
       </head>
-      <body>
+      <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
         {children}
         <ToastContainer
           position="bottom-right"

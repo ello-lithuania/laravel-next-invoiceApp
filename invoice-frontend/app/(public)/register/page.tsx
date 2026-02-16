@@ -33,53 +33,53 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create account</h1>
-          <p className="text-slate-400">Start managing your invoices</p>
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Create account</h1>
+          <p className="text-gray-500 dark:text-gray-400">Start managing your invoices</p>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-8">
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label className="block text-slate-400 text-sm mb-2">Name</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Name</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                 required
               />
             </div>
 
             <div className="mb-6">
-              <label className="block text-slate-400 text-sm mb-2">Email</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Email</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                 required
               />
             </div>
 
             <div className="mb-6">
-              <label className="block text-slate-400 text-sm mb-2">Password</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Password</label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                 required
                 minLength={8}
               />
             </div>
 
             <div className="mb-6">
-              <label className="block text-slate-400 text-sm mb-2">Confirm Password</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Confirm Password</label>
               <input
                 type="password"
                 value={form.password_confirmation}
                 onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                 required
                 minLength={8}
               />
@@ -88,15 +88,15 @@ export default function Register() {
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 text-white py-3 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="w-full btn btn-gradient py-3 disabled:opacity-50"
             >
               {loading ? 'Creating account...' : 'Create account'}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-slate-400 text-sm">
+          <div className="mt-6 text-center text-gray-500 dark:text-gray-400 text-sm">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-400 hover:text-blue-300">
+            <Link href="/login" className="text-blue-500 hover:text-blue-400">
               Sign in
             </Link>
           </div>

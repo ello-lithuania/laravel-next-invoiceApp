@@ -1,8 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { invoices, clients as clientsApi, getToken } from '@/lib/api'
 import { toast } from 'react-toastify'
+import ConfirmModal from '@/components/ConfirmModal'
 
 interface Client {
   id: number
@@ -38,14 +40,14 @@ const statusOptions = [
 ]
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-slate-500/20 text-slate-300',
-  sent: 'bg-blue-500/20 text-blue-400',
+  draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
+  sent: 'bg-blue-500/15 text-blue-500',
   paid: 'bg-green-500/20 text-green-400',
   overdue: 'bg-red-500/20 text-red-400',
 }
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-700/50 rounded ${className}`} />
+  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700/50 rounded ${className}`} />
 }
 
 function InvoicesSkeleton() {
@@ -65,10 +67,10 @@ function InvoicesSkeleton() {
         <Skeleton className="h-12 flex-1 min-w-[200px] rounded-xl" />
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
         <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-800">
+          <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
+            <tr className="border-b border-gray-200 dark:border-gray-700/60">
               <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
               <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
               <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-14" /></th>
@@ -79,7 +81,7 @@ function InvoicesSkeleton() {
           </thead>
           <tbody>
             {[1, 2, 3, 4, 5].map((i) => (
-              <tr key={i} className="border-b border-slate-800">
+              <tr key={i} className="border-b border-gray-200 dark:border-gray-700/60">
                 <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
                 <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
@@ -108,6 +110,10 @@ export default function Invoices() {
   const [filterStatus, setFilterStatus] = useState('')
   const [sortBy, setSortBy] = useState('invoice_date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [selected, setSelected] = useState<number[]>([])
+  const [pdfPreview, setPdfPreview] = useState<{ open: boolean; url: string; title: string }>({ open: false, url: '', title: '' })
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
+  const router = useRouter()
 
   useEffect(() => {
     loadClients()
@@ -134,6 +140,7 @@ export default function Invoices() {
 
   const loadInvoices = async () => {
     setLoading(true)
+    setSelected([])
     try {
       const params = new URLSearchParams()
       params.set('page', String(page))
@@ -152,17 +159,23 @@ export default function Invoices() {
     setLoading(false)
   }
 
-  const handleDelete = async (id: number) => {
-    if (confirm('Delete this invoice?')) {
-      try {
-        await invoices.delete(id)
-        toast.success('Invoice deleted')
-        loadInvoices()
-        loadMonths()
-      } catch (e: any) {
-        toast.error(e.message || 'Failed to delete invoice')
+  const handleDelete = (id: number) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Invoice',
+      message: 'Are you sure you want to delete this invoice? This action cannot be undone.',
+      onConfirm: async () => {
+        setConfirmModal(m => ({ ...m, open: false }))
+        try {
+          await invoices.delete(id)
+          toast.success('Invoice deleted')
+          loadInvoices()
+          loadMonths()
+        } catch (e: any) {
+          toast.error(e.message || 'Failed to delete invoice')
+        }
       }
-    }
+    })
   }
 
   const handleStatusChange = async (id: number, status: string) => {
@@ -178,6 +191,65 @@ export default function Invoices() {
   const downloadPdf = (id: number) => {
     const token = getToken()
     window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
+  }
+
+  const previewPdf = (inv: Invoice) => {
+    const token = getToken()
+    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${inv.id}/pdf?token=${token}`
+    setPdfPreview({ open: true, url, title: `${inv.series}-${String(inv.number).padStart(4, '0')}` })
+  }
+
+  const toggleSelect = (id: number) => {
+    setSelected(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
+  }
+
+  const toggleSelectAll = () => {
+    if (selected.length === list.length) {
+      setSelected([])
+    } else {
+      setSelected(list.map(i => i.id))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    setConfirmModal({
+      open: true,
+      title: `Delete ${selected.length} Invoice(s)`,
+      message: `Are you sure you want to delete ${selected.length} invoice(s)? This action cannot be undone.`,
+      onConfirm: async () => {
+        setConfirmModal(m => ({ ...m, open: false }))
+        try {
+          await invoices.bulkDelete(selected)
+          toast.success(`${selected.length} invoice(s) deleted`)
+          setSelected([])
+          loadInvoices()
+          loadMonths()
+        } catch (e: any) {
+          toast.error(e.message || 'Failed to delete invoices')
+        }
+      }
+    })
+  }
+
+  const handleDuplicate = async (id: number) => {
+    try {
+      const newInvoice = await invoices.duplicate(id)
+      toast.success(`Invoice duplicated as ${newInvoice.series}-${String(newInvoice.number).padStart(4, '0')}`)
+      router.push(`/invoices/edit?id=${newInvoice.id}`)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to duplicate invoice')
+    }
+  }
+
+  const handleBulkStatus = async (status: string) => {
+    try {
+      await invoices.bulkUpdateStatus(selected, status)
+      toast.success(`${selected.length} invoice(s) updated to ${status}`)
+      setSelected([])
+      loadInvoices()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update statuses')
+    }
   }
 
   const handleSort = (column: string) => {
@@ -226,15 +298,16 @@ export default function Invoices() {
   if (loading && list.length === 0) return <InvoicesSkeleton />
 
   return (
+    <>
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Invoices</h1>
-          <p className="text-slate-400">Manage your invoices</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Invoices</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage your invoices</p>
         </div>
         <Link
           href="/invoices/new"
-          className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-6 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="w-full sm:w-auto text-center btn-gradient px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -248,7 +321,7 @@ export default function Invoices() {
           <select
             value={filterMonth}
             onChange={(e) => { setFilterMonth(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
           >
             <option value="">All months</option>
             {getMonthOptions().map(m => (
@@ -260,7 +333,7 @@ export default function Invoices() {
           <select
             value={filterClient}
             onChange={(e) => { setFilterClient(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
           >
             <option value="">All clients</option>
             {clients.map(c => (
@@ -272,7 +345,7 @@ export default function Invoices() {
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
           >
             {statusOptions.map(s => (
               <option key={s.value} value={s.value}>{s.label}</option>
@@ -282,72 +355,125 @@ export default function Invoices() {
         {(filterMonth || filterClient || filterStatus) && (
           <button
             onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); handleFilterChange() }}
-            className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-600 transition-colors"
+            className="px-4 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             Clear filters
           </button>
         )}
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-xl px-4 py-3">
+          <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{selected.length} selected</span>
+          <div className="flex items-center gap-2 ml-auto">
+            <select
+              onChange={(e) => { if (e.target.value) { handleBulkStatus(e.target.value); e.target.value = '' } }}
+              className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
+              defaultValue=""
+            >
+              <option value="" disabled>Change status...</option>
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Delete ({selected.length})
+            </button>
+            <button
+              onClick={() => setSelected([])}
+              className="px-3 py-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+        {/* Desktop table */}
+        <div className="hidden md:block">
         <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-800">
+          <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
+            <tr className="border-b border-gray-100 dark:border-gray-700/60">
+              <th className="px-4 py-3.5 w-10">
+                <input
+                  type="checkbox"
+                  checked={list.length > 0 && selected.length === list.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                />
+              </th>
               <th 
-                className="px-6 py-4 text-left text-slate-400 text-sm font-medium cursor-pointer hover:text-white transition-colors"
+                className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-gray-600 dark:text-gray-300 transition-colors"
                 onClick={() => handleSort('number')}
               >
                 Number <SortIcon column="number" />
               </th>
               <th 
-                className="px-6 py-4 text-left text-slate-400 text-sm font-medium cursor-pointer hover:text-white transition-colors"
+                className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-gray-600 dark:text-gray-300 transition-colors"
                 onClick={() => handleSort('client_name')}
               >
                 Client <SortIcon column="client_name" />
               </th>
               <th 
-                className="px-6 py-4 text-left text-slate-400 text-sm font-medium cursor-pointer hover:text-white transition-colors"
+                className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-gray-600 dark:text-gray-300 transition-colors"
                 onClick={() => handleSort('invoice_date')}
               >
                 Date <SortIcon column="invoice_date" />
               </th>
               <th 
-                className="px-6 py-4 text-left text-slate-400 text-sm font-medium cursor-pointer hover:text-white transition-colors"
+                className="px-6 py-3.5 text-right text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-gray-600 dark:text-gray-300 transition-colors"
                 onClick={() => handleSort('total')}
               >
-                Total <SortIcon column="total" />
+                Amount <SortIcon column="total" />
               </th>
-              <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Status</th>
-              <th className="px-6 py-4 text-left text-slate-400 text-sm font-medium">Actions</th>
+              <th className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3.5 text-right text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
             {list.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <div className="text-slate-500">
-                    <svg className="w-12 h-12 mx-auto mb-3 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                <td colSpan={7} className="px-6 py-16 text-center">
+                  <div className="text-gray-400 dark:text-gray-500">
+                    <svg className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <p>No invoices found</p>
+                    <p className="font-medium">No invoices found</p>
                     {(filterMonth || filterClient || filterStatus) && (
-                      <p className="text-sm mt-1">Try changing the filters</p>
+                      <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Try changing the filters</p>
                     )}
                   </div>
                 </td>
               </tr>
             ) : (
               list.map((inv) => (
-                <tr key={inv.id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
-                  <td className="px-6 py-4 text-white font-medium">{inv.series} {inv.number}</td>
-                  <td className="px-6 py-4 text-slate-300">{inv.client?.name}</td>
-                  <td className="px-6 py-4 text-slate-300">{inv.invoice_date?.split('T')[0]}</td>
-                  <td className="px-6 py-4 text-white font-medium">{inv.total} EUR</td>
+                <tr key={inv.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group ${selected.includes(inv.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                  <td className="px-4 py-4 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(inv.id)}
+                      onChange={() => toggleSelect(inv.id)}
+                      className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </td>
+                  <td className="px-6 py-4">
+                    <Link href={`/invoices/edit?id=${inv.id}`} className="text-gray-800 dark:text-gray-100 font-medium group-hover:text-blue-500 transition-colors">
+                      {inv.series}-{String(inv.number).padStart(4, '0')}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{inv.client?.name}</td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{inv.invoice_date?.split('T')[0]}</td>
+                  <td className="px-6 py-4 text-right text-gray-800 dark:text-gray-100 font-medium tabular-nums">{Number(inv.total).toFixed(2)} €</td>
                   <td className="px-6 py-4">
                     <select
                       value={inv.status || 'draft'}
                       onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
                     >
                       <option value="draft">Draft</option>
                       <option value="sent">Sent</option>
@@ -356,41 +482,122 @@ export default function Invoices() {
                     </select>
                   </td>
                   <td className="px-6 py-4">
-                    <button 
-                      onClick={() => downloadPdf(inv.id)} 
-                      className="text-green-400 hover:text-green-300 mr-4 transition-colors"
-                    >
-                      PDF
-                    </button>
-                    <Link 
-                      href={`/invoices/edit?id=${inv.id}`}
-                      className="text-blue-400 hover:text-blue-300 mr-4 transition-colors"
-                    >
-                      Edit
-                    </Link>
-                    <button 
-                      onClick={() => handleDelete(inv.id)} 
-                      className="text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button 
+                        onClick={() => previewPdf(inv)} 
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"
+                        title="Preview PDF"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </button>
+                      <Link 
+                        href={`/invoices/edit?id=${inv.id}`}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </Link>
+                      <button 
+                        onClick={() => handleDuplicate(inv.id)} 
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-purple-500 hover:bg-purple-500/10 rounded-lg transition-colors"
+                        title="Duplicate"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(inv.id)} 
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden">
+          {list.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <div className="text-gray-400 dark:text-gray-500">
+                <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p>No invoices found</p>
+                {(filterMonth || filterClient || filterStatus) && (
+                  <p className="text-sm mt-1">Try changing the filters</p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
+              {list.map((inv) => (
+                <div key={inv.id} className={`p-4 space-y-3 ${selected.includes(inv.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(inv.id)}
+                        onChange={() => toggleSelect(inv.id)}
+                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-500 focus:ring-blue-500 cursor-pointer"
+                      />
+                      <Link href={`/invoices/edit?id=${inv.id}`} className="text-gray-800 dark:text-gray-100 font-medium hover:text-blue-500">
+                        {inv.series}-{String(inv.number).padStart(4, '0')}
+                      </Link>
+                    </div>
+                    <span className="text-gray-800 dark:text-gray-100 font-medium tabular-nums">{Number(inv.total).toFixed(2)} €</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 dark:text-gray-400 text-sm">{inv.client?.name}</span>
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">{inv.invoice_date?.split('T')[0]}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <select
+                      value={inv.status || 'draft'}
+                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                      <option value="paid">Paid</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => previewPdf(inv)} className="text-green-400 hover:text-green-300 text-sm transition-colors">PDF</button>
+                      <Link href={`/invoices/edit?id=${inv.id}`} className="text-blue-500 hover:text-blue-400 text-sm transition-colors">Edit</Link>
+                      <button onClick={() => handleDuplicate(inv.id)} className="text-purple-500 hover:text-purple-400 text-sm transition-colors">Copy</button>
+                      <button onClick={() => handleDelete(inv.id)} className="text-red-400 hover:text-red-300 text-sm transition-colors">Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {lastPage > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-800">
-            <div className="text-slate-400 text-sm">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700/60">
+            <div className="text-gray-500 dark:text-gray-400 text-sm">
               Showing {list.length} of {total} invoices
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -413,10 +620,10 @@ export default function Invoices() {
                     <button
                       key={pageNum}
                       onClick={() => setPage(pageNum)}
-                      className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         page === pageNum
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                          ? 'bg-gradient-to-r from-blue-600 via-blue-700 to-gray-900 text-white shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
                       {pageNum}
@@ -428,7 +635,7 @@ export default function Invoices() {
               <button
                 onClick={() => setPage(p => Math.min(lastPage, p + 1))}
                 disabled={page === lastPage}
-                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -439,5 +646,51 @@ export default function Invoices() {
         )}
       </div>
     </div>
+
+    {/* PDF Preview Modal */}
+      {pdfPreview.open && (
+        <div className="fixed inset-0 z-50 flex flex-col">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPdfPreview({ open: false, url: '', title: '' })} />
+          <div className="relative bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700/60 shrink-0">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Invoice {pdfPreview.title}</h3>
+              <div className="flex items-center gap-2">
+                <a
+                  href={pdfPreview.url + '&download=1'}
+                  target="_blank"
+                  className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </a>
+                <button
+                  onClick={() => setPdfPreview({ open: false, url: '', title: '' })}
+                  className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-100 dark:bg-gray-900">
+              <iframe src={pdfPreview.url} className="w-full h-full" title="PDF Preview" />
+            </div>
+          </div>
+        </div>
+      )}
+
+    <ConfirmModal
+      open={confirmModal.open}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      confirmLabel="Delete"
+      variant="danger"
+      onConfirm={confirmModal.onConfirm}
+      onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
+    />
+    </>
   )
 }

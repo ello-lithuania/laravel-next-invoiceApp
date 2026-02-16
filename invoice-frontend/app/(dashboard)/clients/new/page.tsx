@@ -34,98 +34,98 @@ export default function NewClient() {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
-        <Link href="/clients" className="text-slate-400 hover:text-white transition-colors">
+        <Link href="/clients" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">New Client</h1>
-          <p className="text-slate-400">Add a new client</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">New Client</h1>
+          <p className="text-gray-500 dark:text-gray-400">Add a new client</p>
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-slate-400 text-sm mb-2">Name *</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Name *</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                 required
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-2">Email</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Email</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-2">Company Code</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Company Code</label>
               <input
                 type="text"
                 value={form.company_code}
                 onChange={(e) => setForm({ ...form, company_code: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-2">VAT Code</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">VAT Code</label>
               <input
                 type="text"
                 value={form.vat_code}
                 onChange={(e) => setForm({ ...form, vat_code: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-2">Phone</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Phone</label>
               <input
                 type="text"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-slate-400 text-sm mb-2">Address</label>
+              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Address</label>
               <input
                 type="text"
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div className="mb-6">
-            <label className="block text-slate-400 text-sm mb-2">Notes</label>
+            <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full p-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
               rows={3}
             />
           </div>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-slate-800">
+          <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700/60">
             <Link 
               href="/clients"
-              className="px-8 py-3 rounded-xl font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+              className="px-8 py-3 rounded-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Cancel
             </Link>
             <button 
               type="submit"
               disabled={saving}
-              className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-8 py-3 rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+              className="btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
             >
               {saving ? (
                 <>

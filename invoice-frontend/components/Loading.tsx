@@ -81,7 +81,7 @@ export default function Loading() {
   return (
     <div 
       ref={containerRef}
-      className={`fixed inset-0 flex items-center justify-center z-50 ${isLight ? 'bg-slate-100' : 'bg-slate-950'}`}
+      className={`fixed inset-0 flex items-center justify-center z-50 ${isLight ? 'bg-gray-100' : 'bg-gray-900'}`}
     >
       <div className="flex flex-col items-center gap-6">
         <div className="relative">
@@ -239,7 +239,7 @@ export default function Loading() {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <p className={`font-medium text-lg ${isLight ? 'text-slate-900' : 'text-white'}`}>Loading</p>
+          <p className={`font-medium text-lg ${isLight ? 'text-gray-900' : 'text-white'}`}>Loading</p>
           <div className="flex gap-1">
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
             <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>

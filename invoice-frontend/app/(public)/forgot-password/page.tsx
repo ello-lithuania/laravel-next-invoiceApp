@@ -24,11 +24,11 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="pt-32 min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8">
-          <h1 className="text-2xl font-bold text-white mb-2 text-center">Forgot Password</h1>
-          <p className="text-slate-400 text-center mb-6">Enter your email to receive a reset link</p>
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-8">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 text-center">Forgot Password</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-center mb-6">Enter your email to receive a reset link</p>
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm">{error}</div>
           )}
@@ -37,13 +37,13 @@ export default function ForgotPassword() {
           )}
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label htmlFor="email" className="block text-slate-300 text-sm font-medium mb-2">Email</label>
+              <label htmlFor="email" className="block text-gray-600 dark:text-gray-300 text-sm font-medium mb-2">Email</label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
                 placeholder="you@example.com"
                 required
               />
@@ -51,13 +51,13 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-semibold py-3 px-4 rounded-xl hover:opacity-90 disabled:opacity-50 transition-all"
+              className="w-full btn btn-gradient py-3 disabled:opacity-50"
             >
               {loading ? 'Sending...' : 'Send Reset Link'}
             </button>
           </form>
           <div className="mt-6 text-center">
-            <Link href="/login" className="text-blue-400 hover:text-blue-300 font-medium">← Back to Sign In</Link>
+            <Link href="/login" className="text-blue-500 hover:text-blue-400 font-medium">← Back to Sign In</Link>
           </div>
         </div>
       </div>

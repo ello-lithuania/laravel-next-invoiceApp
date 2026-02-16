@@ -37,6 +37,14 @@ class ClientController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
+        $client->load(['invoices' => function ($q) {
+            $q->orderBy('invoice_date', 'desc');
+        }]);
+
+        $client->invoices_total = $client->invoices->sum('total');
+        $client->invoices_paid = $client->invoices->where('status', 'paid')->sum('total');
+        $client->invoices_count = $client->invoices->count();
+
         return response()->json($client);
     }
 

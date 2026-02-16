@@ -227,7 +227,11 @@ class InvoiceController extends Controller
 
         $pdf = Pdf::loadView('invoice', ['invoice' => $invoice]);
 
-        return $pdf->download("invoice-{$invoice->series}-{$invoice->number}.pdf");
+        if ($request->query('download')) {
+            return $pdf->download("invoice-{$invoice->series}-{$invoice->number}.pdf");
+        }
+
+        return $pdf->stream("invoice-{$invoice->series}-{$invoice->number}.pdf");
     }
 
     public function unpaid(Request $request)
@@ -239,5 +243,75 @@ class InvoiceController extends Controller
             ->get();
 
         return response()->json($invoices);
+    }
+
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+        ]);
+
+        $deleted = $request->user()->invoices()
+            ->whereIn('id', $validated['ids'])
+            ->get();
+
+        foreach ($deleted as $invoice) {
+            $invoice->items()->delete();
+            $invoice->delete();
+        }
+
+        return response()->json(['message' => $deleted->count() . ' invoice(s) deleted']);
+    }
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+            'status' => 'required|in:draft,sent,paid,overdue',
+        ]);
+
+        $updated = $request->user()->invoices()
+            ->whereIn('id', $validated['ids'])
+            ->update(['status' => $validated['status']]);
+
+        return response()->json(['message' => $updated . ' invoice(s) updated']);
+    }
+
+    public function duplicate(Request $request, Invoice $invoice)
+    {
+        if ($invoice->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        $user = $request->user();
+        $series = $user->invoice_series ?? 'INV';
+        $nextNumber = $user->next_invoice_number ?? 1;
+
+        $newInvoice = $user->invoices()->create([
+            'series' => $series,
+            'number' => $nextNumber,
+            'client_id' => $invoice->client_id,
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(14)->toDateString(),
+            'notes' => $invoice->notes,
+            'total' => $invoice->total,
+            'status' => 'draft',
+        ]);
+
+        $user->update(['next_invoice_number' => $nextNumber + 1]);
+
+        foreach ($invoice->items as $item) {
+            $newInvoice->items()->create([
+                'description' => $item->description,
+                'unit' => $item->unit,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+                'total' => $item->total,
+            ]);
+        }
+
+        return $newInvoice->load('client', 'items');
     }
 }

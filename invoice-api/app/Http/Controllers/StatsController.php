@@ -58,4 +58,23 @@ class StatsController extends Controller
 
         return response()->json($data);
     }
+
+    public function quickStats(Request $request)
+    {
+        $user = $request->user();
+
+        $totalRevenue = $user->invoices()->where('status', 'paid')->sum('total');
+        $totalClients = $user->clients()->count();
+        $totalInvoices = $user->invoices()->count();
+        $paidCount = $user->invoices()->where('status', 'paid')->count();
+        $unpaidCount = $user->invoices()->where('status', '!=', 'paid')->count();
+
+        return response()->json([
+            'total_revenue' => $totalRevenue,
+            'total_clients' => $totalClients,
+            'total_invoices' => $totalInvoices,
+            'paid_count' => $paidCount,
+            'unpaid_count' => $unpaidCount,
+        ]);
+    }
 }

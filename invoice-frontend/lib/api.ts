@@ -247,6 +247,12 @@ export const invoices = {
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
   pdf: (id: number) => 
     `${API_URL}/invoices/${id}/pdf?token=${getToken() || ''}`,
+  bulkDelete: (ids: number[]) =>
+    api<{ message: string }>('/invoices/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  bulkUpdateStatus: (ids: number[], status: string) =>
+    api<{ message: string }>('/invoices/bulk-status', { method: 'POST', body: JSON.stringify({ ids, status }) }),
+  duplicate: (id: number) =>
+    api<Invoice>(`/invoices/${id}/duplicate`, { method: 'POST' }),
 }
 
 export const stats = {
@@ -254,6 +260,8 @@ export const stats = {
     api<StatsData>(`/stats?period=${period}`),
   clientBreakdown: () =>
     api<{ name: string; total: number; count: number }[]>('/stats/clients'),
+  quickStats: () =>
+    api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number }>('/stats/quick'),
 }
 
 export interface Activity {

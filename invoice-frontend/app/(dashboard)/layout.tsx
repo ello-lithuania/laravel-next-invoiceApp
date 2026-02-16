@@ -1,35 +1,48 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
-import { usePathname } from 'next/navigation'
-import DashboardHeader from '@/components/dashboard/Header'
-import Loading from '@/components/Loading'
+import { useState, useEffect } from 'react'
+import Sidebar from '@/components/dashboard/Sidebar'
+import Header from '@/components/dashboard/Header'
+import Breadcrumbs from '@/components/Breadcrumbs'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(false)
-  const pathname = usePathname()
-  const isFirstRender = useRef(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarExpanded, setSidebarExpanded] = useState(true)
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
+    const stored = localStorage.getItem('sidebar-expanded')
+    if (stored !== null) {
+      setSidebarExpanded(stored === 'true')
     }
-    
-    setLoading(true)
-    const timer = setTimeout(() => setLoading(false), 600)
-    return () => clearTimeout(timer)
-  }, [pathname])
+  }, [])
 
-  if (loading) {
-    return <Loading />
-  }
+  useEffect(() => {
+    localStorage.setItem('sidebar-expanded', String(sidebarExpanded))
+  }, [sidebarExpanded])
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      <DashboardHeader />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {children}
-      </main>
+    <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+      <Sidebar
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        sidebarExpanded={sidebarExpanded}
+        setSidebarExpanded={setSidebarExpanded}
+      />
+
+      <div className="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+        <Header
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          sidebarExpanded={sidebarExpanded}
+          setSidebarExpanded={setSidebarExpanded}
+        />
+
+        <main className="grow">
+          <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+            <Breadcrumbs />
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
