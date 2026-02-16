@@ -54,7 +54,7 @@ export default function ClientView() {
   const loadClient = async () => {
     try {
       const data = await clients.get(Number(id))
-      setClient(data as ClientDetail)
+      setClient(data as unknown as ClientDetail)
     } catch (e: any) {
       toast.error(e.message || 'Failed to load client')
     }
