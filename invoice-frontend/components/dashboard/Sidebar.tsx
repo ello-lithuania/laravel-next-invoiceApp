@@ -40,24 +40,6 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    label: 'Profile',
-    href: '/profile',
-    icon: (
-      <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
-        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM6 4a2 2 0 1 1 4 0 2 2 0 0 1-4 0Zm5.794 8.77A5.973 5.973 0 0 1 8 14a5.973 5.973 0 0 1-3.794-1.23A4.49 4.49 0 0 1 8 11a4.49 4.49 0 0 1 3.794 1.77Z" />
-      </svg>
-    ),
-  },
-  {
-    label: 'Settings',
-    href: '/settings',
-    icon: (
-      <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
-        <path d="M10.5 1a3.502 3.502 0 0 1 3.355 2.5H15a1 1 0 1 1 0 2h-1.145a3.502 3.502 0 0 1-6.71 0H1a1 1 0 0 1 0-2h6.145A3.502 3.502 0 0 1 10.5 1ZM9 4.5a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0ZM5.5 9a3.502 3.502 0 0 1 3.355 2.5H15a1 1 0 1 1 0 2H8.855a3.502 3.502 0 0 1-6.71 0H1a1 1 0 1 1 0-2h1.145A3.502 3.502 0 0 1 5.5 9ZM4 12.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0Z" />
-      </svg>
-    ),
-  },
 ]
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded }: SidebarProps) {
@@ -104,9 +86,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, 
       {/* Sidebar */}
       <div
         ref={sidebar}
-        className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 bg-white dark:bg-gray-800 p-4 transition-all duration-200 ease-in-out ${
+        className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 p-4 transition-all duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
         } ${sidebarExpanded ? 'w-64' : 'w-64 lg:w-20'} rounded-r-2xl shadow-sm`}
+        style={{ backgroundColor: 'var(--t-bg-sidebar)', backdropFilter: 'blur(12px)' }}
       >
         {/* Header */}
         <div className="flex justify-between mb-10 pr-3 sm:px-2">
@@ -124,7 +107,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, 
           {/* Logo */}
           <Link href="/dashboard" className="block">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 btn-gradient">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -148,20 +131,21 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, 
               {navItems.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 return (
-                  <li key={item.href} className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 ${
-                    isActive ? 'bg-gradient-to-r from-blue-600/[0.12] dark:from-blue-600/[0.24] to-blue-600/[0.04]' : ''
-                  }`}>
+                  <li key={item.href} className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0`}
+                    style={isActive ? { background: `linear-gradient(to right, var(--t-accent-soft), transparent)` } : {}}
+                  >
                     <Link
                       href={item.href}
                       className={`block truncate transition duration-150 ${
                         isActive
-                          ? 'text-blue-600'
+                          ? ''
                           : 'text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white'
                       }`}
+                      style={isActive ? { color: 'var(--t-accent)' } : {}}
                       title={!sidebarExpanded ? item.label : undefined}
                     >
                       <div className="flex items-center">
-                        <span className={isActive ? 'text-blue-600' : 'text-gray-400 dark:text-gray-500'}>
+                        <span style={isActive ? { color: 'var(--t-accent)' } : { color: 'var(--t-text-muted)' }}>
                           {item.icon}
                         </span>
                         <span className={`text-sm font-medium ml-4 duration-200 ${

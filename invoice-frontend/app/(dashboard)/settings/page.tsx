@@ -1,9 +1,10 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { api } from '@/lib/api'
+import { useTheme, themes } from '@/contexts/ThemeContext'
 
 export default function Settings() {
-  const [darkMode, setDarkMode] = useState(true)
+  const { colorTheme, isDark, setColorTheme, toggleMode } = useTheme()
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [passwords, setPasswords] = useState({
@@ -11,21 +12,6 @@ export default function Settings() {
     password: '',
     password_confirmation: ''
   })
-
-  useEffect(() => {
-    const isDark = localStorage.getItem('dark-mode') !== 'false'
-    setDarkMode(isDark)
-  }, [])
-
-  const toggleTheme = (mode: boolean) => {
-    setDarkMode(mode)
-    localStorage.setItem('dark-mode', String(mode))
-    if (mode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,66 +34,90 @@ export default function Settings() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your account settings</p>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2" style={{ color: 'var(--t-text)' }}>Settings</h1>
+        <p style={{ color: 'var(--t-text-muted)' }}>Manage your account settings</p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Appearance */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60">
-          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100">Appearance</h2>
+        {/* Theme Picker */}
+        <div className="lg:col-span-2 t-card rounded-xl overflow-hidden">
+          <header className="px-5 py-4" style={{ borderBottom: '1px solid var(--t-border)' }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold" style={{ color: 'var(--t-text)' }}>Themes</h2>
+                <p className="text-sm mt-1" style={{ color: 'var(--t-text-muted)' }}>Choose the color scheme for your dashboard</p>
+              </div>
+              {/* Dark/Light mode toggle */}
+              <button
+                onClick={toggleMode}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)', border: '1px solid var(--t-border)' }}
+              >
+                {isDark ? (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M8 0a1 1 0 0 1 1 1v.5a1 1 0 1 1-2 0V1a1 1 0 0 1 1-1Z" />
+                      <path d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-4 2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
+                      <path d="M13.657 3.757a1 1 0 0 0-1.414-1.414l-.354.354a1 1 0 0 0 1.414 1.414l.354-.354ZM13.5 8a1 1 0 0 1 1-1h.5a1 1 0 1 1 0 2h-.5a1 1 0 0 1-1-1ZM13.303 11.889a1 1 0 0 0-1.414 1.414l.354.354a1 1 0 0 0 1.414-1.414l-.354-.354ZM8 13.5a1 1 0 0 1 1 1v.5a1 1 0 1 1-2 0v-.5a1 1 0 0 1 1-1ZM4.111 13.303a1 1 0 1 0-1.414-1.414l-.354.354a1 1 0 1 0 1.414 1.414l.354-.354ZM0 8a1 1 0 0 1 1-1h.5a1 1 0 0 1 0 2H1a1 1 0 0 1-1-1ZM3.757 2.343a1 1 0 1 0-1.414 1.414l.354.354A1 1 0 1 0 4.11 2.697l-.354-.354Z" />
+                    </svg>
+                    Light Mode
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+                      <path d="M7.019 1.985a1.55 1.55 0 0 0-.483-1.36 1.44 1.44 0 0 0-1.53-.277C2.056 1.553 0 4.5 0 7.9 0 12.352 3.648 16 8.1 16c3.407 0 6.246-2.058 7.51-4.963a1.446 1.446 0 0 0-.25-1.55 1.554 1.554 0 0 0-1.372-.502c-4.01.552-7.539-2.987-6.97-7ZM2 7.9C2 5.64 3.193 3.664 4.961 2.6 4.82 7.245 8.72 11.158 13.36 11.04 12.265 12.822 10.341 14 8.1 14 4.752 14 2 11.248 2 7.9Z" />
+                    </svg>
+                    Dark Mode
+                  </>
+                )}
+              </button>
+            </div>
           </header>
           <div className="p-5">
-            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Theme</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => toggleTheme(true)}
-                className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-3 ${
-                  darkMode
-                    ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Dark</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleTheme(false)}
-                className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-3 ${
-                  !darkMode
-                    ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600'
-                }`}
-              >
-                <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">Light</span>
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {themes.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setColorTheme(t.id)}
+                  className={`relative group rounded-xl overflow-hidden transition-all duration-200 ${
+                    colorTheme === t.id
+                      ? 'ring-2 ring-offset-2 scale-[1.02]'
+                      : 'hover:scale-[1.02]'
+                  }`}
+                  style={{
+                    ringColor: colorTheme === t.id ? 'var(--t-accent)' : undefined,
+                    ringOffsetColor: colorTheme === t.id ? 'var(--t-bg-card)' : undefined,
+                  }}
+                >
+                  <div className={`theme-swatch-${t.id} h-24 sm:h-28 flex items-center justify-center`}>
+                    <span className="font-semibold text-sm sm:text-base px-4 py-1.5 rounded-lg backdrop-blur-sm text-white/90 bg-black/25">
+                      {t.name}
+                    </span>
+                  </div>
+                  {colorTheme === t.id && (
+                    <div className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--t-accent)' }}>
+                      <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Change Password */}
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60">
-          <header className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
-            <h2 className="font-semibold text-gray-800 dark:text-gray-100">Change Password</h2>
+        <div className="lg:col-span-2 t-card rounded-xl overflow-hidden">
+          <header className="px-5 py-4" style={{ borderBottom: '1px solid var(--t-border)' }}>
+            <h2 className="font-semibold" style={{ color: 'var(--t-text)' }}>Change Password</h2>
           </header>
-          <div className="p-5">
+          <div className="p-5 max-w-lg">
             {message && (
               <div className={`p-3 rounded-lg mb-4 text-sm flex items-center gap-2 ${
                 message.includes('Error') || message.includes('match') 
-                  ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30' 
-                  : 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-200 dark:border-green-500/30'
+                  ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                  : 'bg-green-500/10 text-green-400 border border-green-500/20'
               }`}>
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {message.includes('Error') || message.includes('match') ? (
@@ -121,7 +131,7 @@ export default function Settings() {
             )}
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Current Password</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--t-text-muted)' }}>Current Password</label>
                 <input
                   type="password"
                   value={passwords.current_password}
@@ -131,7 +141,7 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">New Password</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--t-text-muted)' }}>New Password</label>
                 <input
                   type="password"
                   value={passwords.password}
@@ -142,7 +152,7 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Confirm New Password</label>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--t-text-muted)' }}>Confirm New Password</label>
                 <input
                   type="password"
                   value={passwords.password_confirmation}

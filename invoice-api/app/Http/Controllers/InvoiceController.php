@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class InvoiceController extends Controller
@@ -26,6 +27,18 @@ class InvoiceController extends Controller
 
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('series', 'like', "%{$search}%")
+                  ->orWhere('number', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%")
+                  ->orWhereHas('client', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
         }
 
         $sortBy = $request->get('sort_by', 'invoice_date');
@@ -68,39 +81,41 @@ class InvoiceController extends Controller
             'items.*.price' => 'required|numeric|min:0|max:999999',
         ]);
 
-        $series = $user->invoice_series ?? 'INV';
-        $nextNumber = $user->next_invoice_number ?? 1;
+        return DB::transaction(function () use ($user, $validated) {
+            $series = $user->invoice_series ?? 'INV';
+            $nextNumber = $user->next_invoice_number ?? 1;
 
-        $invoice = $user->invoices()->create([
-            'series' => $series,
-            'number' => $nextNumber,
-            'client_id' => $validated['client_id'],
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'],
-            'notes' => $validated['notes'] ?? null,
-            'total' => 0,
-            'status' => 'draft',
-        ]);
-
-        $user->update(['next_invoice_number' => $nextNumber + 1]);
-
-        $total = 0;
-        foreach ($validated['items'] as $item) {
-            $itemTotal = $item['quantity'] * $item['price'];
-            $total += $itemTotal;
-
-            $invoice->items()->create([
-                'description' => $item['description'],
-                'unit' => $item['unit'],
-                'quantity' => $item['quantity'],
-                'price' => $item['price'],
-                'total' => $itemTotal,
+            $invoice = $user->invoices()->create([
+                'series' => $series,
+                'number' => $nextNumber,
+                'client_id' => $validated['client_id'],
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'],
+                'notes' => $validated['notes'] ?? null,
+                'total' => 0,
+                'status' => 'draft',
             ]);
-        }
 
-        $invoice->update(['total' => $total]);
+            $user->update(['next_invoice_number' => $nextNumber + 1]);
 
-        return $invoice->load('client', 'items');
+            $total = 0;
+            foreach ($validated['items'] as $item) {
+                $itemTotal = $item['quantity'] * $item['price'];
+                $total += $itemTotal;
+
+                $invoice->items()->create([
+                    'description' => $item['description'],
+                    'unit' => $item['unit'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'total' => $itemTotal,
+                ]);
+            }
+
+            $invoice->update(['total' => $total]);
+
+            return $invoice->load('client', 'items');
+        });
     }
 
     public function show(Request $request, Invoice $invoice)
@@ -139,32 +154,34 @@ class InvoiceController extends Controller
             'items.*.price' => 'required|numeric|min:0|max:999999',
         ]);
 
-        $invoice->update([
-            'client_id' => $validated['client_id'],
-            'invoice_date' => $validated['invoice_date'],
-            'due_date' => $validated['due_date'],
-            'notes' => $validated['notes'] ?? null,
-        ]);
-
-        $invoice->items()->delete();
-
-        $total = 0;
-        foreach ($validated['items'] as $item) {
-            $itemTotal = $item['quantity'] * $item['price'];
-            $total += $itemTotal;
-
-            $invoice->items()->create([
-                'description' => $item['description'],
-                'unit' => $item['unit'],
-                'quantity' => $item['quantity'],
-                'price' => $item['price'],
-                'total' => $itemTotal,
+        return DB::transaction(function () use ($invoice, $validated) {
+            $invoice->update([
+                'client_id' => $validated['client_id'],
+                'invoice_date' => $validated['invoice_date'],
+                'due_date' => $validated['due_date'],
+                'notes' => $validated['notes'] ?? null,
             ]);
-        }
 
-        $invoice->update(['total' => $total]);
+            $invoice->items()->delete();
 
-        return $invoice->load('client', 'items');
+            $total = 0;
+            foreach ($validated['items'] as $item) {
+                $itemTotal = $item['quantity'] * $item['price'];
+                $total += $itemTotal;
+
+                $invoice->items()->create([
+                    'description' => $item['description'],
+                    'unit' => $item['unit'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price'],
+                    'total' => $itemTotal,
+                ]);
+            }
+
+            $invoice->update(['total' => $total]);
+
+            return $invoice->load('client', 'items');
+        });
     }
 
     public function destroy(Request $request, Invoice $invoice)
@@ -173,8 +190,10 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $invoice->items()->delete();
-        $invoice->delete();
+        DB::transaction(function () use ($invoice) {
+            $invoice->items()->delete();
+            $invoice->delete();
+        });
 
         return response()->json(['message' => 'Invoice deleted']);
     }
@@ -256,10 +275,12 @@ class InvoiceController extends Controller
             ->whereIn('id', $validated['ids'])
             ->get();
 
-        foreach ($deleted as $invoice) {
-            $invoice->items()->delete();
-            $invoice->delete();
-        }
+        DB::transaction(function () use ($deleted) {
+            foreach ($deleted as $invoice) {
+                $invoice->items()->delete();
+                $invoice->delete();
+            }
+        });
 
         return response()->json(['message' => $deleted->count() . ' invoice(s) deleted']);
     }
@@ -286,32 +307,35 @@ class InvoiceController extends Controller
         }
 
         $user = $request->user();
-        $series = $user->invoice_series ?? 'INV';
-        $nextNumber = $user->next_invoice_number ?? 1;
 
-        $newInvoice = $user->invoices()->create([
-            'series' => $series,
-            'number' => $nextNumber,
-            'client_id' => $invoice->client_id,
-            'invoice_date' => now()->toDateString(),
-            'due_date' => now()->addDays(14)->toDateString(),
-            'notes' => $invoice->notes,
-            'total' => $invoice->total,
-            'status' => 'draft',
-        ]);
+        return DB::transaction(function () use ($user, $invoice) {
+            $series = $user->invoice_series ?? 'INV';
+            $nextNumber = $user->next_invoice_number ?? 1;
 
-        $user->update(['next_invoice_number' => $nextNumber + 1]);
-
-        foreach ($invoice->items as $item) {
-            $newInvoice->items()->create([
-                'description' => $item->description,
-                'unit' => $item->unit,
-                'quantity' => $item->quantity,
-                'price' => $item->price,
-                'total' => $item->total,
+            $newInvoice = $user->invoices()->create([
+                'series' => $series,
+                'number' => $nextNumber,
+                'client_id' => $invoice->client_id,
+                'invoice_date' => now()->toDateString(),
+                'due_date' => now()->addDays(14)->toDateString(),
+                'notes' => $invoice->notes,
+                'total' => $invoice->total,
+                'status' => 'draft',
             ]);
-        }
 
-        return $newInvoice->load('client', 'items');
+            $user->update(['next_invoice_number' => $nextNumber + 1]);
+
+            foreach ($invoice->items as $item) {
+                $newInvoice->items()->create([
+                    'description' => $item->description,
+                    'unit' => $item->unit,
+                    'quantity' => $item->quantity,
+                    'price' => $item->price,
+                    'total' => $item->total,
+                ]);
+            }
+
+            return $newInvoice->load('client', 'items');
+        });
     }
 }

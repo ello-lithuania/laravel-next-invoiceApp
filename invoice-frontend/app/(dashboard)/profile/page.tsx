@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { profile, auth, Session } from '@/lib/api'
+import { toast } from 'react-toastify'
 
 interface User {
   name: string
@@ -98,7 +99,9 @@ export default function Profile() {
     try {
       const data = await profile.get()
       setUser(data)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load profile')
+    }
     setLoading(false)
   }
 
@@ -106,7 +109,9 @@ export default function Profile() {
     try {
       const data = await auth.sessions()
       setSessions(data)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load sessions')
+    }
     setLoadingSessions(false)
   }
 

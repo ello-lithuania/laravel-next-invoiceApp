@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { clients, getToken } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { statusColors, formatCurrency } from '@/lib/utils'
+import { Skeleton } from '@/components/Skeleton'
 
 interface ClientInvoice {
   id: number
@@ -30,17 +32,6 @@ interface ClientDetail {
   invoices_count: number
 }
 
-const statusColors: Record<string, string> = {
-  draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
-  sent: 'bg-blue-500/15 text-blue-500',
-  paid: 'bg-green-500/20 text-green-400',
-  overdue: 'bg-red-500/20 text-red-400',
-}
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700/50 rounded ${className}`} />
-}
-
 function ClientViewContent() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
@@ -60,9 +51,6 @@ function ClientViewContent() {
     }
     setLoading(false)
   }
-
-  const formatCurrency = (v: number) =>
-    new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(v)
 
   if (loading) return (
     <div className="space-y-6">

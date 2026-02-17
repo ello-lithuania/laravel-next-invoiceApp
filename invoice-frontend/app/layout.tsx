@@ -1,6 +1,7 @@
 import './globals.css'
 import 'react-toastify/dist/ReactToastify.css'
 import { ToastContainer } from 'react-toastify'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 
 export const metadata = {
   title: 'InvoiceApp',
@@ -16,20 +17,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               (function() {
                 try {
-                  var darkMode = localStorage.getItem('dark-mode');
-                  if (darkMode === null || darkMode === 'true') {
-                    document.documentElement.classList.add('dark');
-                  }
+                  var color = localStorage.getItem('app-color-theme') || localStorage.getItem('app-theme') || 'midnight';
+                  if (color === 'frost') color = 'midnight';
+                  var modeStr = localStorage.getItem('app-theme-mode');
+                  var isDark = modeStr ? modeStr === 'dark' : true;
+                  document.documentElement.setAttribute('data-theme', color);
+                  document.documentElement.setAttribute('data-mode', isDark ? 'dark' : 'light');
+                  if (isDark) document.documentElement.classList.add('dark');
                 } catch (e) {
                   document.documentElement.classList.add('dark');
+                  document.documentElement.setAttribute('data-theme', 'midnight');
+                  document.documentElement.setAttribute('data-mode', 'dark');
                 }
               })();
             `,
           }}
         />
       </head>
-      <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
-        {children}
+      <body className="font-inter antialiased">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <ToastContainer
           position="bottom-right"
           autoClose={5000}

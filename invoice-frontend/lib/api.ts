@@ -8,7 +8,10 @@ function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null
   const value = `; ${document.cookie}`
   const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null
+  if (parts.length === 2) {
+    const raw = parts.pop()?.split(';').shift() || null
+    return raw ? decodeURIComponent(raw) : null
+  }
   return null
 }
 
@@ -16,12 +19,13 @@ function setCookie(name: string, value: string, days: number = 7): void {
   if (typeof document === 'undefined') return
   const expires = new Date(Date.now() + days * 864e5).toUTCString()
   const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
-  document.cookie = `${name}=${value}; expires=${expires}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
 }
 
 function deleteCookie(name: string): void {
   if (typeof document === 'undefined') return
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`
+  const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${isSecure ? '; Secure' : ''}`
 }
 
 export function getToken(): string | null {
@@ -128,6 +132,7 @@ export interface Invoice {
   due_date: string
   notes?: string
   total: number
+  status: 'draft' | 'sent' | 'paid' | 'overdue'
   client?: Client
   items?: InvoiceItem[]
 }
@@ -232,7 +237,7 @@ export const invoices = {
   listPaginated: (params: string) => 
     api<PaginatedResponse<Invoice>>(`/invoices?${params}`),
   unpaid: () =>
-    api<(Invoice & { status?: string })[]>('/invoices/unpaid'),
+    api<Invoice[]>('/invoices/unpaid'),
   months: () =>
     api<string[]>('/invoices/months'),
   get: (id: number) => 

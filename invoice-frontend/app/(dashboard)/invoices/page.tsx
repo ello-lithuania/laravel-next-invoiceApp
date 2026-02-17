@@ -1,30 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { invoices, clients as clientsApi, getToken } from '@/lib/api'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { invoices, clients as clientsApi, getToken, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { statusColors } from '@/lib/utils'
+import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 
-interface Client {
-  id: number
-  name: string
-}
-
-interface Invoice {
-  id: number
-  series: string
-  number: number
-  client_id: number
-  client?: Client
-  invoice_date: string
-  due_date: string
-  total: number
-  status?: string
-}
-
 interface PaginatedResponse {
-  data: Invoice[]
+  data: InvoiceType[]
   current_page: number
   last_page: number
   per_page: number
@@ -38,17 +23,6 @@ const statusOptions = [
   { value: 'paid', label: 'Paid' },
   { value: 'overdue', label: 'Overdue' },
 ]
-
-const statusColors: Record<string, string> = {
-  draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
-  sent: 'bg-blue-500/15 text-blue-500',
-  paid: 'bg-green-500/20 text-green-400',
-  overdue: 'bg-red-500/20 text-red-400',
-}
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700/50 rounded ${className}`} />
-}
 
 function InvoicesSkeleton() {
   return (
@@ -97,9 +71,9 @@ function InvoicesSkeleton() {
   )
 }
 
-export default function Invoices() {
-  const [list, setList] = useState<Invoice[]>([])
-  const [clients, setClients] = useState<Client[]>([])
+function InvoicesContent() {
+  const [list, setList] = useState<InvoiceType[]>([])
+  const [clients, setClients] = useState<ClientType[]>([])
   const [monthOptions, setMonthOptions] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -114,6 +88,13 @@ export default function Invoices() {
   const [pdfPreview, setPdfPreview] = useState<{ open: boolean; url: string; title: string }>({ open: false, url: '', title: '' })
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const [filterSearch, setFilterSearch] = useState('')
+
+  useEffect(() => {
+    const search = searchParams.get('search') || ''
+    setFilterSearch(search)
+  }, [searchParams])
 
   useEffect(() => {
     loadClients()
@@ -122,20 +103,24 @@ export default function Invoices() {
 
   useEffect(() => {
     loadInvoices()
-  }, [page, filterMonth, filterClient, filterStatus, sortBy, sortDir])
+  }, [page, filterMonth, filterClient, filterStatus, filterSearch, sortBy, sortDir])
 
   const loadClients = async () => {
     try {
       const data = await clientsApi.list()
       setClients(data)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load clients')
+    }
   }
 
   const loadMonths = async () => {
     try {
       const data = await invoices.months()
       setMonthOptions(data)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load months')
+    }
   }
 
   const loadInvoices = async () => {
@@ -150,12 +135,15 @@ export default function Invoices() {
       if (filterMonth) params.set('month', filterMonth)
       if (filterClient) params.set('client_id', filterClient)
       if (filterStatus) params.set('status', filterStatus)
+      if (filterSearch) params.set('search', filterSearch)
       
       const data = await invoices.listPaginated(params.toString())
       setList(data.data)
       setLastPage(data.last_page)
       setTotal(data.total)
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load invoices')
+    }
     setLoading(false)
   }
 
@@ -193,7 +181,7 @@ export default function Invoices() {
     window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
   }
 
-  const previewPdf = (inv: Invoice) => {
+  const previewPdf = (inv: InvoiceType) => {
     const token = getToken()
     const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${inv.id}/pdf?token=${token}`
     setPdfPreview({ open: true, url, title: `${inv.series}-${String(inv.number).padStart(4, '0')}` })
@@ -352,9 +340,9 @@ export default function Invoices() {
             ))}
           </select>
         </div>
-        {(filterMonth || filterClient || filterStatus) && (
+        {(filterMonth || filterClient || filterStatus || filterSearch) && (
           <button
-            onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); handleFilterChange() }}
+            onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); setFilterSearch(''); router.replace('/invoices'); handleFilterChange() }}
             className="px-4 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             Clear filters
@@ -692,5 +680,13 @@ export default function Invoices() {
       onCancel={() => setConfirmModal(m => ({ ...m, open: false }))}
     />
     </>
+  )
+}
+
+export default function Invoices() {
+  return (
+    <Suspense fallback={<InvoicesSkeleton />}>
+      <InvoicesContent />
+    </Suspense>
   )
 }

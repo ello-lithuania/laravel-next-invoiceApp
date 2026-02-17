@@ -2,18 +2,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { invoices, clients as clientsApi } from '@/lib/api'
+import { invoices, clients as clientsApi, getToken, Client } from '@/lib/api'
+import { toast } from 'react-toastify'
 
 interface InvoiceItem {
   description: string
   unit: string
   quantity: number
   price: number
-}
-
-interface Client {
-  id: number
-  name: string
 }
 
 const emptyItem: InvoiceItem = { description: '', unit: 'h', quantity: 1, price: 0 }
@@ -23,6 +19,7 @@ function EditInvoiceForm() {
   const searchParams = useSearchParams()
   const id = searchParams.get('id')
   const [clients, setClients] = useState<Client[]>([])
+  const [duplicating, setDuplicating] = useState(false)
   const [clientSearch, setClientSearch] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
@@ -63,7 +60,9 @@ function EditInvoiceForm() {
           })) || [{ ...emptyItem }]
         })
       }
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load invoice')
+    }
     setLoading(false)
   }
 
@@ -78,8 +77,27 @@ function EditInvoiceForm() {
       }
       await invoices.update(Number(id), { ...form, client_id: Number(form.client_id) })
       router.push('/invoices')
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save invoice')
+    }
     setSaving(false)
+  }
+
+  const handleDuplicate = async () => {
+    setDuplicating(true)
+    try {
+      const newInvoice = await invoices.duplicate(Number(id))
+      toast.success(`Invoice duplicated as ${newInvoice.series}-${String(newInvoice.number).padStart(4, '0')}`)
+      router.push(`/invoices/edit?id=${newInvoice.id}`)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to duplicate invoice')
+    }
+    setDuplicating(false)
+  }
+
+  const downloadPdf = () => {
+    const token = getToken()
+    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
   }
 
   const addItem = () => {
@@ -110,15 +128,38 @@ function EditInvoiceForm() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <Link href="/invoices" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Edit Invoice</h1>
-          <p className="text-gray-500 dark:text-gray-400">Update invoice details</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link href="/invoices" className="text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 transition-colors">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Edit Invoice</h1>
+            <p className="text-gray-500 dark:text-gray-400">Update invoice details</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={downloadPdf}
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-medium text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            PDF
+          </button>
+          <button
+            onClick={handleDuplicate}
+            disabled={duplicating}
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-medium text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+            {duplicating ? 'Duplicating...' : 'Duplicate'}
+          </button>
         </div>
       </div>
 

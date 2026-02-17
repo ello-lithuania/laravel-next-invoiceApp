@@ -20,7 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [sidebarExpanded])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-screen overflow-hidden t-page-bg">
       <Sidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}

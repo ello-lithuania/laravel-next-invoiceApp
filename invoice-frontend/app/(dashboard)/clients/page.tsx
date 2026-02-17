@@ -1,21 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { clients } from '@/lib/api'
+import { clients, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
-
-interface Client {
-  id: number
-  name: string
-  company_code?: string
-  email?: string
-  phone?: string
-}
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700/50 rounded ${className}`} />
-}
 
 function ClientsSkeleton() {
   return (
