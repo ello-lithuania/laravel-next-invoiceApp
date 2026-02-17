@@ -84,10 +84,10 @@ export default function Settings() {
                       ? 'ring-2 ring-offset-2 scale-[1.02]'
                       : 'hover:scale-[1.02]'
                   }`}
-                  style={{
-                    ringColor: colorTheme === t.id ? 'var(--t-accent)' : undefined,
-                    ringOffsetColor: colorTheme === t.id ? 'var(--t-bg-card)' : undefined,
-                  }}
+style={{
+                    '--tw-ring-color': colorTheme === t.id ? 'var(--t-accent)' : undefined,
+                    '--tw-ring-offset-color': colorTheme === t.id ? 'var(--t-bg-card)' : undefined,
+                  } as React.CSSProperties}
                 >
                   <div className={`theme-swatch-${t.id} h-24 sm:h-28 flex items-center justify-center`}>
                     <span className="font-semibold text-sm sm:text-base px-4 py-1.5 rounded-lg backdrop-blur-sm text-white/90 bg-black/25">
