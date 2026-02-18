@@ -303,7 +303,7 @@ export default function Profile() {
                             ? 'shadow-lg ring-1'
                             : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
-                        style={isSelected ? { borderColor: 'var(--t-accent)', ringColor: 'var(--t-accent)' } : {}}
+                        style={isSelected ? { borderColor: 'var(--t-accent)' } : {}}
                       >
                         {isSelected && (
                           <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center shadow-md" style={{ background: 'var(--t-accent)' }}>
