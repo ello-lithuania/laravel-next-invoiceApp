@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\TimeEntryController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Password;
@@ -72,6 +73,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/stats', [StatsController::class, 'index']);
     Route::get('/stats/clients', [StatsController::class, 'clientBreakdown']);
     Route::get('/stats/quick', [StatsController::class, 'quickStats']);
+    Route::get('/stats/year-summary', [StatsController::class, 'yearSummary']);
 
     Route::put('/password', [PasswordController::class, 'update']);
     Route::get('/activity', [ActivityController::class, 'index']);
@@ -83,6 +85,16 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::apiResource('invoices', InvoiceController::class);
     Route::post('/invoices/{invoice}/status', [InvoiceController::class, 'updateStatus']);
     Route::post('/invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate']);
+
+    Route::get('/time-entries/running', [TimeEntryController::class, 'running']);
+    Route::post('/time-entries/{timeEntry}/start', [TimeEntryController::class, 'start']);
+    Route::post('/time-entries/{timeEntry}/stop', [TimeEntryController::class, 'stop']);
+    Route::post('/time-entries/{timeEntry}/add-time', [TimeEntryController::class, 'addTime']);
+    Route::post('/time-entries/convert-to-invoice', [TimeEntryController::class, 'convertToInvoice']);
+    Route::post('/time-entries/bulk-delete', [TimeEntryController::class, 'bulkDelete']);
+    Route::apiResource('time-entries', TimeEntryController::class)->except(['show']);
 });
 
 Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+Route::get('/sample-invoice-pdf', [InvoiceController::class, 'samplePdf']);
+Route::get('/stats/year-summary/pdf', [StatsController::class, 'yearSummaryPdf']);

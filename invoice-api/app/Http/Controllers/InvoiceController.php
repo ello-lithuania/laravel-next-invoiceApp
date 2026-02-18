@@ -225,6 +225,81 @@ class InvoiceController extends Controller
         return $invoice->load('client', 'items');
     }
 
+    public function samplePdf(Request $request)
+    {
+        $token = $request->query('token');
+        if (!$token) {
+            return response()->json(['message' => 'Token required'], 401);
+        }
+
+        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
+        if (!$accessToken) {
+            return response()->json(['message' => 'Invalid token'], 401);
+        }
+
+        $user = $accessToken->tokenable;
+        $template = $request->query('template', $user->invoice_template ?? 'classic');
+
+        // Build dummy invoice object
+        $invoice = new \stdClass();
+        $invoice->series = 'INV';
+        $invoice->number = 1;
+        $invoice->invoice_date = \Carbon\Carbon::now();
+        $invoice->due_date = \Carbon\Carbon::now()->addDays(30);
+        $invoice->total = 1850.00;
+        $invoice->notes = 'Thank you for your business!';
+
+        $invoice->user = new \stdClass();
+        $invoice->user->name = $user->name ?: 'John Doe';
+        $invoice->user->company_code = $user->company_code ?: 'IVP-123456';
+        $invoice->user->vat_code = $user->vat_code ?: '';
+        $invoice->user->address = $user->address ?: 'Vilnius, Lietuva';
+        $invoice->user->phone = $user->phone ?: '+370 600 12345';
+        $invoice->user->bank_name = $user->bank_name ?: 'Swedbank';
+        $invoice->user->bank_account = $user->bank_account ?: 'LT12 7300 0101 2345 6789';
+        $invoice->user->signature = $user->signature;
+
+        $invoice->client = new \stdClass();
+        $invoice->client->name = 'UAB "Sample Client"';
+        $invoice->client->company_code = '301234567';
+        $invoice->client->vat_code = 'LT100001234567';
+        $invoice->client->address = 'Gedimino pr. 1, Vilnius';
+        $invoice->client->phone = '+370 600 98765';
+
+        $item1 = new \stdClass();
+        $item1->description = 'Website development & design';
+        $item1->unit = 'val.';
+        $item1->quantity = 40;
+        $item1->price = 35.00;
+        $item1->total = 1400.00;
+
+        $item2 = new \stdClass();
+        $item2->description = 'SEO optimization';
+        $item2->unit = 'vnt.';
+        $item2->quantity = 1;
+        $item2->price = 250.00;
+        $item2->total = 250.00;
+
+        $item3 = new \stdClass();
+        $item3->description = 'Hosting setup & configuration';
+        $item3->unit = 'vnt.';
+        $item3->quantity = 1;
+        $item3->price = 200.00;
+        $item3->total = 200.00;
+
+        $invoice->items = collect([$item1, $item2, $item3]);
+
+        $viewName = match($template) {
+            'minimal' => 'invoice-minimal',
+            'modern' => 'invoice-modern',
+            default => 'invoice',
+        };
+
+        $pdf = Pdf::loadView($viewName, ['invoice' => $invoice]);
+
+        return $pdf->stream("sample-{$template}.pdf");
+    }
+
     public function pdf(Request $request, Invoice $invoice)
     {
         $token = $request->query('token');
@@ -244,7 +319,14 @@ class InvoiceController extends Controller
 
         $invoice->load(['user', 'client', 'items']);
 
-        $pdf = Pdf::loadView('invoice', ['invoice' => $invoice]);
+        $template = $request->query('template', $user->invoice_template ?? 'classic');
+        $viewName = match($template) {
+            'minimal' => 'invoice-minimal',
+            'modern' => 'invoice-modern',
+            default => 'invoice',
+        };
+
+        $pdf = Pdf::loadView($viewName, ['invoice' => $invoice]);
 
         if ($request->query('download')) {
             return $pdf->download("invoice-{$invoice->series}-{$invoice->number}.pdf");

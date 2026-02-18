@@ -21,7 +21,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   const [activityOpen, setActivityOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
-  const { colorTheme, isDark, setColorTheme, toggleMode } = useTheme()
+  const { colorTheme, isDark, mounted, setColorTheme, toggleMode } = useTheme()
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const dropdown = useRef<HTMLDivElement>(null)
@@ -172,9 +172,10 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
             className="w-8 h-8 flex items-center justify-center rounded-full transition-colors"
             style={{ color: 'var(--t-text-muted)' }}
             onClick={toggleMode}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={mounted ? (isDark ? 'Switch to light mode' : 'Switch to dark mode') : undefined}
+            suppressHydrationWarning
           >
-            {isDark ? (
+            {mounted && (isDark ? (
               <svg className="fill-current" width={16} height={16} viewBox="0 0 16 16">
                 <path d="M8 0a1 1 0 0 1 1 1v.5a1 1 0 1 1-2 0V1a1 1 0 0 1 1-1Z" />
                 <path d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0Zm-4 2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
@@ -185,7 +186,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
                 <path d="M11.875 4.375a.625.625 0 1 0 1.25 0c.001-.69.56-1.249 1.25-1.25a.625.625 0 1 0 0-1.25 1.252 1.252 0 0 1-1.25-1.25.625.625 0 1 0-1.25 0 1.252 1.252 0 0 1-1.25 1.25.625.625 0 1 0 0 1.25c.69.001 1.249.56 1.25 1.25Z" />
                 <path d="M7.019 1.985a1.55 1.55 0 0 0-.483-1.36 1.44 1.44 0 0 0-1.53-.277C2.056 1.553 0 4.5 0 7.9 0 12.352 3.648 16 8.1 16c3.407 0 6.246-2.058 7.51-4.963a1.446 1.446 0 0 0-.25-1.55 1.554 1.554 0 0 0-1.372-.502c-4.01.552-7.539-2.987-6.97-7ZM2 7.9C2 5.64 3.193 3.664 4.961 2.6 4.82 7.245 8.72 11.158 13.36 11.04 12.265 12.822 10.341 14 8.1 14 4.752 14 2 11.248 2 7.9Z" />
               </svg>
-            )}
+            ))}
           </button>
 
           {/* Theme Color Picker (grid icon) */}

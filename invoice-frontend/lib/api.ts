@@ -98,6 +98,7 @@ export interface User {
   next_invoice_number?: number
   signature?: string
   signature_url?: string
+  invoice_template?: string
 }
 
 export interface Client {
@@ -153,6 +154,40 @@ export interface StatsData {
     total_amount: number
   }
   period: string
+}
+
+export interface YearSummaryMonth {
+  month: number
+  invoice_count: number
+  total: number
+  hours: number
+  is_best: boolean
+  is_worst: boolean
+}
+
+export interface YearSummaryClient {
+  name: string
+  invoice_count: number
+  total: number
+  hours: number
+}
+
+export interface YearSummaryData {
+  total_revenue: number
+  paid_revenue: number
+  unpaid_revenue: number
+  total_invoices: number
+  total_clients: number
+  avg_invoice: number
+  avg_monthly: number
+  total_hours: number
+  avg_hourly_rate: number
+  time_tracking_revenue: number
+  months: YearSummaryMonth[]
+  clients: YearSummaryClient[]
+  best_month: YearSummaryMonth | null
+  worst_month: YearSummaryMonth | null
+  largest_invoice: { series: string; number: number; total: number; client: string } | null
 }
 
 export interface Session {
@@ -250,8 +285,10 @@ export const invoices = {
     api<Invoice>(`/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   delete: (id: number) => 
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
-  pdf: (id: number) => 
-    `${API_URL}/invoices/${id}/pdf?token=${getToken() || ''}`,
+  pdf: (id: number, template?: string) => 
+    `${API_URL}/invoices/${id}/pdf?token=${getToken() || ''}${template ? `&template=${template}` : ''}`,
+  samplePdf: (template: string) =>
+    `${API_URL}/sample-invoice-pdf?token=${getToken() || ''}&template=${template}`,
   bulkDelete: (ids: number[]) =>
     api<{ message: string }>('/invoices/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   bulkUpdateStatus: (ids: number[], status: string) =>
@@ -267,6 +304,12 @@ export const stats = {
     api<{ name: string; total: number; count: number }[]>('/stats/clients'),
   quickStats: () =>
     api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number }>('/stats/quick'),
+  yearSummary: (year: number) =>
+    api<{ year: number; data: YearSummaryData }>(`/stats/year-summary?year=${year}`),
+  yearSummaryPdfUrl: (year: number, download = false) => {
+    const token = getCookie('auth_token')
+    return `${API_URL}/stats/year-summary/pdf?year=${year}${download ? '&download=1' : ''}&token=${token}`
+  },
 }
 
 export interface Activity {
@@ -294,4 +337,44 @@ export const password = {
     }
     return response
   },
+}
+
+export interface TimeEntry {
+  id: number
+  user_id: number
+  client_id: number
+  description: string
+  hourly_rate: number
+  started_at: string | null
+  ended_at: string | null
+  duration_seconds: number
+  is_running: boolean
+  is_invoiced: boolean
+  invoice_id: number | null
+  client?: Client
+  created_at: string
+  updated_at: string
+}
+
+export const timeEntries = {
+  list: (params?: string) =>
+    api<TimeEntry[]>(`/time-entries${params ? `?${params}` : ''}`),
+  create: (data: { client_id: number; description: string; hourly_rate: number; duration_seconds?: number }) =>
+    api<TimeEntry>('/time-entries', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: { client_id: number; description: string; hourly_rate: number; duration_seconds?: number }) =>
+    api<TimeEntry>(`/time-entries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    api<{ message: string }>(`/time-entries/${id}`, { method: 'DELETE' }),
+  start: (id: number) =>
+    api<TimeEntry>(`/time-entries/${id}/start`, { method: 'POST' }),
+  stop: (id: number, durationMinutes?: number) =>
+    api<TimeEntry>(`/time-entries/${id}/stop`, { method: 'POST', body: JSON.stringify(durationMinutes !== undefined ? { duration_minutes: durationMinutes } : {}) }),
+  addTime: (id: number, minutes: number) =>
+    api<TimeEntry>(`/time-entries/${id}/add-time`, { method: 'POST', body: JSON.stringify({ minutes }) }),
+  running: () =>
+    api<TimeEntry | null>('/time-entries/running'),
+  convertToInvoice: (data: { time_entry_ids: number[]; invoice_date: string; due_date: string; notes?: string }) =>
+    api<Invoice>('/time-entries/convert-to-invoice', { method: 'POST', body: JSON.stringify(data) }),
+  bulkDelete: (ids: number[]) =>
+    api<{ message: string }>('/time-entries/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
 }

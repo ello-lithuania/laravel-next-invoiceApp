@@ -25,6 +25,7 @@ class User extends Authenticatable
         'invoice_series',
         'next_invoice_number',
         'signature',
+        'invoice_template',
     ];
 
     protected $hidden = [
@@ -39,5 +40,10 @@ class User extends Authenticatable
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function timeEntries()
+    {
+        return $this->hasMany(TimeEntry::class);
     }
 }

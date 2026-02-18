@@ -36,6 +36,7 @@ class ProfileController extends Controller
             'bank_account' => 'nullable|string|max:255',
             'invoice_series' => 'nullable|string|max:50',
             'next_invoice_number' => 'nullable|integer|min:1',
+            'invoice_template' => 'nullable|string|in:classic,minimal,modern',
         ]);
 
         $request->user()->update($request->only([
@@ -49,6 +50,7 @@ class ProfileController extends Controller
             'bank_account',
             'invoice_series',
             'next_invoice_number',
+            'invoice_template',
         ]));
 
         return response()->json($this->userWithSignatureUrl($request->user()));

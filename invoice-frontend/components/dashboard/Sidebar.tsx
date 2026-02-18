@@ -40,6 +40,26 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Time Tracking',
+    href: '/time-tracking',
+    icon: (
+      <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0Zm0 14A6 6 0 1 1 8 2a6 6 0 0 1 0 12Z" />
+        <path d="M9 4a1 1 0 0 0-2 0v4a1 1 0 0 0 .293.707l2 2a1 1 0 0 0 1.414-1.414L9 7.586V4Z" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Year Summary',
+    href: '/year-summary',
+    icon: (
+      <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm2 0v12h8V2H4z" />
+        <path d="M5 5h6v1H5V5zm0 3h6v1H5V8zm0 3h4v1H5v-1z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded }: SidebarProps) {

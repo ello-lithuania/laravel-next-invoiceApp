@@ -19,6 +19,7 @@ export const themes: ThemeDefinition[] = [
 interface ThemeContextType {
   colorTheme: string       // 'midnight' | 'volta' | 'emerald' | 'amethyst' | 'sunset'
   isDark: boolean
+  mounted: boolean
   setColorTheme: (id: string) => void
   toggleMode: () => void
   setMode: (dark: boolean) => void
@@ -31,6 +32,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
   colorTheme: 'midnight',
   isDark: true,
+  mounted: false,
   setColorTheme: () => {},
   toggleMode: () => {},
   setMode: () => {},
@@ -53,6 +55,7 @@ function applyToDOM(color: string, dark: boolean) {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [colorTheme, setColorThemeState] = useState('midnight')
   const [isDark, setIsDarkState] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const savedColor = localStorage.getItem('app-color-theme') || localStorage.getItem('app-theme') || 'midnight'
@@ -64,6 +67,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setColorThemeState(color)
     setIsDarkState(dark)
     applyToDOM(color, dark)
+    setMounted(true)
   }, [])
 
   const setColorTheme = (id: string) => {
@@ -97,6 +101,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     <ThemeContext.Provider value={{
       colorTheme,
       isDark,
+      mounted,
       setColorTheme,
       toggleMode,
       setMode,

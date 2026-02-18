@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { profile, auth, Session } from '@/lib/api'
+import { profile, auth, invoices as invoicesApi, Session } from '@/lib/api'
 import { toast } from 'react-toastify'
 
 interface User {
@@ -17,6 +17,7 @@ interface User {
   next_invoice_number?: number
   signature?: string
   signature_url?: string
+  invoice_template?: string
 }
 
 function Skeleton({ className }: { className?: string }) {
@@ -280,6 +281,54 @@ export default function Profile() {
                     <input type="number" min="1" value={user?.next_invoice_number || 1} onChange={(e) => setUser({ ...user!, next_invoice_number: parseInt(e.target.value) || 1 })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., 1" />
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">The number that will be assigned to your next invoice</p>
                   </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 dark:border-gray-700/60 mt-8 pt-8">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Invoice Template</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Choose how your invoice PDF will look. Click to select, preview shows sample data.</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                  {[
+                    { id: 'classic', name: 'Classic', desc: 'Blue header bar, traditional layout' },
+                    { id: 'minimal', name: 'Minimal', desc: 'Clean black & white, no colors' },
+                    { id: 'modern', name: 'Modern', desc: 'Dark sidebar with purple accents' },
+                  ].map(tmpl => {
+                    const isSelected = (user?.invoice_template || 'classic') === tmpl.id
+                    return (
+                      <button
+                        key={tmpl.id}
+                        type="button"
+                        onClick={() => setUser({ ...user!, invoice_template: tmpl.id })}
+                        className={`relative text-left rounded-xl border-2 transition-all overflow-hidden ${
+                          isSelected
+                            ? 'shadow-lg ring-1'
+                            : 'border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600'
+                        }`}
+                        style={isSelected ? { borderColor: 'var(--t-accent)', ringColor: 'var(--t-accent)' } : {}}
+                      >
+                        {isSelected && (
+                          <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center shadow-md" style={{ background: 'var(--t-accent)' }}>
+                            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                        {/* PDF iframe preview */}
+                        <div className="relative bg-gray-100 dark:bg-gray-900" style={{ height: '280px' }}>
+                          <iframe
+                            src={invoicesApi.samplePdf(tmpl.id)}
+                            className="w-full h-full pointer-events-none"
+                            title={`${tmpl.name} template preview`}
+                            style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '182%', height: '182%' }}
+                          />
+                        </div>
+                        {/* Label */}
+                        <div className="p-3 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700/40">
+                          <p className="font-semibold text-gray-800 dark:text-gray-100 text-sm">{tmpl.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tmpl.desc}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700/60 mt-8 pt-8">
