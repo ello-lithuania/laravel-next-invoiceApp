@@ -304,6 +304,8 @@ export const stats = {
     api<{ name: string; total: number; count: number }[]>('/stats/clients'),
   quickStats: () =>
     api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number }>('/stats/quick'),
+  availableYears: () =>
+    api<number[]>('/stats/available-years'),
   yearSummary: (year: number) =>
     api<{ year: number; data: YearSummaryData }>(`/stats/year-summary?year=${year}`),
   yearSummaryPdfUrl: (year: number, download = false) => {

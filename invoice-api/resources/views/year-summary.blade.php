@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Metinė suvestinė {{ $year }}</title>
+    <title>Year Summary {{ $year }}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-size: 11px; line-height: 1.5; color: #333; font-family: 'Dejavu sans', sans-serif; }
@@ -30,29 +30,18 @@
         table.data tr:nth-child(even) td { background: #f9f9f9; }
         table.data tr.highlight td { background: #eef4ff; font-weight: bold; }
 
-        .months-grid { display: table; width: 100%; }
-        .months-row { display: table-row; }
-        .month-cell { display: table-cell; width: 8.33%; padding: 3px; text-align: center; vertical-align: top; }
-        .month-inner { background: #f5f7fa; border-radius: 4px; padding: 8px 4px; }
-        .month-name { font-size: 8px; color: #666; text-transform: uppercase; }
-        .month-amount { font-size: 9px; font-weight: bold; color: #333; margin-top: 2px; }
-        .month-count { font-size: 7px; color: #999; }
-        .month-best .month-inner { background: #d4edda; border: 1px solid #28a745; }
-        .month-worst .month-inner { background: #fff3cd; border: 1px solid #ffc107; }
-
         .summary-box { background: #f5f7fa; padding: 15px; border-left: 3px solid #0054ac; margin-top: 20px; border-radius: 4px; }
         .summary-row { margin-bottom: 5px; }
         .summary-label { color: #666; font-size: 10px; }
         .summary-val { font-weight: bold; color: #333; }
 
-        .footer-bar { background: #0054ac; height: 30px; position: fixed; bottom: 0; left: 0; right: 0; }
         .footer-text { text-align: center; color: #999; font-size: 8px; margin-top: 30px; }
     </style>
 </head>
 <body>
     <div class="header-bar">
-        <div class="header-title">METINĖ SUVESTINĖ</div>
-        <div class="header-sub">{{ $user->name }} · {{ $year }} m.</div>
+        <div class="header-title">YEAR SUMMARY</div>
+        <div class="header-sub">{{ $user->name }} · {{ $year }}</div>
     </div>
 
     <div class="content">
@@ -62,19 +51,19 @@
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ number_format($data['total_revenue'], 2) }} €</div>
-                        <div class="stat-label">Visos pajamos</div>
+                        <div class="stat-label">Total Revenue</div>
                     </div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ number_format($data['paid_revenue'], 2) }} €</div>
-                        <div class="stat-label">Apmokėta</div>
+                        <div class="stat-label">Paid</div>
                     </div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ number_format($data['unpaid_revenue'], 2) }} €</div>
-                        <div class="stat-label">Neapmokėta</div>
+                        <div class="stat-label">Unpaid</div>
                     </div>
                 </div>
             </div>
@@ -85,19 +74,19 @@
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ $data['total_invoices'] }}</div>
-                        <div class="stat-label">Iš viso sąskaitų</div>
+                        <div class="stat-label">Total Invoices</div>
                     </div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ $data['total_clients'] }}</div>
-                        <div class="stat-label">Klientų</div>
+                        <div class="stat-label">Clients</div>
                     </div>
                 </div>
                 <div class="stat-box">
                     <div class="stat-inner">
                         <div class="stat-value">{{ number_format($data['avg_invoice'], 2) }} €</div>
-                        <div class="stat-label">Vid. sąskaitos dydis</div>
+                        <div class="stat-label">Avg. Invoice Size</div>
                     </div>
                 </div>
             </div>
@@ -105,19 +94,19 @@
 
         {{-- Monthly breakdown --}}
         <div class="section">
-            <div class="section-title">Mėnesių suvestinė</div>
+            <div class="section-title">Monthly Breakdown</div>
             <table class="data">
                 <thead>
                     <tr>
-                        <th>Mėnuo</th>
-                        <th class="right">Sąskaitos</th>
-                        <th class="right">Suma</th>
-                        <th class="right">Valandos</th>
+                        <th>Month</th>
+                        <th class="right">Invoices</th>
+                        <th class="right">Amount</th>
+                        <th class="right">Hours</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php
-                        $monthNames = ['Sausis', 'Vasaris', 'Kovas', 'Balandis', 'Gegužė', 'Birželis', 'Liepa', 'Rugpjūtis', 'Rugsėjis', 'Spalis', 'Lapkritis', 'Gruodis'];
+                        $monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                     @endphp
                     @foreach($data['months'] as $month)
                         <tr class="{{ $month['is_best'] ? 'highlight' : '' }}">
@@ -128,14 +117,14 @@
                             </td>
                             <td class="right">{{ $month['invoice_count'] }}</td>
                             <td class="right bold">{{ number_format($month['total'], 2) }} €</td>
-                            <td class="right">{{ $month['hours'] > 0 ? number_format($month['hours'], 1) . ' val.' : '—' }}</td>
+                            <td class="right">{{ $month['hours'] > 0 ? number_format($month['hours'], 1) . ' h' : '—' }}</td>
                         </tr>
                     @endforeach
                     <tr style="border-top: 2px solid #0054ac;">
-                        <td class="bold">IŠ VISO</td>
+                        <td class="bold">TOTAL</td>
                         <td class="right bold">{{ $data['total_invoices'] }}</td>
                         <td class="right bold" style="color: #0054ac;">{{ number_format($data['total_revenue'], 2) }} €</td>
-                        <td class="right bold">{{ $data['total_hours'] > 0 ? number_format($data['total_hours'], 1) . ' val.' : '—' }}</td>
+                        <td class="right bold">{{ $data['total_hours'] > 0 ? number_format($data['total_hours'], 1) . ' h' : '—' }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -143,15 +132,15 @@
 
         {{-- Client breakdown --}}
         <div class="section">
-            <div class="section-title">Klientai</div>
+            <div class="section-title">Clients</div>
             <table class="data">
                 <thead>
                     <tr>
-                        <th>Klientas</th>
-                        <th class="right">Sąskaitos</th>
-                        <th class="right">Suma</th>
-                        <th class="right">Valandos</th>
-                        <th class="right">% nuo viso</th>
+                        <th>Client</th>
+                        <th class="right">Invoices</th>
+                        <th class="right">Amount</th>
+                        <th class="right">Hours</th>
+                        <th class="right">% of Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -160,7 +149,7 @@
                             <td class="bold">{{ $client['name'] }}</td>
                             <td class="right">{{ $client['invoice_count'] }}</td>
                             <td class="right bold">{{ number_format($client['total'], 2) }} €</td>
-                            <td class="right">{{ $client['hours'] > 0 ? number_format($client['hours'], 1) . ' val.' : '—' }}</td>
+                            <td class="right">{{ $client['hours'] > 0 ? number_format($client['hours'], 1) . ' h' : '—' }}</td>
                             <td class="right">{{ $data['total_revenue'] > 0 ? number_format($client['total'] / $data['total_revenue'] * 100, 1) : 0 }}%</td>
                         </tr>
                     @endforeach
@@ -171,18 +160,18 @@
         {{-- Time tracking summary --}}
         @if($data['total_hours'] > 0)
         <div class="section">
-            <div class="section-title">Laiko suvestinė</div>
+            <div class="section-title">Time Tracking</div>
             <div class="summary-box">
                 <div class="summary-row">
-                    <span class="summary-label">Iš viso valandų: </span>
-                    <span class="summary-val">{{ number_format($data['total_hours'], 1) }} val.</span>
+                    <span class="summary-label">Total Hours: </span>
+                    <span class="summary-val">{{ number_format($data['total_hours'], 1) }} h</span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Vidutinis valandinis įkainis: </span>
-                    <span class="summary-val">{{ number_format($data['avg_hourly_rate'], 2) }} €/val.</span>
+                    <span class="summary-label">Average Hourly Rate: </span>
+                    <span class="summary-val">{{ number_format($data['avg_hourly_rate'], 2) }} €/h</span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Pajamos iš laiko sekimo: </span>
+                    <span class="summary-label">Time Tracking Revenue: </span>
                     <span class="summary-val">{{ number_format($data['time_tracking_revenue'], 2) }} €</span>
                 </div>
             </div>
@@ -191,30 +180,30 @@
 
         {{-- Highlights --}}
         <div class="section">
-            <div class="section-title">Metų akcentai</div>
+            <div class="section-title">Highlights</div>
             <div class="summary-box">
                 <div class="summary-row">
-                    <span class="summary-label">Geriausias mėnuo: </span>
+                    <span class="summary-label">Best Month: </span>
                     <span class="summary-val">
                         @if($data['best_month'])
-                            {{ $monthNames[$data['best_month']['month'] - 1] }} — {{ number_format($data['best_month']['total'], 2) }} € ({{ $data['best_month']['invoice_count'] }} sąsk.)
+                            {{ $monthNames[$data['best_month']['month'] - 1] }} — {{ number_format($data['best_month']['total'], 2) }} € ({{ $data['best_month']['invoice_count'] }} inv.)
                         @else
                             —
                         @endif
                     </span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Blogiausias mėnuo: </span>
+                    <span class="summary-label">Worst Month: </span>
                     <span class="summary-val">
                         @if($data['worst_month'])
-                            {{ $monthNames[$data['worst_month']['month'] - 1] }} — {{ number_format($data['worst_month']['total'], 2) }} € ({{ $data['worst_month']['invoice_count'] }} sąsk.)
+                            {{ $monthNames[$data['worst_month']['month'] - 1] }} — {{ number_format($data['worst_month']['total'], 2) }} € ({{ $data['worst_month']['invoice_count'] }} inv.)
                         @else
                             —
                         @endif
                     </span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Didžiausia sąskaita: </span>
+                    <span class="summary-label">Largest Invoice: </span>
                     <span class="summary-val">
                         @if($data['largest_invoice'])
                             {{ $data['largest_invoice']['series'] }} {{ $data['largest_invoice']['number'] }} — {{ number_format($data['largest_invoice']['total'], 2) }} € ({{ $data['largest_invoice']['client'] }})
@@ -224,17 +213,15 @@
                     </span>
                 </div>
                 <div class="summary-row">
-                    <span class="summary-label">Vid. per mėnesį: </span>
+                    <span class="summary-label">Avg. per Month: </span>
                     <span class="summary-val">{{ number_format($data['avg_monthly'], 2) }} €</span>
                 </div>
             </div>
         </div>
 
         <div class="footer-text">
-            Sugeneruota {{ now()->format('Y-m-d H:i') }} · {{ $user->name }}
+            Generated {{ now()->format('Y-m-d H:i') }} · {{ $user->name }}
         </div>
     </div>
-
-    <div class="footer-bar"></div>
 </body>
 </html>

@@ -74,6 +74,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/stats/clients', [StatsController::class, 'clientBreakdown']);
     Route::get('/stats/quick', [StatsController::class, 'quickStats']);
     Route::get('/stats/year-summary', [StatsController::class, 'yearSummary']);
+    Route::get('/stats/available-years', [StatsController::class, 'availableYears']);
 
     Route::put('/password', [PasswordController::class, 'update']);
     Route::get('/activity', [ActivityController::class, 'index']);

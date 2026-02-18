@@ -4,10 +4,10 @@ import { stats, YearSummaryData } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 
-const monthNames = ['Sausis', 'Vasaris', 'Kovas', 'Balandis', 'Gegužė', 'Birželis', 'Liepa', 'Rugpjūtis', 'Rugsėjis', 'Spalis', 'Lapkritis', 'Gruodis']
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 function fmt(n: number): string {
-  return n.toLocaleString('lt-LT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 function YearSummarySkeleton() {
@@ -31,21 +31,37 @@ function YearSummarySkeleton() {
 }
 
 export default function YearSummary() {
-  const currentYear = new Date().getFullYear()
-  const [year, setYear] = useState(currentYear)
+  const [year, setYear] = useState<number | null>(null)
   const [data, setData] = useState<YearSummaryData | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const years = Array.from({ length: 5 }, (_, i) => currentYear - i)
+  const [availableYears, setAvailableYears] = useState<number[]>([])
 
   useEffect(() => {
-    loadData()
+    loadYears()
+  }, [])
+
+  useEffect(() => {
+    if (year) loadData()
   }, [year])
+
+  const loadYears = async () => {
+    try {
+      const years = await stats.availableYears()
+      setAvailableYears(years)
+      if (years.length > 0) {
+        setYear(years[0])
+      } else {
+        setLoading(false)
+      }
+    } catch {
+      setLoading(false)
+    }
+  }
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const res = await stats.yearSummary(year)
+      const res = await stats.yearSummary(year!)
       setData(res.data)
     } catch (e: any) {
       toast.error('Failed to load year summary')
@@ -54,14 +70,29 @@ export default function YearSummary() {
   }
 
   const handleViewPdf = () => {
-    window.open(stats.yearSummaryPdfUrl(year), '_blank')
+    window.open(stats.yearSummaryPdfUrl(year!), '_blank')
   }
 
   const handleDownloadPdf = () => {
-    window.open(stats.yearSummaryPdfUrl(year, true), '_blank')
+    window.open(stats.yearSummaryPdfUrl(year!, true), '_blank')
   }
 
   if (loading) return <YearSummarySkeleton />
+
+  if (availableYears.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <svg className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <p className="font-medium text-gray-500 dark:text-gray-400">No invoices yet</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Create invoices to see the year summary</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!data) return null
 
   const maxMonth = Math.max(...data.months.map(m => m.total), 1)
@@ -71,8 +102,8 @@ export default function YearSummary() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Metinė suvestinė</h1>
-          <p className="text-gray-500 dark:text-gray-400">Pajamų, klientų ir laiko analizė</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Year Summary</h1>
+          <p className="text-gray-500 dark:text-gray-400">Revenue, clients and time analysis</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -80,7 +111,7 @@ export default function YearSummary() {
             onChange={e => setYear(Number(e.target.value))}
             className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-medium"
           >
-            {years.map(y => <option key={y} value={y}>{y} m.</option>)}
+            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
           <button
             onClick={handleViewPdf}
@@ -106,7 +137,7 @@ export default function YearSummary() {
       {/* Key metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Visos pajamos</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
           <p className="text-2xl font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(data.total_revenue)} €</p>
           <div className="flex gap-3 mt-2 text-xs">
             <span className="text-green-500">✓ {fmt(data.paid_revenue)} €</span>
@@ -114,37 +145,37 @@ export default function YearSummary() {
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Sąskaitos</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Invoices</p>
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_invoices}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Vid. {fmt(data.avg_invoice)} €</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_invoice)} €</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Klientai</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Clients</p>
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_clients}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Vid. {fmt(data.avg_monthly)} €/mėn.</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_monthly)} €/mo</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Valandos</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_hours > 0 ? `${data.total_hours.toFixed(1)} val.` : '—'}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Hours</p>
+          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_hours > 0 ? `${data.total_hours.toFixed(1)} h` : '—'}</p>
           {data.avg_hourly_rate > 0 && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Vid. {fmt(data.avg_hourly_rate)} €/val.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_hourly_rate)} €/h</p>
           )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Geriausias mėnuo</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Best Month</p>
           {data.best_month ? (
             <>
               <p className="text-lg font-bold text-green-500">{monthNames[data.best_month.month - 1]}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.best_month.total)} € · {data.best_month.invoice_count} sąsk.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.best_month.total)} € · {data.best_month.invoice_count} inv.</p>
             </>
           ) : <p className="text-lg text-gray-400">—</p>}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Blogiausias mėnuo</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Worst Month</p>
           {data.worst_month ? (
             <>
               <p className="text-lg font-bold text-yellow-500">{monthNames[data.worst_month.month - 1]}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.worst_month.total)} € · {data.worst_month.invoice_count} sąsk.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.worst_month.total)} € · {data.worst_month.invoice_count} inv.</p>
             </>
           ) : <p className="text-lg text-gray-400">—</p>}
         </div>
@@ -152,7 +183,7 @@ export default function YearSummary() {
 
       {/* Monthly chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Mėnesių suvestinė</h2>
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Breakdown</h2>
         <div className="space-y-3">
           {data.months.map(m => (
             <div key={m.month} className="flex items-center gap-3">
@@ -182,7 +213,7 @@ export default function YearSummary() {
                 )}
               </div>
               <span className="text-xs text-gray-400 dark:text-gray-500 w-12 text-right shrink-0">
-                {m.invoice_count > 0 ? `${m.invoice_count} sąsk.` : ''}
+                {m.invoice_count > 0 ? `${m.invoice_count} inv.` : ''}
               </span>
             </div>
           ))}
@@ -193,17 +224,17 @@ export default function YearSummary() {
       {data.clients.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
           <div className="p-6 pb-3">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Klientai</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Clients</h2>
           </div>
           {/* Desktop */}
           <div className="hidden md:block">
             <table className="w-full">
               <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
                 <tr>
-                  <th className="px-6 py-3 text-left">Klientas</th>
-                  <th className="px-6 py-3 text-right">Sąskaitos</th>
-                  <th className="px-6 py-3 text-right">Suma</th>
-                  <th className="px-6 py-3 text-right">Valandos</th>
+                  <th className="px-6 py-3 text-left">Client</th>
+                  <th className="px-6 py-3 text-right">Invoices</th>
+                  <th className="px-6 py-3 text-right">Amount</th>
+                  <th className="px-6 py-3 text-right">Hours</th>
                   <th className="px-6 py-3 text-right">%</th>
                 </tr>
               </thead>
@@ -214,7 +245,7 @@ export default function YearSummary() {
                     <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-400">{c.invoice_count}</td>
                     <td className="px-6 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{fmt(c.total)} €</td>
                     <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-400">
-                      {c.hours > 0 ? `${c.hours.toFixed(1)} val.` : '—'}
+                      {c.hours > 0 ? `${c.hours.toFixed(1)} h` : '—'}
                     </td>
                     <td className="px-6 py-3 text-right">
                       <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
@@ -235,8 +266,8 @@ export default function YearSummary() {
                   <span className="font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(c.total)} €</span>
                 </div>
                 <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{c.invoice_count} sąsk.</span>
-                  {c.hours > 0 && <span>{c.hours.toFixed(1)} val.</span>}
+                  <span>{c.invoice_count} inv.</span>
+                  {c.hours > 0 && <span>{c.hours.toFixed(1)} h</span>}
                   <span>{data.total_revenue > 0 ? ((c.total / data.total_revenue) * 100).toFixed(1) : 0}%</span>
                 </div>
               </div>
@@ -248,10 +279,10 @@ export default function YearSummary() {
       {/* Largest invoice */}
       {data.largest_invoice && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Metų akcentai</h2>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Highlights</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--t-accent-soft)' }}>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Didžiausia sąskaita</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Largest Invoice</p>
               <p className="font-bold text-gray-800 dark:text-gray-100">{fmt(data.largest_invoice.total)} €</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {data.largest_invoice.series} {data.largest_invoice.number} · {data.largest_invoice.client}
@@ -259,10 +290,10 @@ export default function YearSummary() {
             </div>
             {data.total_hours > 0 && (
               <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--t-accent-soft)' }}>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Iš laiko sekimo</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">From Time Tracking</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{fmt(data.time_tracking_revenue)} €</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {data.total_hours.toFixed(1)} val. · vid. {fmt(data.avg_hourly_rate)} €/val.
+                  {data.total_hours.toFixed(1)} h · avg. {fmt(data.avg_hourly_rate)} €/h
                 </p>
               </div>
             )}
@@ -276,8 +307,8 @@ export default function YearSummary() {
           <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <p className="font-medium text-gray-500 dark:text-gray-400">Nėra duomenų už {year} m.</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Sukurkite sąskaitas, kad matytumėte suvestinę</p>
+          <p className="font-medium text-gray-500 dark:text-gray-400">No data for {year}</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Create invoices to see the summary</p>
         </div>
       )}
     </div>

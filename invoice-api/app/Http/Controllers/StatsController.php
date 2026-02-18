@@ -196,6 +196,18 @@ class StatsController extends Controller
         ];
     }
 
+    public function availableYears(Request $request)
+    {
+        $years = $request->user()->invoices()
+            ->selectRaw('YEAR(invoice_date) as year')
+            ->groupBy('year')
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        return response()->json($years);
+    }
+
     public function yearSummary(Request $request)
     {
         $year = (int) $request->get('year', now()->year);
