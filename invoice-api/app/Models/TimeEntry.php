@@ -16,6 +16,7 @@ class TimeEntry extends Model
         'duration_seconds',
         'is_running',
         'is_invoiced',
+        'is_prepaid',
         'invoice_id',
     ];
 
@@ -24,6 +25,7 @@ class TimeEntry extends Model
         'ended_at' => 'datetime',
         'is_running' => 'boolean',
         'is_invoiced' => 'boolean',
+        'is_prepaid' => 'boolean',
     ];
 
     public function user()

@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════
-   THEME SYSTEM: 5 color themes × 2 modes (dark / light)
+   THEME SYSTEM: 9 color themes × 2 modes (dark / light)
    
    Selectors: [data-theme="X"][data-mode="dark|light"]
    
@@ -313,6 +313,246 @@
   --t-scrollbar-hover: #fbbf24;
 }
 
+/* ─── NORD (arctic frost — based on nordtheme.com palette) ── */
+
+[data-theme="nord"][data-mode="dark"] {
+  --t-page-gradient: linear-gradient(135deg, #2e3440 0%, #3b4252 25%, #434c5e 50%, #4c566a 75%, #2e3440 100%);
+  --t-bg-card: rgba(36, 42, 54, 0.94);
+  --t-bg-card-hover: rgba(36, 42, 54, 0.97);
+  --t-bg-sidebar: rgba(28, 33, 43, 0.97);
+  --t-bg-header: rgba(28, 33, 43, 0.94);
+  --t-bg-input: rgba(59, 66, 82, 0.5);
+  --t-bg-elevated: rgba(67, 76, 94, 0.6);
+  --t-border: rgba(136, 192, 208, 0.20);
+  --t-border-light: rgba(136, 192, 208, 0.10);
+  --t-text: #eceff4;
+  --t-text-secondary: #d8dee9;
+  --t-text-muted: #81a1c1;
+  --t-accent: #88c0d0;
+  --t-accent-hover: #5e81ac;
+  --t-accent-soft: rgba(136, 192, 208, 0.18);
+  --t-accent-glow: rgba(136, 192, 208, 0.3);
+  --t-gradient-from: #5e81ac;
+  --t-gradient-via: #81a1c1;
+  --t-gradient-to: #3b4252;
+  --t-chart-bar: #88c0d0;
+  --t-chart-grid: rgba(136, 192, 208, 0.14);
+  --t-tooltip-bg: rgba(28, 33, 43, 0.97);
+  --t-tooltip-border: rgba(136, 192, 208, 0.25);
+  --t-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --t-scrollbar: #4c566a;
+  --t-scrollbar-hover: #5e81ac;
+}
+
+[data-theme="nord"][data-mode="light"] {
+  --t-page-gradient: linear-gradient(135deg, #eceff4 0%, #e5e9f0 25%, #d8dee9 50%, #c2cfe0 75%, #eceff4 100%);
+  --t-bg-card: rgba(255, 255, 255, 0.92);
+  --t-bg-card-hover: rgba(255, 255, 255, 0.97);
+  --t-bg-sidebar: rgba(255, 255, 255, 0.95);
+  --t-bg-header: rgba(255, 255, 255, 0.90);
+  --t-bg-input: rgba(255, 255, 255, 0.80);
+  --t-bg-elevated: rgba(229, 233, 240, 0.70);
+  --t-border: rgba(67, 76, 94, 0.15);
+  --t-border-light: rgba(67, 76, 94, 0.08);
+  --t-text: #2e3440;
+  --t-text-secondary: #3b4252;
+  --t-text-muted: #4c566a;
+  --t-accent: #5e81ac;
+  --t-accent-hover: #4c6a8a;
+  --t-accent-soft: rgba(94, 129, 172, 0.10);
+  --t-accent-glow: rgba(94, 129, 172, 0.18);
+  --t-gradient-from: #88c0d0;
+  --t-gradient-via: #5e81ac;
+  --t-gradient-to: #4c566a;
+  --t-chart-bar: #5e81ac;
+  --t-chart-grid: #d8dee9;
+  --t-tooltip-bg: #2e3440;
+  --t-tooltip-border: #4c566a;
+  --t-card-shadow: 0 4px 20px rgba(67, 76, 94, 0.10), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --t-scrollbar: #c2cfe0;
+  --t-scrollbar-hover: #88c0d0;
+}
+
+/* ─── MOCHA (Catppuccin-inspired warm pastel) ─────────────── */
+
+[data-theme="mocha"][data-mode="dark"] {
+  --t-page-gradient: linear-gradient(135deg, #1e1e2e 0%, #313244 25%, #45475a 50%, #585b70 75%, #1e1e2e 100%);
+  --t-bg-card: rgba(24, 24, 37, 0.94);
+  --t-bg-card-hover: rgba(24, 24, 37, 0.97);
+  --t-bg-sidebar: rgba(17, 17, 27, 0.97);
+  --t-bg-header: rgba(17, 17, 27, 0.94);
+  --t-bg-input: rgba(49, 50, 68, 0.5);
+  --t-bg-elevated: rgba(69, 71, 90, 0.6);
+  --t-border: rgba(250, 179, 135, 0.18);
+  --t-border-light: rgba(250, 179, 135, 0.08);
+  --t-text: #cdd6f4;
+  --t-text-secondary: #bac2de;
+  --t-text-muted: #9399b2;
+  --t-accent: #fab387;
+  --t-accent-hover: #f9a06b;
+  --t-accent-soft: rgba(250, 179, 135, 0.15);
+  --t-accent-glow: rgba(250, 179, 135, 0.3);
+  --t-gradient-from: #fab387;
+  --t-gradient-via: #f5c2e7;
+  --t-gradient-to: #45475a;
+  --t-chart-bar: #fab387;
+  --t-chart-grid: rgba(250, 179, 135, 0.12);
+  --t-tooltip-bg: rgba(17, 17, 27, 0.97);
+  --t-tooltip-border: rgba(250, 179, 135, 0.2);
+  --t-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --t-scrollbar: #45475a;
+  --t-scrollbar-hover: #fab387;
+}
+
+[data-theme="mocha"][data-mode="light"] {
+  --t-page-gradient: linear-gradient(135deg, #eff1f5 0%, #e6e9ef 25%, #ffece0 50%, #fcd9b6 75%, #eff1f5 100%);
+  --t-bg-card: rgba(255, 255, 255, 0.92);
+  --t-bg-card-hover: rgba(255, 255, 255, 0.97);
+  --t-bg-sidebar: rgba(255, 255, 255, 0.95);
+  --t-bg-header: rgba(255, 255, 255, 0.90);
+  --t-bg-input: rgba(255, 255, 255, 0.80);
+  --t-bg-elevated: rgba(255, 236, 224, 0.70);
+  --t-border: rgba(223, 142, 29, 0.15);
+  --t-border-light: rgba(223, 142, 29, 0.08);
+  --t-text: #4c4f69;
+  --t-text-secondary: #5c5f77;
+  --t-text-muted: #8c8fa1;
+  --t-accent: #df8e1d;
+  --t-accent-hover: #b87410;
+  --t-accent-soft: rgba(223, 142, 29, 0.10);
+  --t-accent-glow: rgba(223, 142, 29, 0.18);
+  --t-gradient-from: #fab387;
+  --t-gradient-via: #df8e1d;
+  --t-gradient-to: #b87410;
+  --t-chart-bar: #df8e1d;
+  --t-chart-grid: #fcd9b6;
+  --t-tooltip-bg: #4c4f69;
+  --t-tooltip-border: #5c5f77;
+  --t-card-shadow: 0 4px 20px rgba(223, 142, 29, 0.10), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --t-scrollbar: #fcd9b6;
+  --t-scrollbar-hover: #fab387;
+}
+
+/* ─── OCEAN (deep sea — coastal palette) ──────────────────── */
+
+[data-theme="ocean"][data-mode="dark"] {
+  --t-page-gradient: linear-gradient(135deg, #001219 0%, #005f73 25%, #0a4f5c 50%, #0a9396 70%, #001219 100%);
+  --t-bg-card: rgba(0, 14, 18, 0.94);
+  --t-bg-card-hover: rgba(0, 14, 18, 0.97);
+  --t-bg-sidebar: rgba(0, 9, 12, 0.97);
+  --t-bg-header: rgba(0, 9, 12, 0.94);
+  --t-bg-input: rgba(0, 60, 70, 0.5);
+  --t-bg-elevated: rgba(8, 70, 80, 0.6);
+  --t-border: rgba(20, 184, 166, 0.20);
+  --t-border-light: rgba(20, 184, 166, 0.10);
+  --t-text: #e0fbfc;
+  --t-text-secondary: #94d2bd;
+  --t-text-muted: #6a9a8a;
+  --t-accent: #14b8a6;
+  --t-accent-hover: #0d9488;
+  --t-accent-soft: rgba(20, 184, 166, 0.15);
+  --t-accent-glow: rgba(20, 184, 166, 0.3);
+  --t-gradient-from: #14b8a6;
+  --t-gradient-via: #0a9396;
+  --t-gradient-to: #005f73;
+  --t-chart-bar: #14b8a6;
+  --t-chart-grid: rgba(20, 184, 166, 0.12);
+  --t-tooltip-bg: rgba(0, 9, 12, 0.97);
+  --t-tooltip-border: rgba(20, 184, 166, 0.25);
+  --t-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --t-scrollbar: #005f73;
+  --t-scrollbar-hover: #0a9396;
+}
+
+[data-theme="ocean"][data-mode="light"] {
+  --t-page-gradient: linear-gradient(135deg, #ccfbf1 0%, #99f6e4 25%, #f0fdfa 50%, #5eead4 75%, #ccfbf1 100%);
+  --t-bg-card: rgba(255, 255, 255, 0.92);
+  --t-bg-card-hover: rgba(255, 255, 255, 0.97);
+  --t-bg-sidebar: rgba(255, 255, 255, 0.95);
+  --t-bg-header: rgba(255, 255, 255, 0.90);
+  --t-bg-input: rgba(255, 255, 255, 0.80);
+  --t-bg-elevated: rgba(204, 251, 241, 0.70);
+  --t-border: rgba(13, 148, 136, 0.15);
+  --t-border-light: rgba(13, 148, 136, 0.08);
+  --t-text: #001219;
+  --t-text-secondary: #005f73;
+  --t-text-muted: #0a7a82;
+  --t-accent: #0d9488;
+  --t-accent-hover: #0f766e;
+  --t-accent-soft: rgba(13, 148, 136, 0.10);
+  --t-accent-glow: rgba(13, 148, 136, 0.18);
+  --t-gradient-from: #14b8a6;
+  --t-gradient-via: #0d9488;
+  --t-gradient-to: #005f73;
+  --t-chart-bar: #0d9488;
+  --t-chart-grid: #99f6e4;
+  --t-tooltip-bg: #001219;
+  --t-tooltip-border: #005f73;
+  --t-card-shadow: 0 4px 20px rgba(13, 148, 136, 0.10), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --t-scrollbar: #5eead4;
+  --t-scrollbar-hover: #14b8a6;
+}
+
+/* ─── CRIMSON (deep wine — burgundy palette) ──────────────── */
+
+[data-theme="crimson"][data-mode="dark"] {
+  --t-page-gradient: linear-gradient(135deg, #1a0511 0%, #4c0519 25%, #7f1d1d 50%, #9f1239 70%, #1a0511 100%);
+  --t-bg-card: rgba(15, 4, 11, 0.94);
+  --t-bg-card-hover: rgba(15, 4, 11, 0.97);
+  --t-bg-sidebar: rgba(10, 3, 8, 0.97);
+  --t-bg-header: rgba(10, 3, 8, 0.94);
+  --t-bg-input: rgba(50, 12, 25, 0.5);
+  --t-bg-elevated: rgba(65, 18, 35, 0.6);
+  --t-border: rgba(244, 63, 94, 0.18);
+  --t-border-light: rgba(244, 63, 94, 0.08);
+  --t-text: #fff1f2;
+  --t-text-secondary: #fecdd3;
+  --t-text-muted: #b08090;
+  --t-accent: #f43f5e;
+  --t-accent-hover: #e11d48;
+  --t-accent-soft: rgba(244, 63, 94, 0.15);
+  --t-accent-glow: rgba(244, 63, 94, 0.3);
+  --t-gradient-from: #f43f5e;
+  --t-gradient-via: #e11d48;
+  --t-gradient-to: #4c0519;
+  --t-chart-bar: #f43f5e;
+  --t-chart-grid: rgba(244, 63, 94, 0.12);
+  --t-tooltip-bg: rgba(10, 3, 8, 0.97);
+  --t-tooltip-border: rgba(244, 63, 94, 0.2);
+  --t-card-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --t-scrollbar: #7f1d1d;
+  --t-scrollbar-hover: #b91c1c;
+}
+
+[data-theme="crimson"][data-mode="light"] {
+  --t-page-gradient: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 25%, #fff1f2 50%, #fda4af 75%, #ffe4e6 100%);
+  --t-bg-card: rgba(255, 255, 255, 0.92);
+  --t-bg-card-hover: rgba(255, 255, 255, 0.97);
+  --t-bg-sidebar: rgba(255, 255, 255, 0.95);
+  --t-bg-header: rgba(255, 255, 255, 0.90);
+  --t-bg-input: rgba(255, 255, 255, 0.80);
+  --t-bg-elevated: rgba(255, 228, 230, 0.70);
+  --t-border: rgba(159, 18, 57, 0.15);
+  --t-border-light: rgba(159, 18, 57, 0.08);
+  --t-text: #1a0511;
+  --t-text-secondary: #7f1d1d;
+  --t-text-muted: #9d5566;
+  --t-accent: #e11d48;
+  --t-accent-hover: #be123c;
+  --t-accent-soft: rgba(225, 29, 72, 0.10);
+  --t-accent-glow: rgba(225, 29, 72, 0.18);
+  --t-gradient-from: #f43f5e;
+  --t-gradient-via: #e11d48;
+  --t-gradient-to: #9f1239;
+  --t-chart-bar: #e11d48;
+  --t-chart-grid: #fecdd3;
+  --t-tooltip-bg: #1a0511;
+  --t-tooltip-border: #4c0519;
+  --t-card-shadow: 0 4px 20px rgba(159, 18, 57, 0.10), 0 1px 4px rgba(0, 0, 0, 0.04);
+  --t-scrollbar: #fda4af;
+  --t-scrollbar-hover: #f43f5e;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    BASE STYLES
    ═══════════════════════════════════════════════════════════════ */
@@ -546,6 +786,10 @@ tbody tr { transition: background-color 0.15s ease; }
 .theme-swatch-emerald   { background: linear-gradient(135deg, #022c22, #065f46, #047857, #022c22); }
 .theme-swatch-amethyst  { background: linear-gradient(135deg, #1e1045, #4c1d95, #6d28d9, #1e1045); }
 .theme-swatch-sunset    { background: linear-gradient(135deg, #451a03, #92400e, #b45309, #451a03); }
+.theme-swatch-nord      { background: linear-gradient(135deg, #2e3440, #4c566a, #5e81ac, #88c0d0); }
+.theme-swatch-mocha     { background: linear-gradient(135deg, #1e1e2e, #45475a, #fab387, #f5c2e7); }
+.theme-swatch-ocean     { background: linear-gradient(135deg, #001219, #005f73, #0a9396, #94d2bd); }
+.theme-swatch-crimson   { background: linear-gradient(135deg, #1a0511, #7f1d1d, #e11d48, #f43f5e); }
 
 /* ═══════════════════════════════════════════════════════════════
    GLOBAL SELECT STYLING

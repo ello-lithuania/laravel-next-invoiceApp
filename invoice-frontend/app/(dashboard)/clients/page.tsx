@@ -16,6 +16,7 @@ function ClientsSkeleton() {
         </div>
         <Skeleton className="h-12 w-36 rounded-xl" />
       </div>
+      <Skeleton className="h-12 w-full rounded-xl" />
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
         <table className="w-full">
           <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
@@ -47,16 +48,40 @@ function ClientsSkeleton() {
 export default function Clients() {
   const [list, setList] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [lastPage, setLastPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
+
+  const PER_PAGE = 10
+
+  // Debounce search input
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearchTerm(searchInput)
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   useEffect(() => {
     loadClients()
-  }, [])
+  }, [page, searchTerm])
 
   const loadClients = async () => {
+    setLoading(true)
     try {
-      const data = await clients.list()
-      setList(data)
+      const params = new URLSearchParams()
+      params.set('page', String(page))
+      params.set('per_page', String(PER_PAGE))
+      if (searchTerm) params.set('search', searchTerm)
+
+      const data = await clients.paginated(params.toString())
+      setList(data.data)
+      setLastPage(data.last_page)
+      setTotal(data.total)
     } catch (e: any) {
       toast.error(e.message || 'Failed to load clients')
     }
@@ -73,7 +98,11 @@ export default function Clients() {
         try {
           await clients.delete(id)
           toast.success('Client deleted')
-          loadClients()
+          if (list.length === 1 && page > 1) {
+            setPage(page - 1)
+          } else {
+            loadClients()
+          }
         } catch (e: any) {
           toast.error(e.message || 'Failed to delete client')
         }
@@ -81,7 +110,7 @@ export default function Clients() {
     })
   }
 
-  if (loading) return <ClientsSkeleton />
+  if (loading && list.length === 0) return <ClientsSkeleton />
 
   return (
     <div className="space-y-6">
@@ -99,6 +128,32 @@ export default function Clients() {
           </svg>
           Add Client
         </Link>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          placeholder="Search by name, company code, VAT, email or phone..."
+          className="w-full pl-12 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+          style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+        />
+        {searchInput && (
+          <button
+            onClick={() => setSearchInput('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            title="Clear"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
@@ -122,8 +177,8 @@ export default function Clients() {
                     <svg className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    <p className="font-medium">No clients yet</p>
-                    <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Add your first client to get started</p>
+                    <p className="font-medium">{searchTerm ? 'No clients match your search' : 'No clients yet'}</p>
+                    <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">{searchTerm ? 'Try a different keyword' : 'Add your first client to get started'}</p>
                   </div>
                 </td>
               </tr>
@@ -185,8 +240,8 @@ export default function Clients() {
                 <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <p>No clients yet</p>
-                <p className="text-sm mt-1">Add your first client to get started</p>
+                <p>{searchTerm ? 'No clients match your search' : 'No clients yet'}</p>
+                <p className="text-sm mt-1">{searchTerm ? 'Try a different keyword' : 'Add your first client to get started'}</p>
               </div>
             </div>
           ) : (
@@ -214,6 +269,55 @@ export default function Clients() {
           )}
         </div>
       </div>
+
+      {/* Pagination */}
+      {total > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Showing <span className="font-medium text-gray-700 dark:text-gray-300">{(page - 1) * PER_PAGE + 1}</span>
+            {' – '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">{Math.min(page * PER_PAGE, total)}</span>
+            {' of '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">{total}</span>
+            {' clients'}
+          </p>
+          {lastPage > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ←
+              </button>
+              {Array.from({ length: lastPage }, (_, i) => i + 1).map(p => {
+                const show = p === 1 || p === lastPage || Math.abs(p - page) <= 1
+                const showEllipsis = (p === 2 && page > 4) || (p === lastPage - 1 && page < lastPage - 3)
+                if (!show && showEllipsis) return <span key={p} className="px-2 text-gray-400">…</span>
+                if (!show) return null
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      p === page ? 'btn-gradient' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setPage(p => Math.min(lastPage, p + 1))}
+                disabled={page === lastPage}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <ConfirmModal
         open={confirmModal.open}

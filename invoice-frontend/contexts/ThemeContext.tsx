@@ -4,26 +4,29 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 export interface ThemeDefinition {
   id: string
   name: string
-  isDark?: boolean // not used in definitions, computed from mode
+  isDark?: boolean
 }
 
-// 5 color themes — each has dark + light variants in CSS
+// 9 color themes — each has dark + light variants in CSS
 export const themes: ThemeDefinition[] = [
   { id: 'midnight',  name: 'Midnight' },
   { id: 'volta',     name: 'Volta' },
   { id: 'emerald',   name: 'Emerald' },
   { id: 'amethyst',  name: 'Amethyst' },
   { id: 'sunset',    name: 'Sunset' },
+  { id: 'nord',      name: 'Nord' },
+  { id: 'mocha',     name: 'Mocha' },
+  { id: 'ocean',     name: 'Ocean' },
+  { id: 'crimson',   name: 'Crimson' },
 ]
 
 interface ThemeContextType {
-  colorTheme: string       // 'midnight' | 'volta' | 'emerald' | 'amethyst' | 'sunset'
+  colorTheme: string
   isDark: boolean
   mounted: boolean
   setColorTheme: (id: string) => void
   toggleMode: () => void
   setMode: (dark: boolean) => void
-  // Backward compat aliases
   theme: string
   setTheme: (id: string) => void
   currentTheme: ThemeDefinition & { isDark: boolean }
@@ -59,7 +62,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const savedColor = localStorage.getItem('app-color-theme') || localStorage.getItem('app-theme') || 'midnight'
-    // Migrate old 'frost' theme
     const color = savedColor === 'frost' ? 'midnight' : savedColor
     const savedMode = localStorage.getItem('app-theme-mode')
     const dark = savedMode ? savedMode === 'dark' : savedColor !== 'frost'
@@ -105,7 +107,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setColorTheme,
       toggleMode,
       setMode,
-      // Backward compat
       theme: colorTheme,
       setTheme: setColorTheme,
       currentTheme,

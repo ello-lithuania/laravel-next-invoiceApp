@@ -50,15 +50,42 @@ class StatsController extends Controller
 
     public function clientBreakdown(Request $request)
     {
-        $data = $request->user()->invoices()
+        $user = $request->user();
+        $year = (int) ($request->get('year') ?? now()->year);
+
+        $start = Carbon::create($year, 1, 1)->startOfDay();
+        $end = Carbon::create($year, 12, 31)->endOfDay();
+
+        // Total paid income for the year (basis for percentage)
+        $yearTotal = (float) $user->invoices()
+            ->where('status', 'paid')
+            ->whereBetween('invoice_date', [$start, $end])
+            ->sum('total');
+
+        $rows = $user->invoices()
             ->join('clients', 'invoices.client_id', '=', 'clients.id')
+            ->where('invoices.status', 'paid')
+            ->whereBetween('invoices.invoice_date', [$start, $end])
             ->selectRaw('clients.name, SUM(invoices.total) as total, COUNT(*) as count')
             ->groupBy('clients.id', 'clients.name')
             ->orderByDesc('total')
-            ->limit(5)
-            ->get();
+            ->limit(10)
+            ->get()
+            ->map(function ($row) use ($yearTotal) {
+                $total = (float) $row->total;
+                return [
+                    'name' => $row->name,
+                    'total' => $total,
+                    'count' => (int) $row->count,
+                    'percentage' => $yearTotal > 0 ? round($total / $yearTotal * 100, 1) : 0,
+                ];
+            });
 
-        return response()->json($data);
+        return response()->json([
+            'clients' => $rows,
+            'year' => $year,
+            'year_total' => $yearTotal,
+        ]);
     }
 
     public function quickStats(Request $request)
@@ -96,18 +123,15 @@ class StatsController extends Controller
             ->whereBetween('created_at', [$startOfYear, $endOfYear])
             ->get();
 
-        // Totals
         $totalRevenue = $invoices->sum('total');
         $paidRevenue = $invoices->where('status', 'paid')->sum('total');
         $unpaidRevenue = $totalRevenue - $paidRevenue;
         $totalInvoices = $invoices->count();
         $avgInvoice = $totalInvoices > 0 ? $totalRevenue / $totalInvoices : 0;
 
-        // Unique clients from invoices
         $clientIds = $invoices->pluck('client_id')->unique();
         $totalClients = $clientIds->count();
 
-        // Time tracking
         $totalSeconds = $timeEntries->sum('duration_seconds');
         $totalHours = $totalSeconds / 3600;
         $avgHourlyRate = $totalHours > 0
@@ -115,7 +139,6 @@ class StatsController extends Controller
             : 0;
         $timeTrackingRevenue = $timeEntries->sum(fn ($e) => ($e->duration_seconds / 3600) * $e->hourly_rate);
 
-        // Monthly breakdown
         $months = [];
         $monthsWithRevenue = [];
         for ($m = 1; $m <= 12; $m++) {
@@ -137,7 +160,6 @@ class StatsController extends Controller
             }
         }
 
-        // Best/worst months (only months with invoices)
         $bestMonth = null;
         $worstMonth = null;
         if (count($monthsWithRevenue) > 0) {
@@ -154,7 +176,6 @@ class StatsController extends Controller
             }
         }
 
-        // Client breakdown
         $clients = [];
         foreach ($clientIds as $clientId) {
             $clientInvoices = $invoices->where('client_id', $clientId);
@@ -169,7 +190,6 @@ class StatsController extends Controller
         }
         usort($clients, fn ($a, $b) => $b['total'] <=> $a['total']);
 
-        // Largest invoice
         $largest = $invoices->sortByDesc('total')->first();
 
         return [

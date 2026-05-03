@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
+use App\Models\TimeEntry;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -240,7 +241,6 @@ class InvoiceController extends Controller
         $user = $accessToken->tokenable;
         $template = $request->query('template', $user->invoice_template ?? 'classic');
 
-        // Build dummy invoice object
         $invoice = new \stdClass();
         $invoice->series = 'INV';
         $invoice->number = 1;
@@ -344,6 +344,59 @@ class InvoiceController extends Controller
             ->get();
 
         return response()->json($invoices);
+    }
+
+    /**
+     * Returns invoices that contain hour-based items (unit matches common hour notations),
+     * with computed total/worked/remaining hours from linked time entries.
+     * Used in time-tracking page when marking entry as "already invoiced".
+     */
+    public function trackable(Request $request)
+    {
+        $user = $request->user();
+        $clientId = $request->get('client_id');
+
+        $query = $user->invoices()->with(['client', 'items'])->orderBy('invoice_date', 'desc');
+        if ($clientId) {
+            $query->where('client_id', $clientId);
+        }
+
+        $invoices = $query->get();
+
+        // Sum tracked seconds per invoice in one query
+        $workedByInvoice = TimeEntry::whereIn('invoice_id', $invoices->pluck('id'))
+            ->selectRaw('invoice_id, SUM(duration_seconds) as total_seconds')
+            ->groupBy('invoice_id')
+            ->pluck('total_seconds', 'invoice_id');
+
+        // Match common hourly unit variants (Lithuanian and English forms)
+        $hourUnits = ['val.', 'val', 'h', 'hr', 'hrs', 'hour', 'hours'];
+
+        $result = $invoices->map(function ($invoice) use ($workedByInvoice, $hourUnits) {
+            $totalHours = (float) $invoice->items
+                ->filter(fn ($i) => in_array(strtolower($i->unit), $hourUnits, true))
+                ->sum('quantity');
+            if ($totalHours <= 0) {
+                return null;
+            }
+            $workedSeconds = (int) ($workedByInvoice[$invoice->id] ?? 0);
+            $workedHours = round($workedSeconds / 3600, 2);
+
+            return [
+                'id' => $invoice->id,
+                'series' => $invoice->series,
+                'number' => $invoice->number,
+                'client_id' => $invoice->client_id,
+                'client' => $invoice->client,
+                'status' => $invoice->status,
+                'invoice_date' => $invoice->invoice_date,
+                'total_hours' => round($totalHours, 2),
+                'worked_hours' => $workedHours,
+                'remaining_hours' => round(max(0, $totalHours - $workedHours), 2),
+            ];
+        })->filter()->values();
+
+        return response()->json($result);
     }
 
     public function bulkDelete(Request $request)

@@ -82,7 +82,7 @@ function InvoicesContent() {
   const [filterMonth, setFilterMonth] = useState('')
   const [filterClient, setFilterClient] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [sortBy, setSortBy] = useState('invoice_date')
+  const [sortBy, setSortBy] = useState('number')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [selected, setSelected] = useState<number[]>([])
   const [pdfPreview, setPdfPreview] = useState<{ open: boolean; url: string; title: string }>({ open: false, url: '', title: '' })
@@ -90,6 +90,7 @@ function InvoicesContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [filterSearch, setFilterSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
 
   useEffect(() => {
     const search = searchParams.get('search') || ''
@@ -100,6 +101,15 @@ function InvoicesContent() {
     loadClients()
     loadMonths()
   }, [])
+
+  // Debounce search input → filterSearch
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setFilterSearch(searchInput)
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(t)
+  }, [searchInput])
 
   useEffect(() => {
     loadInvoices()
@@ -305,6 +315,29 @@ function InvoicesContent() {
       </div>
 
       <div className="flex flex-wrap gap-4">
+        <div className="flex-1 min-w-[200px] relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Search by series, number, client or notes..."
+            className="w-full pl-10 pr-9 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              title="Clear"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="flex-1 min-w-[200px]">
           <select
             value={filterMonth}
@@ -342,7 +375,7 @@ function InvoicesContent() {
         </div>
         {(filterMonth || filterClient || filterStatus || filterSearch) && (
           <button
-            onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); setFilterSearch(''); router.replace('/invoices'); handleFilterChange() }}
+            onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); setSearchInput(''); setFilterSearch(''); router.replace('/invoices'); handleFilterChange() }}
             className="px-4 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
           >
             Clear filters
@@ -471,6 +504,15 @@ function InvoicesContent() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
+                      <Link
+                        href={`/time-tracking?invoice_id=${inv.id}`}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-cyan-500 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                        title="Track time against this invoice"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </Link>
                       <button 
                         onClick={() => previewPdf(inv)} 
                         className="p-2 text-gray-500 dark:text-gray-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition-colors"

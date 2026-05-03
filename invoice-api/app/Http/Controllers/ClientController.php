@@ -9,9 +9,27 @@ class ClientController extends Controller
 {
     public function index(Request $request)
     {
-        return response()->json(
-            $request->user()->clients()->orderBy('name')->get()
-        );
+        $query = $request->user()->clients()->orderBy('name');
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('company_code', 'like', "%{$search}%")
+                  ->orWhere('vat_code', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
+
+        // Paginated mode (when per_page is provided) — used by clients page
+        if ($request->has('per_page')) {
+            $perPage = (int) $request->get('per_page', 10);
+            return $query->paginate($perPage);
+        }
+
+        // Legacy: return all clients (used by invoice/time-tracking dropdowns)
+        return response()->json($query->get());
     }
 
     public function store(Request $request)

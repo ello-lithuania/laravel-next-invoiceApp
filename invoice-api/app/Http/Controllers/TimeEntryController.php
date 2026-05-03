@@ -12,14 +12,23 @@ class TimeEntryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->timeEntries()->with('client');
+        $query = $request->user()->timeEntries()->with('client', 'invoice');
 
         if ($request->has('client_id') && $request->client_id) {
             $query->where('client_id', $request->client_id);
         }
 
         if ($request->has('invoiced')) {
-            $query->where('is_invoiced', $request->invoiced === 'true');
+            if ($request->invoiced === 'true') {
+                $query->where('is_invoiced', true);
+            } else {
+                // "Not invoiced" view also shows prepaid (active SF) entries
+                // because they're still being worked on
+                $query->where(function ($q) {
+                    $q->where('is_invoiced', false)
+                      ->orWhere('is_prepaid', true);
+                });
+            }
         }
 
         if ($request->has('month') && $request->month) {
@@ -50,22 +59,43 @@ class TimeEntryController extends Controller
             'description' => 'required|string|max:500',
             'hourly_rate' => 'required|numeric|min:0',
             'duration_seconds' => 'nullable|integer|min:0',
+            'is_prepaid' => 'nullable|boolean',
+            'invoice_id' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !$user->invoices()->where('id', $value)->exists()) {
+                        $fail('Invalid invoice.');
+                    }
+                },
+            ],
         ]);
+
+        $isPrepaid = !empty($validated['is_prepaid']) && !empty($validated['invoice_id']);
+        $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
 
         $entry = $user->timeEntries()->create([
             'client_id' => $validated['client_id'],
             'description' => $validated['description'],
             'hourly_rate' => $validated['hourly_rate'],
             'duration_seconds' => $validated['duration_seconds'] ?? 0,
+            'is_prepaid' => $isPrepaid,
+            'is_invoiced' => $isPrepaid,
+            'invoice_id' => $invoiceId,
         ]);
 
-        return response()->json($entry->load('client'), 201);
+        return response()->json($entry->load('client', 'invoice'), 201);
     }
 
     public function update(Request $request, TimeEntry $timeEntry)
     {
         if ($timeEntry->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
+        }
+
+        // Don't allow editing converted (non-prepaid) invoiced entries
+        if ($timeEntry->is_invoiced && !$timeEntry->is_prepaid) {
+            return response()->json(['message' => 'Cannot edit converted entry'], 400);
         }
 
         $user = $request->user();
@@ -83,11 +113,32 @@ class TimeEntryController extends Controller
             'description' => 'required|string|max:500',
             'hourly_rate' => 'required|numeric|min:0',
             'duration_seconds' => 'nullable|integer|min:0',
+            'is_prepaid' => 'nullable|boolean',
+            'invoice_id' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) use ($user) {
+                    if ($value && !$user->invoices()->where('id', $value)->exists()) {
+                        $fail('Invalid invoice.');
+                    }
+                },
+            ],
         ]);
 
-        $timeEntry->update($validated);
+        $isPrepaid = !empty($validated['is_prepaid']) && !empty($validated['invoice_id']);
+        $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
 
-        return response()->json($timeEntry->load('client'));
+        $timeEntry->update([
+            'client_id' => $validated['client_id'],
+            'description' => $validated['description'],
+            'hourly_rate' => $validated['hourly_rate'],
+            'duration_seconds' => $validated['duration_seconds'] ?? $timeEntry->duration_seconds,
+            'is_prepaid' => $isPrepaid,
+            'is_invoiced' => $isPrepaid,
+            'invoice_id' => $invoiceId,
+        ]);
+
+        return response()->json($timeEntry->load('client', 'invoice'));
     }
 
     public function destroy(Request $request, TimeEntry $timeEntry)
@@ -119,7 +170,7 @@ class TimeEntryController extends Controller
             'duration_seconds' => $timeEntry->duration_seconds + ($validated['minutes'] * 60),
         ]);
 
-        return response()->json($timeEntry->load('client'));
+        return response()->json($timeEntry->load('client', 'invoice'));
     }
 
     public function start(Request $request, TimeEntry $timeEntry)
@@ -146,7 +197,7 @@ class TimeEntryController extends Controller
             'started_at' => now(),
         ]);
 
-        return response()->json($timeEntry->load('client'));
+        return response()->json($timeEntry->load('client', 'invoice'));
     }
 
     public function stop(Request $request, TimeEntry $timeEntry)
@@ -164,7 +215,6 @@ class TimeEntryController extends Controller
         ]);
 
         if (isset($validated['duration_minutes'])) {
-            // User override — set total duration to base + provided minutes
             $newDuration = $timeEntry->duration_seconds + (int) ceil($validated['duration_minutes'] * 60);
         } else {
             $elapsed = (int) abs(now()->diffInSeconds($timeEntry->started_at));
@@ -177,13 +227,13 @@ class TimeEntryController extends Controller
             'duration_seconds' => $newDuration,
         ]);
 
-        return response()->json($timeEntry->load('client'));
+        return response()->json($timeEntry->load('client', 'invoice'));
     }
 
     public function running(Request $request)
     {
         $entry = $request->user()->timeEntries()
-            ->with('client')
+            ->with('client', 'invoice')
             ->where('is_running', true)
             ->first();
 
@@ -212,7 +262,6 @@ class TimeEntryController extends Controller
             return response()->json(['message' => 'No valid time entries found'], 400);
         }
 
-        // All entries must belong to the same client
         $clientIds = $entries->pluck('client_id')->unique();
         if ($clientIds->count() > 1) {
             return response()->json(['message' => 'All time entries must belong to the same client'], 400);

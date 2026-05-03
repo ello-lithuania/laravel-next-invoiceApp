@@ -138,6 +138,19 @@ export interface Invoice {
   items?: InvoiceItem[]
 }
 
+export interface TrackableInvoice {
+  id: number
+  series: string
+  number: number
+  client_id: number
+  client?: Client
+  status: 'draft' | 'sent' | 'paid' | 'overdue'
+  invoice_date: string
+  total_hours: number
+  worked_hours: number
+  remaining_hours: number
+}
+
 export interface AuthResponse {
   user: User
   token: string
@@ -154,6 +167,19 @@ export interface StatsData {
     total_amount: number
   }
   period: string
+}
+
+export interface ClientBreakdown {
+  name: string
+  total: number
+  count: number
+  percentage: number
+}
+
+export interface ClientBreakdownResponse {
+  clients: ClientBreakdown[]
+  year: number
+  year_total: number
 }
 
 export interface YearSummaryMonth {
@@ -245,9 +271,19 @@ export const profile = {
     api<{ message: string }>('/profile/signature', { method: 'DELETE' }),
 }
 
+export interface PaginatedResponse<T> {
+  data: T[]
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
 export const clients = {
   list: () => 
     api<Client[]>('/clients'),
+  paginated: (params: string) =>
+    api<PaginatedResponse<Client>>(`/clients?${params}`),
   get: (id: number) => 
     api<Client>(`/clients/${id}`),
   create: (data: Omit<Client, 'id' | 'user_id'>) => 
@@ -258,14 +294,6 @@ export const clients = {
     api<{ message: string }>(`/clients/${id}`, { method: 'DELETE' }),
 }
 
-export interface PaginatedResponse<T> {
-  data: T[]
-  current_page: number
-  last_page: number
-  per_page: number
-  total: number
-}
-
 export const invoices = {
   list: () => 
     api<Invoice[]>('/invoices'),
@@ -273,6 +301,8 @@ export const invoices = {
     api<PaginatedResponse<Invoice>>(`/invoices?${params}`),
   unpaid: () =>
     api<Invoice[]>('/invoices/unpaid'),
+  trackable: (clientId?: number | string) =>
+    api<TrackableInvoice[]>(`/invoices/trackable${clientId ? `?client_id=${clientId}` : ''}`),
   months: () =>
     api<string[]>('/invoices/months'),
   get: (id: number) => 
@@ -300,8 +330,8 @@ export const invoices = {
 export const stats = {
   get: (period: string) => 
     api<StatsData>(`/stats?period=${period}`),
-  clientBreakdown: () =>
-    api<{ name: string; total: number; count: number }[]>('/stats/clients'),
+  clientBreakdown: (year?: number) =>
+    api<ClientBreakdownResponse>(`/stats/clients${year ? `?year=${year}` : ''}`),
   quickStats: () =>
     api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number }>('/stats/quick'),
   availableYears: () =>
@@ -352,18 +382,29 @@ export interface TimeEntry {
   duration_seconds: number
   is_running: boolean
   is_invoiced: boolean
+  is_prepaid: boolean
   invoice_id: number | null
   client?: Client
+  invoice?: Invoice
   created_at: string
   updated_at: string
+}
+
+export interface TimeEntryPayload {
+  client_id: number
+  description: string
+  hourly_rate: number
+  duration_seconds?: number
+  is_prepaid?: boolean
+  invoice_id?: number | null
 }
 
 export const timeEntries = {
   list: (params?: string) =>
     api<TimeEntry[]>(`/time-entries${params ? `?${params}` : ''}`),
-  create: (data: { client_id: number; description: string; hourly_rate: number; duration_seconds?: number }) =>
+  create: (data: TimeEntryPayload) =>
     api<TimeEntry>('/time-entries', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: number, data: { client_id: number; description: string; hourly_rate: number; duration_seconds?: number }) =>
+  update: (id: number, data: TimeEntryPayload) =>
     api<TimeEntry>(`/time-entries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: number) =>
     api<{ message: string }>(`/time-entries/${id}`, { method: 'DELETE' }),
