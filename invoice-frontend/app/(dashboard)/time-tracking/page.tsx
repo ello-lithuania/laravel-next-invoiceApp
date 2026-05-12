@@ -65,6 +65,11 @@ export default function TimeTracking() {
   const [showDescSuggestions, setShowDescSuggestions] = useState(false)
   const descRef = useRef<HTMLDivElement>(null)
 
+  // Client searchable dropdown
+  const [clientSearch, setClientSearch] = useState('')
+  const [showClientSuggestions, setShowClientSuggestions] = useState(false)
+  const clientRef = useRef<HTMLDivElement>(null)
+
   // Timer
   const [runningEntry, setRunningEntry] = useState<TimeEntry | null>(null)
   const [timerDisplay, setTimerDisplay] = useState(0)
@@ -104,10 +109,22 @@ export default function TimeTracking() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (descRef.current && !descRef.current.contains(e.target as Node)) setShowDescSuggestions(false)
+      if (clientRef.current && !clientRef.current.contains(e.target as Node)) setShowClientSuggestions(false)
     }
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
   }, [])
+
+  // Keep client search input in sync when form.client_id changes externally (edit, URL param, reset)
+  useEffect(() => {
+    if (form.client_id) {
+      const selected = clients.find(c => String(c.id) === String(form.client_id))
+      if (selected && clientSearch !== selected.name) setClientSearch(selected.name)
+    } else if (!showClientSuggestions) {
+      setClientSearch('')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.client_id, clients])
 
   useEffect(() => {
     return () => {
@@ -528,21 +545,47 @@ export default function TimeTracking() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client *</label>
-                <select
-                  value={form.client_id}
-                  onChange={e => {
-                    const clientId = e.target.value
-                    setForm({ ...form, client_id: clientId, hourly_rate: savedRates[clientId] || form.hourly_rate })
-                  }}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                  style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-                >
-                  <option value="">Select client...</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <div ref={clientRef} className="relative">
+                  <input
+                    type="text"
+                    value={clientSearch}
+                    onChange={e => {
+                      setClientSearch(e.target.value)
+                      setShowClientSuggestions(true)
+                      if (form.client_id) setForm({ ...form, client_id: '' })
+                    }}
+                    onFocus={() => setShowClientSuggestions(true)}
+                    required
+                    placeholder="Search client..."
+                    autoComplete="off"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                    style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+                  />
+                  {showClientSuggestions && (
+                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {(() => {
+                        const filtered = clients.filter(c => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                        if (filtered.length === 0) {
+                          return <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">No clients found</div>
+                        }
+                        return filtered.map(c => (
+                          <div
+                            key={c.id}
+                            onClick={() => {
+                              const clientId = String(c.id)
+                              setForm({ ...form, client_id: clientId, hourly_rate: savedRates[clientId] || form.hourly_rate })
+                              setClientSearch(c.name)
+                              setShowClientSuggestions(false)
+                            }}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100"
+                          >
+                            {c.name}
+                          </div>
+                        ))
+                      })()}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hourly Rate (€) *</label>
