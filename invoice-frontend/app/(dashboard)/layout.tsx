@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 import Breadcrumbs from '@/components/Breadcrumbs'
+import { UserProvider } from '@/contexts/UserContext'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -20,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [sidebarExpanded])
 
   return (
+    <UserProvider>
     <div className="flex h-screen overflow-hidden t-page-bg">
       <Sidebar
         sidebarOpen={sidebarOpen}
@@ -48,5 +50,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+    </UserProvider>
   )
 }

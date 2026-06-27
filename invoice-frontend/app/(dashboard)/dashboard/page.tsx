@@ -1,10 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { profile, stats, invoices, Invoice, ClientBreakdownResponse } from '@/lib/api'
+import { stats, invoices, Invoice, ClientBreakdownResponse } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { statusColors, formatCurrency } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
+import { useUser } from '@/contexts/UserContext'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 function AnimatedNumber({ value, prefix = '', suffix = '', duration = 1000 }: { value: number; prefix?: string; suffix?: string; duration?: number }) {
@@ -97,7 +98,7 @@ function useThemeVar(varName: string, fallback: string): string {
 }
 
 export default function Dashboard() {
-  const [userName, setUserName] = useState('')
+  const { user } = useUser()
   const [statsData, setStatsData] = useState<StatsData | null>(null)
   const [clientBreakdown, setClientBreakdown] = useState<ClientBreakdownResponse>({ clients: [], year: new Date().getFullYear(), year_total: 0 })
   const [unpaidInvoices, setUnpaidInvoices] = useState<Invoice[]>([])
@@ -118,13 +119,11 @@ export default function Dashboard() {
 
   const loadData = async () => {
     try {
-      const [userData, breakdownData, unpaidData, qStats] = await Promise.all([
-        profile.get(),
+      const [breakdownData, unpaidData, qStats] = await Promise.all([
         stats.clientBreakdown(),
         invoices.unpaid(),
         stats.quickStats()
       ])
-      setUserName(userData.name)
       setClientBreakdown(breakdownData)
       setUnpaidInvoices(unpaidData)
       setQuickStatsData(qStats)
@@ -205,7 +204,7 @@ export default function Dashboard() {
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold mb-2 t-text">Dashboard</h1>
-        <p className="t-text-muted">Welcome back, {userName}</p>
+        <p className="t-text-muted">Welcome back, {user?.name || ''}</p>
       </div>
 
       {/* Stat Cards */}

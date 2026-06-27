@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { auth, activity as activityApi, Activity, User } from '@/lib/api'
+import { auth, activity as activityApi, Activity } from '@/lib/api'
 import { useTheme, themes } from '@/contexts/ThemeContext'
+import { useUser } from '@/contexts/UserContext'
 
 interface HeaderProps {
   sidebarOpen: boolean
@@ -16,7 +17,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   const router = useRouter()
   const searchParams = useSearchParams()
   const pathname = usePathname()
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useUser()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
@@ -39,22 +40,11 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   }, [searchParams, pathname])
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [userData, activityData] = await Promise.all([
-          auth.user(),
-          activityApi.list()
-        ])
-        setUser(userData)
-        setActivities(activityData)
-      } catch (e: any) {
-        if (e?.status === 401) {
-          router.push('/login')
-        }
-      }
-    }
-    fetchData()
-  }, [router])
+    // User now comes from UserContext (fetched once for the whole dashboard).
+    activityApi.list()
+      .then(setActivities)
+      .catch(() => { /* api() handles 401; ignore transient activity errors */ })
+  }, [])
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

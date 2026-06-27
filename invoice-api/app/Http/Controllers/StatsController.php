@@ -92,18 +92,22 @@ class StatsController extends Controller
     {
         $user = $request->user();
 
-        $totalRevenue = $user->invoices()->where('status', 'paid')->sum('total');
-        $totalClients = $user->clients()->count();
-        $totalInvoices = $user->invoices()->count();
-        $paidCount = $user->invoices()->where('status', 'paid')->count();
-        $unpaidCount = $user->invoices()->where('status', '!=', 'paid')->count();
+        // Single aggregate pass over invoices instead of 4 separate queries.
+        $agg = $user->invoices()
+            ->selectRaw("
+                COUNT(*) as total_invoices,
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) as paid_count,
+                COALESCE(SUM(CASE WHEN status <> 'paid' THEN 1 ELSE 0 END), 0) as unpaid_count
+            ")
+            ->first();
 
         return response()->json([
-            'total_revenue' => $totalRevenue,
-            'total_clients' => $totalClients,
-            'total_invoices' => $totalInvoices,
-            'paid_count' => $paidCount,
-            'unpaid_count' => $unpaidCount,
+            'total_revenue' => (float) $agg->total_revenue,
+            'total_clients' => $user->clients()->count(),
+            'total_invoices' => (int) $agg->total_invoices,
+            'paid_count' => (int) $agg->paid_count,
+            'unpaid_count' => (int) $agg->unpaid_count,
         ]);
     }
 
