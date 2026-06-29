@@ -1,7 +1,8 @@
 'use client'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { stats } from '@/lib/api'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -34,6 +35,7 @@ const navItems = [
   {
     label: 'Clients',
     href: '/clients',
+    addHref: '/clients/new',
     icon: (
       <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
         <path d="M12 1a1 1 0 1 0-2 0v2a3 3 0 0 0 3 3h2a1 1 0 1 0 0-2h-2a1 1 0 0 1-1-1V1ZM1 10a1 1 0 1 0 0 2h2a1 1 0 0 1 1 1v2a1 1 0 1 0 2 0v-2a3 3 0 0 0-3-3H1ZM5 0a1 1 0 0 1 1 1v2a3 3 0 0 1-3 3H1a1 1 0 0 1 0-2h2a1 1 0 0 0 1-1V1a1 1 0 0 1 1-1ZM12 13a1 1 0 0 1 1-1h2a1 1 0 1 0 0-2h-2a3 3 0 0 0-3 3v2a1 1 0 1 0 2 0v-2Z" />
@@ -62,10 +64,78 @@ const navItems = [
   },
 ]
 
-export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded }: SidebarProps) {
+export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }: SidebarProps) {
   const pathname = usePathname()
   const trigger = useRef<HTMLButtonElement>(null)
   const sidebar = useRef<HTMLDivElement>(null)
+  const [unpaidCount, setUnpaidCount] = useState(0)
+
+  // Live unpaid badge on the Invoices item
+  useEffect(() => {
+    let active = true
+    stats.quickStats()
+      .then(d => { if (active) setUnpaidCount(d.unpaid_count) })
+      .catch(() => { /* badge is best-effort */ })
+    return () => { active = false }
+  }, [pathname])
+
+  const renderItem = (item: { label: string; href: string; icon: React.ReactNode; addHref?: string }) => {
+    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+    const badge = item.href === '/invoices' && unpaidCount > 0 ? unpaidCount : null
+    return (
+      <li key={item.href} className={`relative mb-1 last:mb-0 rounded-lg transition-all`}
+        style={isActive ? { background: 'var(--t-bg-elevated)' } : {}}
+      >
+        {isActive && (
+          <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: 'linear-gradient(var(--t-gradient-from), var(--t-accent))' }} />
+        )}
+        {badge !== null && !sidebarExpanded && (
+          <span className="hidden lg:block absolute top-1 right-2 w-2 h-2 rounded-full z-10" style={{ background: 'var(--t-accent)' }} />
+        )}
+        {item.addHref && sidebarExpanded && (
+          <Link
+            href={item.addHref}
+            title={`New ${item.label}`}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-6 h-6 flex items-center justify-center bd-clip-sm transition-colors"
+            style={{ color: 'var(--t-text-muted)' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--t-accent-soft)'; e.currentTarget.style.color = 'var(--t-accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--t-text-muted)' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" className="fill-current">
+              <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
+            </svg>
+          </Link>
+        )}
+        <Link
+          href={item.href}
+          className={`block transition duration-150 ${
+            // collapsed (lg): vertical icon+label rail; expanded: horizontal row
+            sidebarExpanded ? 'pl-4 pr-3 py-2.5' : 'pl-4 pr-3 py-2.5 lg:px-1 lg:py-2'
+          } ${isActive ? '' : 'text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white'}`}
+          style={isActive ? { color: 'var(--t-accent)' } : {}}
+        >
+          <div className={`flex items-center ${sidebarExpanded ? '' : 'lg:flex-col lg:gap-1'}`}>
+            <span style={isActive ? { color: 'var(--t-accent)' } : { color: 'var(--t-text-muted)' }}>
+              {item.icon}
+            </span>
+            <span className={`font-medium duration-200 ${
+              sidebarExpanded
+                ? 'text-sm ml-4 truncate'
+                : 'text-sm ml-4 truncate lg:ml-0 lg:text-[10px] lg:leading-tight lg:font-semibold lg:text-center lg:whitespace-normal lg:overflow-visible'
+            }`}>
+              {item.label}
+            </span>
+            {badge !== null && sidebarExpanded && (
+              <span className="ml-auto text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded-full"
+                style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
+                {badge}
+              </span>
+            )}
+          </div>
+        </Link>
+      </li>
+    )
+  }
 
   // Close on click outside (mobile)
   useEffect(() => {
@@ -108,7 +178,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, 
         ref={sidebar}
         className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 p-4 transition-all duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
-        } ${sidebarExpanded ? 'w-64' : 'w-64 lg:w-20'} rounded-r-2xl shadow-sm`}
+        } ${sidebarExpanded ? 'w-56' : 'w-56 lg:w-20'} shadow-sm`}
         style={{ backgroundColor: 'var(--t-bg-sidebar)', backdropFilter: 'blur(12px)' }}
       >
         {/* Header */}
@@ -124,88 +194,27 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded, 
               <path d="M10.7 18.7l1.4-1.4L7.8 13H20v-2H7.8l4.3-4.3-1.4-1.4L4 12z" />
             </svg>
           </button>
-          {/* Logo */}
+          {/* Logo — spinning 3D cube + gradient wordmark */}
           <Link href="/dashboard" className="block">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 btn-gradient">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+            <div className="flex items-center gap-2.5">
+              <div className="bd-cube-stage shrink-0">
+                <div className="bd-cube"><span /><span /><span /><span /><span /><span /></div>
               </div>
-              <span className={`text-lg font-bold text-gray-800 dark:text-gray-100 duration-200 ${sidebarExpanded ? 'opacity-100' : 'lg:opacity-0 lg:hidden'}`}>
-                InvoiceApp
+              <span className={`bd-wordmark text-lg duration-200 ${sidebarExpanded ? 'opacity-100' : 'lg:opacity-0 lg:hidden'}`}>
+                Invoicer
               </span>
             </div>
           </Link>
         </div>
 
         {/* Navigation */}
-        <div className="space-y-8">
-          <div>
-            <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">
-              <span className={`${sidebarExpanded ? 'block' : 'hidden lg:block lg:text-center'}`}>
-                {sidebarExpanded ? 'Pages' : '•••'}
-              </span>
-            </h3>
-            <ul className="mt-3">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
-                return (
-                  <li key={item.href} className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0`}
-                    style={isActive ? { background: `linear-gradient(to right, var(--t-accent-soft), transparent)` } : {}}
-                  >
-                    <Link
-                      href={item.href}
-                      className={`block truncate transition duration-150 ${
-                        isActive
-                          ? ''
-                          : 'text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                      style={isActive ? { color: 'var(--t-accent)' } : {}}
-                      title={!sidebarExpanded ? item.label : undefined}
-                    >
-                      <div className="flex items-center">
-                        <span style={isActive ? { color: 'var(--t-accent)' } : { color: 'var(--t-text-muted)' }}>
-                          {item.icon}
-                        </span>
-                        <span className={`text-sm font-medium ml-4 duration-200 ${
-                          sidebarExpanded ? 'opacity-100' : 'lg:opacity-0 lg:hidden'
-                        }`}>
-                          {item.label}
-                        </span>
-                      </div>
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
-        </div>
-
-        {/* New Invoice CTA */}
-        <div className="mt-auto pt-4">
-          <Link
-            href="/invoices/new"
-            className={`btn btn-gradient w-full ${sidebarExpanded ? 'gap-2' : 'lg:px-0 lg:justify-center'}`}
-            title={!sidebarExpanded ? 'New Invoice' : undefined}
-          >
-            <svg className="fill-current shrink-0" width="16" height="16" viewBox="0 0 16 16">
-              <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
-            </svg>
-            <span className={`duration-200 ${sidebarExpanded ? 'opacity-100' : 'lg:hidden lg:opacity-0'}`}>New Invoice</span>
-          </Link>
-
-          {/* Expand / collapse button */}
-          <div className="hidden lg:inline-flex justify-end mt-2 w-full">
-            <button
-              onClick={() => setSidebarExpanded(!sidebarExpanded)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700/50"
-            >
-              <svg className={`fill-current text-gray-400 dark:text-gray-500 shrink-0 transition-transform duration-200 ${sidebarExpanded ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 16 16">
-                <path d="M6.6 13.4L5.2 12l4-4-4-4 1.4-1.4L12 8z" />
-              </svg>
-            </button>
-          </div>
+        <div>
+          <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">
+            <span className={`${sidebarExpanded ? 'block' : 'hidden lg:block lg:text-center'}`}>
+              {sidebarExpanded ? 'Menu' : '•••'}
+            </span>
+          </h3>
+          <ul className="mt-3">{navItems.map(renderItem)}</ul>
         </div>
       </div>
     </div>

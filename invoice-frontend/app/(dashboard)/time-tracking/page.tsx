@@ -465,7 +465,7 @@ export default function TimeTracking() {
         </div>
         <button
           onClick={() => { resetForm(); setShowForm(!showForm) }}
-          className="w-full sm:w-auto text-center btn-gradient px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto text-center btn-gradient px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 bd-clip-sm"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -537,7 +537,7 @@ export default function TimeTracking() {
 
       {/* New / Edit Entry Form */}
       {showForm && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
             {editingId ? 'Edit Time Entry' : 'New Time Entry'}
           </h2>
@@ -717,7 +717,7 @@ export default function TimeTracking() {
               <button
                 type="submit"
                 disabled={saving}
-                className="btn-gradient px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="btn-gradient px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 bd-clip-sm"
               >
                 {saving ? 'Saving...' : editingId ? 'Update Entry' : 'Create Entry'}
               </button>
@@ -771,7 +771,7 @@ export default function TimeTracking() {
       </div>
 
       {/* Entries Table */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
         {/* Desktop */}
         <div className="hidden md:block">
           <table className="w-full">
@@ -1193,7 +1193,7 @@ export default function TimeTracking() {
 
       {/* Total summary for selected */}
       {selectedIds.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-4">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               <span className="font-medium">{selectedIds.length}</span> entries selected
@@ -1256,7 +1256,7 @@ export default function TimeTracking() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="btn-gradient px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="btn-gradient px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 bd-clip-sm"
                 >
                   {saving ? 'Creating...' : 'Create Invoice'}
                 </button>

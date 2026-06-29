@@ -163,7 +163,7 @@ function EditInvoiceForm() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
@@ -393,7 +393,7 @@ function EditInvoiceForm() {
               <button 
                 type="submit"
                 disabled={saving}
-                className="flex-1 sm:flex-initial btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-initial btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bd-clip-sm"
               >
                 {saving ? (
                   <>

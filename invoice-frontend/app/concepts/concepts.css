@@ -1,0 +1,168 @@
+/* ═══════════════════════════════════════════════════════════════
+   CONCEPTS — full dashboard mock, switchable design directions.
+   3 skins: .cpt--neo (sharp/cyber), .cpt--aurora (glow/glass),
+            .cpt--prism (geometric/bold). All theme-aware (--t-*).
+   ═══════════════════════════════════════════════════════════════ */
+
+.cpt-shell {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid var(--t-border);
+  min-height: 640px;
+  background: var(--t-page-gradient, var(--t-bg-card));
+}
+.cpt-bg { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.cpt-ui { position: relative; z-index: 1; padding: 20px; }
+
+/* Slow drifting gradient wash behind the shapes — subtle "alive" feel */
+.cpt-shell::before {
+  content: '';
+  position: absolute; inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg,
+    var(--t-gradient-from), var(--t-gradient-via),
+    var(--t-accent), var(--t-gradient-to), var(--t-gradient-from));
+  background-size: 240% 240%;
+  opacity: 0.16;
+  filter: blur(8px);
+  animation: cpt-gradflow 18s ease-in-out infinite;
+}
+@keyframes cpt-gradflow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@media (prefers-reduced-motion: reduce) { .cpt-shell::before { animation: none !important; } }
+
+/* ── compact spinning cube mark ─────────────────────────────── */
+.cpt-cube-stage { perspective: 360px; width: 30px; height: 30px; }
+.cpt-cube { position: relative; width: 30px; height: 30px; transform-style: preserve-3d; animation: cpt-spin 8s linear infinite; }
+.cpt-cube span { position: absolute; width: 30px; height: 30px; border: 1px solid var(--t-accent); background: var(--t-accent-soft); box-shadow: inset 0 0 10px var(--t-accent-glow); }
+.cpt-cube span:nth-child(1){ transform: rotateY(0)      translateZ(15px); }
+.cpt-cube span:nth-child(2){ transform: rotateY(90deg)  translateZ(15px); }
+.cpt-cube span:nth-child(3){ transform: rotateY(180deg) translateZ(15px); }
+.cpt-cube span:nth-child(4){ transform: rotateY(270deg) translateZ(15px); }
+.cpt-cube span:nth-child(5){ transform: rotateX(90deg)  translateZ(15px); }
+.cpt-cube span:nth-child(6){ transform: rotateX(-90deg) translateZ(15px); }
+@keyframes cpt-spin { from { transform: rotateX(-22deg) rotateY(0); } to { transform: rotateX(-22deg) rotateY(360deg); } }
+
+.cpt-wordmark { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── header / layout primitives ─────────────────────────────── */
+.cpt-top { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.cpt-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; flex: 1; max-width: 360px;
+  color: var(--t-text-muted); font-size: 12px; background: var(--t-bg-input); border: 1px solid var(--t-border-light); }
+.cpt-search svg { width: 16px; height: 16px; }
+.cpt-iconbtn { width: 36px; height: 36px; display: grid; place-items: center; color: var(--t-text-secondary);
+  background: var(--t-bg-elevated); border: 1px solid var(--t-border-light); }
+.cpt-iconbtn svg { width: 17px; height: 17px; }
+.cpt-avatar { width: 36px; height: 36px; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-gradient-via)); }
+
+.cpt-h1 { font-size: 1.6rem; font-weight: 800; color: var(--t-text); letter-spacing: -0.02em; }
+.cpt-sub { color: var(--t-text-muted); font-size: 0.85rem; }
+
+.cpt-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 20px 0; }
+.cpt-cols { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+
+.cpt-card { position: relative; padding: 18px; background: var(--t-bg-card); border: 1px solid var(--t-border); color: var(--t-text); overflow: hidden; }
+.cpt-klabel { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--t-text-muted); font-weight: 700; }
+.cpt-kval { font-size: 1.7rem; font-weight: 800; margin-top: 8px; letter-spacing: -0.02em; }
+.cpt-ksub { font-size: 11px; margin-top: 4px; }
+.cpt-trend { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; padding: 2px 6px; }
+
+.cpt-iconwrap { width: 36px; height: 36px; display: grid; place-items: center; }
+.cpt-iconwrap svg { width: 18px; height: 18px; }
+
+.cpt-panel { padding: 18px; background: var(--t-bg-card); border: 1px solid var(--t-border); }
+.cpt-ph { font-size: 0.95rem; font-weight: 700; color: var(--t-text); margin-bottom: 14px; }
+
+/* faux bar chart */
+.cpt-bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; }
+.cpt-bars i { flex: 1; border-radius: 4px 4px 0 0; background: var(--t-accent); opacity: .85; }
+
+/* table rows */
+.cpt-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--t-border-light); font-size: 12px; color: var(--t-text-secondary); }
+.cpt-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+
+/* sparkline (inline svg colored by accent) */
+.cpt-spark { width: 84px; height: 26px; }
+
+/* ════════════════════════ SKIN: NEO (sharp / cyber) ═════════ */
+.cpt--neo .cpt-card, .cpt--neo .cpt-panel, .cpt--neo .cpt-iconbtn, .cpt--neo .cpt-avatar, .cpt--neo .cpt-search, .cpt--neo .cpt-iconwrap {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+.cpt--neo .cpt-card { border-color: color-mix(in srgb, var(--t-accent) 35%, var(--t-border)); background: color-mix(in srgb, var(--t-bg-card) 88%, transparent); }
+.cpt--neo .cpt-card::after { content: ''; position: absolute; top: 0; right: 0; width: 14px; height: 14px; background: var(--t-accent); clip-path: polygon(100% 0, 0 0, 100% 100%); }
+.cpt--neo .cpt-kval { font-family: ui-monospace, "SFMono-Regular", Menlo, monospace; }
+.cpt--neo .cpt-iconwrap { background: transparent; border: 1px solid var(--t-accent); color: var(--t-accent); }
+.cpt--neo .cpt-h1 { text-transform: uppercase; letter-spacing: 0.02em; }
+.cpt--neo .cpt-bars i { border-radius: 0; clip-path: polygon(0 0, 100% 8px, 100% 100%, 0 100%); }
+/* bg: rotating wireframe polygons + scanning grid */
+.cpt--neo .cpt-bg { background:
+  linear-gradient(var(--t-border-light) 1px, transparent 1px) 0 0 / 100% 34px,
+  linear-gradient(90deg, var(--t-border-light) 1px, transparent 1px) 0 0 / 34px 100%; }
+.cpt--neo .cpt-poly { position: absolute; border: 1.5px solid var(--t-accent); opacity: .25; }
+.cpt--neo .cpt-poly.p1 { width: 220px; height: 220px; top: 8%; right: 6%; clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); animation: cpt-spinslow 26s linear infinite; }
+.cpt--neo .cpt-poly.p2 { width: 150px; height: 150px; bottom: 10%; left: 8%; clip-path: polygon(50% 0, 100% 100%, 0 100%); animation: cpt-spinrev 18s linear infinite; }
+.cpt--neo .cpt-poly.p3 { width: 90px; height: 90px; top: 45%; left: 40%; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); animation: cpt-spinslow 14s linear infinite; }
+@keyframes cpt-spinslow { to { transform: rotate(360deg); } }
+@keyframes cpt-spinrev { to { transform: rotate(-360deg); } }
+
+/* ════════════════════════ SKIN: AURORA (glow / glass) ═══════ */
+.cpt--aurora .cpt-card, .cpt--aurora .cpt-panel { border-radius: 18px; background: color-mix(in srgb, var(--t-bg-card) 55%, transparent); backdrop-filter: blur(16px); border: 1px solid color-mix(in srgb, var(--t-accent) 22%, var(--t-border)); box-shadow: 0 8px 30px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10); }
+.cpt--aurora .cpt-search, .cpt--aurora .cpt-iconbtn, .cpt--aurora .cpt-avatar, .cpt--aurora .cpt-iconwrap { border-radius: 999px; }
+.cpt--aurora .cpt-iconwrap { background: var(--t-accent-soft); color: var(--t-accent); box-shadow: 0 0 18px var(--t-accent-glow); }
+.cpt--aurora .cpt-kval { text-shadow: 0 0 22px var(--t-accent-glow); }
+.cpt--aurora .cpt-bars i { border-radius: 6px 6px 0 0; box-shadow: 0 0 16px var(--t-accent-glow); background: linear-gradient(var(--t-accent), var(--t-gradient-via)); }
+.cpt--aurora .cpt-blob { position: absolute; border-radius: 50%; filter: blur(54px); opacity: .5; mix-blend-mode: screen; }
+.cpt--aurora .cpt-blob.b1 { width: 320px; height: 320px; background: var(--t-accent);       top: -80px; left: -40px;  animation: cpt-d1 16s ease-in-out infinite; }
+.cpt--aurora .cpt-blob.b2 { width: 280px; height: 280px; background: var(--t-gradient-via); bottom: -90px; right: -30px; animation: cpt-d2 20s ease-in-out infinite; }
+.cpt--aurora .cpt-blob.b3 { width: 220px; height: 220px; background: var(--t-gradient-from); top: 35%; left: 50%;    animation: cpt-d3 13s ease-in-out infinite; }
+@keyframes cpt-d1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(70px,50px) scale(1.18)} }
+@keyframes cpt-d2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-60px,-40px) scale(1.22)} }
+@keyframes cpt-d3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-50px,60px) scale(.82)} }
+
+/* ════════════════════════ SKIN: PRISM (geometric / bold) ════ */
+.cpt--prism .cpt-card { border-radius: 4px; border: none; background: var(--t-bg-card); box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+.cpt--prism .cpt-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: linear-gradient(var(--t-gradient-from), var(--t-accent)); }
+.cpt--prism .cpt-panel { border-radius: 4px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.18); }
+.cpt--prism .cpt-search, .cpt--prism .cpt-iconbtn, .cpt--prism .cpt-avatar { border-radius: 6px; }
+.cpt--prism .cpt-iconwrap { border-radius: 10px; background: linear-gradient(135deg, var(--t-gradient-from), var(--t-accent)); color: #fff; }
+.cpt--prism .cpt-h1 { font-size: 1.9rem; }
+.cpt--prism .cpt-kval { font-size: 1.9rem; }
+.cpt--prism .cpt-bars i { border-radius: 0; background: linear-gradient(var(--t-accent), var(--t-gradient-from)); }
+/* bg: floating sharp diamonds & triangles */
+.cpt--prism .cpt-shape { position: absolute; opacity: .5; }
+.cpt--prism .cpt-shape.s1 { width: 120px; height: 120px; top: 12%; right: 10%; background: linear-gradient(135deg, var(--t-accent), transparent); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); animation: cpt-fl1 12s ease-in-out infinite; }
+.cpt--prism .cpt-shape.s2 { width: 90px; height: 90px; bottom: 14%; left: 12%; background: linear-gradient(135deg, var(--t-gradient-via), transparent); clip-path: polygon(50% 0, 100% 100%, 0 100%); animation: cpt-fl2 15s ease-in-out infinite; }
+.cpt--prism .cpt-shape.s3 { width: 64px; height: 64px; top: 55%; right: 30%; background: linear-gradient(135deg, var(--t-gradient-from), transparent); clip-path: polygon(0 0, 100% 0, 100% 100%); animation: cpt-fl1 9s ease-in-out infinite reverse; }
+@keyframes cpt-fl1 { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(-26px) rotate(35deg)} }
+@keyframes cpt-fl2 { 0%,100%{transform:translateY(0) rotate(0)} 50%{transform:translateY(24px) rotate(-30deg)} }
+
+/* ════════════════ SKIN: PRISM SHARP (Prism + Neo clipped corners) ═══
+   Element gets BOTH .cpt--prism and .cpt--fusion → inherits Prism look,
+   these rules add the sharp beveled corners + accent corner notch.     */
+.cpt--fusion .cpt-card, .cpt--fusion .cpt-panel,
+.cpt--fusion .cpt-iconbtn, .cpt--fusion .cpt-avatar, .cpt--fusion .cpt-search {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+.cpt--fusion .cpt-iconwrap {
+  border-radius: 0;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.cpt--fusion .cpt-card::after {
+  content: ''; position: absolute; top: 0; right: 0; width: 16px; height: 16px;
+  background: var(--t-accent); clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+.cpt--fusion .cpt-bars i { clip-path: polygon(0 0, 100% 7px, 100% 100%, 0 100%); border-radius: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cpt-cube, .cpt-poly, .cpt-blob, .cpt-shape { animation: none !important; }
+}

@@ -115,7 +115,7 @@ export default function YearSummary() {
           </select>
           <button
             onClick={handleViewPdf}
-            className="btn-gradient px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2"
+            className="btn-gradient px-5 py-3 rounded-xl font-medium transition-colors flex items-center gap-2 bd-clip-sm"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -136,7 +136,7 @@ export default function YearSummary() {
 
       {/* Key metrics */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
           <p className="text-2xl font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(data.total_revenue)} €</p>
           <div className="flex gap-3 mt-2 text-xs">
@@ -144,24 +144,24 @@ export default function YearSummary() {
             <span className="text-yellow-500">○ {fmt(data.unpaid_revenue)} €</span>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Invoices</p>
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_invoices}</p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_invoice)} €</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Clients</p>
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_clients}</p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_monthly)} €/mo</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Hours</p>
           <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_hours > 0 ? `${data.total_hours.toFixed(1)} h` : '—'}</p>
           {data.avg_hourly_rate > 0 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_hourly_rate)} €/h</p>
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Best Month</p>
           {data.best_month ? (
             <>
@@ -170,7 +170,7 @@ export default function YearSummary() {
             </>
           ) : <p className="text-lg text-gray-400">—</p>}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Worst Month</p>
           {data.worst_month ? (
             <>
@@ -182,7 +182,7 @@ export default function YearSummary() {
       </div>
 
       {/* Monthly chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Breakdown</h2>
         <div className="space-y-3">
           {data.months.map(m => (
@@ -222,7 +222,7 @@ export default function YearSummary() {
 
       {/* Client breakdown */}
       {data.clients.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
           <div className="p-6 pb-3">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Clients</h2>
           </div>
@@ -278,7 +278,7 @@ export default function YearSummary() {
 
       {/* Largest invoice */}
       {data.largest_invoice && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Highlights</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--t-accent-soft)' }}>
@@ -303,7 +303,7 @@ export default function YearSummary() {
 
       {/* Empty state */}
       {data.total_invoices === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 p-12 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-12 text-center">
           <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>

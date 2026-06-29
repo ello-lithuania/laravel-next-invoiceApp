@@ -40,7 +40,7 @@ export default function Settings() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Theme Picker */}
-        <div className="lg:col-span-2 t-card rounded-xl overflow-hidden">
+        <div className="lg:col-span-2 t-card prism-card rounded-xl overflow-hidden">
           <header className="px-5 py-4" style={{ borderBottom: '1px solid var(--t-border)' }}>
             <div className="flex items-center justify-between">
               <div>
@@ -108,7 +108,7 @@ style={{
         </div>
 
         {/* Change Password */}
-        <div className="lg:col-span-2 t-card rounded-xl overflow-hidden">
+        <div className="lg:col-span-2 t-card prism-card rounded-xl overflow-hidden">
           <header className="px-5 py-4" style={{ borderBottom: '1px solid var(--t-border)' }}>
             <h2 className="font-semibold" style={{ color: 'var(--t-text)' }}>Change Password</h2>
           </header>
@@ -165,7 +165,7 @@ style={{
               <button
                 type="submit"
                 disabled={saving}
-                className="btn btn-gradient disabled:opacity-50"
+                className="btn btn-gradient disabled:opacity-50 bd-clip-sm"
               >
                 {saving ? (
                   <>

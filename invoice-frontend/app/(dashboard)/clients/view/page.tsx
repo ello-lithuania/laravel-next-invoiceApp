@@ -87,7 +87,7 @@ function ClientViewContent() {
         <div className="flex items-center gap-2">
           <Link
             href={`/invoices/new?client_id=${client.id}`}
-            className="btn-gradient px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2"
+            className="btn-gradient px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 bd-clip-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -105,19 +105,19 @@ function ClientViewContent() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium mb-2">Total Invoiced</p>
           <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(client.invoices_total)}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium mb-2">Paid</p>
           <p className="text-xl font-bold text-emerald-500">{formatCurrency(client.invoices_paid)}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium mb-2">Unpaid</p>
           <p className="text-xl font-bold text-amber-500">{formatCurrency(unpaid)}</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-5">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5">
           <p className="text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 font-medium mb-2">Invoices</p>
           <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{client.invoices_count}</p>
         </div>
@@ -125,7 +125,7 @@ function ClientViewContent() {
 
       {/* Client Info */}
       <div className="grid lg:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Contact Information</h2>
           <div className="space-y-3">
             {client.email && (
@@ -166,7 +166,7 @@ function ClientViewContent() {
         </div>
 
         {/* Invoices Table */}
-        <div className="lg:col-span-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700/60">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Invoice History</h2>
           </div>

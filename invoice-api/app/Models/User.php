@@ -46,4 +46,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(TimeEntry::class);
     }
+
+    public function catalogItems()
+    {
+        return $this->hasMany(CatalogItem::class);
+    }
 }

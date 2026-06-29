@@ -21,6 +21,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [themePickerOpen, setThemePickerOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([])
   const { colorTheme, isDark, mounted, setColorTheme, toggleMode } = useTheme()
   const [searchOpen, setSearchOpen] = useState(false)
@@ -28,6 +29,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   const dropdown = useRef<HTMLDivElement>(null)
   const activityDropdown = useRef<HTMLDivElement>(null)
   const themeDropdown = useRef<HTMLDivElement>(null)
+  const createDropdown = useRef<HTMLDivElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -51,6 +53,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
       if (dropdown.current && !dropdown.current.contains(e.target as Node)) setDropdownOpen(false)
       if (activityDropdown.current && !activityDropdown.current.contains(e.target as Node)) setActivityOpen(false)
       if (themeDropdown.current && !themeDropdown.current.contains(e.target as Node)) setThemePickerOpen(false)
+      if (createDropdown.current && !createDropdown.current.contains(e.target as Node)) setCreateOpen(false)
     }
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
@@ -58,10 +61,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        searchInput.current?.focus()
-      }
+      // ⌘K is handled by the global CommandPalette
       if (e.key === 'Escape') { setSearchOpen(false); setThemePickerOpen(false) }
     }
     document.addEventListener('keydown', handler)
@@ -100,7 +100,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
         {/* Left: Hamburger toggle */}
         <div className="flex items-center gap-4">
           <button
-            className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+            className="flex items-center justify-center w-10 h-10 bd-clip-sm transition-colors"
             style={{ border: '1px solid var(--t-border)', background: 'var(--t-bg-card)', color: 'var(--t-text-secondary)' }}
             aria-controls="sidebar"
             onClick={(e) => {
@@ -133,7 +133,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search or type command..."
-              className="w-full pl-12 pr-20 py-2.5 text-sm rounded-lg transition-all"
+              className="w-full pl-12 pr-20 py-2.5 text-sm bd-clip-sm transition-all"
               style={{ background: 'var(--t-bg-input)', border: '1px solid var(--t-border)', color: 'var(--t-text)' }}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -145,6 +145,49 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
 
         {/* Right: Actions */}
         <div className="flex items-center space-x-3">
+          {/* Quick create */}
+          <div className="relative" ref={createDropdown}>
+            <button
+              onClick={() => setCreateOpen(!createOpen)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bd-clip-sm text-sm font-semibold text-white btn-gradient"
+              title="Create new"
+            >
+              <svg className="fill-current shrink-0" width="14" height="14" viewBox="0 0 16 16">
+                <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
+              </svg>
+              <span className="hidden sm:inline">New</span>
+            </button>
+
+            {createOpen && (
+              <div className="header-dropdown absolute right-0 mt-2.5 w-56 rounded-xl shadow-2xl z-20 overflow-hidden"
+                style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border)', backdropFilter: 'blur(16px)', maxWidth: 'calc(100vw - 2rem)' }}
+              >
+                {[
+                  { label: 'New Invoice', sub: 'Create an invoice', href: '/invoices/new', color: 'var(--t-accent)', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+                  { label: 'New Client', sub: 'Add a client', href: '/clients/new', color: '#a855f7', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
+                  { label: 'Time Entry', sub: 'Track time', href: '/time-tracking', color: '#10b981', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+                ].map((it) => (
+                  <Link key={it.href} href={it.href} onClick={() => setCreateOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors"
+                    style={{ borderBottom: '1px solid var(--t-border-light)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--t-bg-elevated)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span className="w-9 h-9 bd-clip-sm flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${it.color}, color-mix(in srgb, ${it.color} 60%, #000))` }}>
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={it.icon} />
+                      </svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold t-text">{it.label}</p>
+                      <p className="text-xs t-text-muted">{it.sub}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Mobile search button */}
           <button
             className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full transition-colors"
@@ -316,11 +359,11 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
           {/* User menu — Volta style */}
           <div className="relative inline-flex" ref={dropdown}>
             <button className="inline-flex justify-center items-center group" onClick={() => setDropdownOpen(!dropdownOpen)}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-semibold btn-gradient">
+              <div className="w-8 h-8 bd-clip-sm flex items-center justify-center text-white text-sm font-semibold btn-gradient" suppressHydrationWarning>
                 {user?.name?.charAt(0)?.toUpperCase() || '?'}
               </div>
               <div className="flex items-center truncate">
-                <span className="truncate ml-2 text-sm font-medium max-w-[120px] t-text">
+                <span className="truncate ml-2 text-sm font-medium max-w-[120px] t-text" suppressHydrationWarning>
                   {user?.name || 'User'}
                 </span>
                 <svg className="w-3 h-3 shrink-0 ml-1 fill-current t-text-muted" viewBox="0 0 12 12">
@@ -335,7 +378,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
               >
                 {/* User info header */}
                 <div className="px-4 py-4 flex items-center gap-3" style={{ borderBottom: '1px solid var(--t-border)' }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-bold btn-gradient shrink-0">
+                  <div className="w-12 h-12 bd-clip flex items-center justify-center text-white text-lg font-bold btn-gradient shrink-0">
                     {user?.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div className="min-w-0">
@@ -399,7 +442,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search invoices…"
               autoFocus
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 text-sm bd-clip-sm transition-colors"
               style={{ background: 'var(--t-bg-input)', border: '1px solid var(--t-border)', color: 'var(--t-text)' }}
             />
           </form>

@@ -880,3 +880,109 @@ html:not(.dark) input.bg-white,
 html:not(.dark) textarea.bg-white {
   background: var(--t-bg-input) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOTION: reveal-on-load, staggered children, card hover lift
+   Respects prefers-reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Fade + slide a section in once its data arrives */
+.reveal {
+  animation: reveal-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stagger direct children (stat cards, list rows) */
+.stagger > * {
+  animation: reveal-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+
+/* Lift + accent glow on hover for interactive cards */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.2s ease, border-color 0.2s ease;
+  will-change: transform;
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18), 0 0 0 1px var(--t-accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .stagger > *,
+  .hover-lift {
+    animation: none !important;
+    transition: none !important;
+  }
+  .hover-lift:hover { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRISM SHARP — brand language (clipped corners, cube, gradients)
+   Reusable utilities for header, sidebar and (later) dashboard.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Beveled "sharp" corners — top-right + bottom-left notched */
+.bd-clip   { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); border-radius: 0 !important; }
+.bd-clip-sm{ clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); border-radius: 0 !important; }
+/* Bevel only the right corners — for the sidebar panel */
+.bd-clip-r { clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%); }
+
+/* Accent corner notch (triangle) on a clipped card */
+.bd-notch { position: relative; }
+.bd-notch::after {
+  content: ''; position: absolute; top: 0; right: 0; width: 12px; height: 12px;
+  background: var(--t-accent); clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+
+/* Gradient icon tile */
+.bd-grad-icon {
+  background: linear-gradient(135deg, var(--t-gradient-from), var(--t-accent));
+  color: #fff;
+}
+
+/* Gradient wordmark text */
+.bd-wordmark {
+  font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* Spinning 3D cube brand mark */
+.bd-cube-stage { perspective: 360px; width: 30px; height: 30px; flex-shrink: 0; }
+.bd-cube { position: relative; width: 30px; height: 30px; transform-style: preserve-3d; animation: bd-spin 9s linear infinite; }
+.bd-cube span { position: absolute; width: 30px; height: 30px; border: 1px solid var(--t-accent); background: var(--t-accent-soft); box-shadow: inset 0 0 10px var(--t-accent-glow); }
+.bd-cube span:nth-child(1){ transform: rotateY(0)      translateZ(15px); }
+.bd-cube span:nth-child(2){ transform: rotateY(90deg)  translateZ(15px); }
+.bd-cube span:nth-child(3){ transform: rotateY(180deg) translateZ(15px); }
+.bd-cube span:nth-child(4){ transform: rotateY(270deg) translateZ(15px); }
+.bd-cube span:nth-child(5){ transform: rotateX(90deg)  translateZ(15px); }
+.bd-cube span:nth-child(6){ transform: rotateX(-90deg) translateZ(15px); }
+@keyframes bd-spin { from { transform: rotateX(-22deg) rotateY(0); } to { transform: rotateX(-22deg) rotateY(360deg); } }
+
+@media (prefers-reduced-motion: reduce) { .bd-cube { animation: none !important; } }
+
+/* Prism Sharp card — crisp corners + left gradient accent bar.
+   No transparent clip on cards (would reveal the page gradient). */
+.prism-card { position: relative; border-radius: 5px !important; }
+.prism-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: linear-gradient(var(--t-gradient-from), var(--t-accent));
+  pointer-events: none; border-radius: 5px 0 0 5px;
+}
+/* Solid gradient icon tile with a clipped corner (sits on the card → no bg bleed) */
+.prism-itile {
+  background: linear-gradient(135deg, var(--t-gradient-from), var(--t-accent));
+  color: #fff;
+}

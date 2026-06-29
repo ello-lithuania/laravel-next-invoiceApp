@@ -4,6 +4,7 @@ import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 import Breadcrumbs from '@/components/Breadcrumbs'
 import { UserProvider } from '@/contexts/UserContext'
+import CommandPalette from '@/components/CommandPalette'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -22,6 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <UserProvider>
+    <CommandPalette />
     <div className="flex h-screen overflow-hidden t-page-bg">
       <Sidebar
         sidebarOpen={sidebarOpen}

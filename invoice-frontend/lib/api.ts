@@ -333,7 +333,7 @@ export const stats = {
   clientBreakdown: (year?: number) =>
     api<ClientBreakdownResponse>(`/stats/clients${year ? `?year=${year}` : ''}`),
   quickStats: () =>
-    api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number }>('/stats/quick'),
+    api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number; revenue_sparkline: number[]; revenue_trend: number }>('/stats/quick'),
   availableYears: () =>
     api<number[]>('/stats/available-years'),
   yearSummary: (year: number) =>
@@ -354,8 +354,26 @@ export interface Activity {
 }
 
 export const activity = {
-  list: () => 
+  list: () =>
     api<Activity[]>('/activity'),
+}
+
+export interface CatalogItem {
+  id: number
+  description: string
+  unit: string
+  price: number
+}
+
+export const catalog = {
+  list: () =>
+    api<CatalogItem[]>('/catalog-items'),
+  create: (data: { description: string; unit?: string; price?: number }) =>
+    api<CatalogItem>('/catalog-items', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: number, data: { description: string; unit?: string; price?: number }) =>
+    api<CatalogItem>(`/catalog-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: number) =>
+    api<{ message: string }>(`/catalog-items/${id}`, { method: 'DELETE' }),
 }
 
 export const password = {

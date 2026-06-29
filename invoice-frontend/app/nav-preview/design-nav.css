@@ -1,0 +1,173 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAV PREVIEW — Material-style sidebar + header variants
+   Solid / professional, subtle background shapes. Theme-aware.
+   Prefixed .nv-*. Respects reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+.nv-stage {
+  position: relative;
+  height: 560px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--t-border);
+  background:
+    radial-gradient(120% 80% at 100% 0%, var(--t-accent-soft), transparent 55%),
+    var(--t-page-gradient, var(--t-bg-card));
+}
+.nv-chip {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 20; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; padding: 5px 12px; border-radius: 999px;
+  background: var(--t-bg-card); color: var(--t-text-secondary);
+  border: 1px solid var(--t-border); backdrop-filter: blur(8px);
+}
+
+/* ─── Compact 3D cube logo mark ─────────────────────────────── */
+.nv-cube-stage { perspective: 360px; width: 32px; height: 32px; }
+.nv-cube { position: relative; width: 32px; height: 32px; transform-style: preserve-3d; animation: nv-spin 8s linear infinite; }
+.nv-cube span {
+  position: absolute; width: 32px; height: 32px;
+  border: 1px solid var(--t-accent);
+  background: var(--t-accent-soft);
+  box-shadow: inset 0 0 10px var(--t-accent-glow);
+}
+.nv-cube span:nth-child(1){ transform: rotateY(0deg)   translateZ(16px); }
+.nv-cube span:nth-child(2){ transform: rotateY(90deg)  translateZ(16px); }
+.nv-cube span:nth-child(3){ transform: rotateY(180deg) translateZ(16px); }
+.nv-cube span:nth-child(4){ transform: rotateY(270deg) translateZ(16px); }
+.nv-cube span:nth-child(5){ transform: rotateX(90deg)  translateZ(16px); }
+.nv-cube span:nth-child(6){ transform: rotateX(-90deg) translateZ(16px); }
+@keyframes nv-spin { from { transform: rotateX(-22deg) rotateY(0); } to { transform: rotateX(-22deg) rotateY(360deg); } }
+
+.nv-wordmark {
+  font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-accent));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ─── Generic drawer surface ────────────────────────────────── */
+.nv-drawer {
+  position: absolute; top: 0; left: 0; bottom: 0;
+  display: flex; flex-direction: column;
+  background: var(--t-bg-sidebar);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+.nv-logo { display: flex; align-items: center; gap: 10px; }
+.nv-section { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--t-text-muted); }
+
+/* nav item base */
+.nv-item {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; font-weight: 600; color: var(--t-text-secondary);
+  transition: background .18s, color .18s;
+  cursor: pointer;
+}
+.nv-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+.nv-item:hover { color: var(--t-text); }
+
+/* Material-3 filled tonal button */
+.nv-cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 600; font-size: 13px; color: #fff;
+  border-radius: 999px; padding: 11px 16px;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-gradient-via));
+  box-shadow: 0 4px 14px var(--t-accent-glow);
+}
+
+/* decorative subtle background shape inside a drawer */
+.nv-shape {
+  position: absolute; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(circle, var(--t-accent-soft), transparent 70%);
+  opacity: .8;
+}
+
+/* ─── VARIANT 1 — Material 3 Drawer (pill indicator) ────────── */
+.nv-v1 { width: 260px; padding: 20px 14px; box-shadow: 1px 0 0 var(--t-border); }
+.nv-v1 .nv-item { padding: 11px 16px; border-radius: 999px; margin-bottom: 4px; }
+.nv-v1 .nv-item--active { background: var(--t-accent-soft); color: var(--t-accent); }
+.nv-v1 .nv-shape { width: 220px; height: 220px; left: -80px; bottom: -70px; }
+
+/* ─── VARIANT 2 — Material Rail (icon + tiny label) ─────────── */
+.nv-v2 { width: 96px; padding: 18px 8px; align-items: center; box-shadow: 1px 0 0 var(--t-border); }
+.nv-v2 .nv-rail-item {
+  width: 64px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 0; border-radius: 16px; cursor: pointer;
+  font-size: 10px; font-weight: 600; color: var(--t-text-muted);
+  transition: background .18s, color .18s;
+}
+.nv-v2 .nv-rail-item svg { width: 20px; height: 20px; }
+.nv-v2 .nv-rail-pill {
+  display: grid; place-items: center; width: 48px; height: 30px; border-radius: 999px;
+  transition: background .18s;
+}
+.nv-v2 .nv-rail-item--active { color: var(--t-accent); }
+.nv-v2 .nv-rail-item--active .nv-rail-pill { background: var(--t-accent-soft); }
+.nv-v2 .nv-shape { width: 160px; height: 160px; left: -40px; top: 30%; }
+
+/* ─── VARIANT 3 — Elevated card drawer (left accent bar) ────── */
+.nv-v3 {
+  width: 244px; margin: 16px; bottom: 16px; top: 16px;
+  border-radius: 20px;
+  background: var(--t-bg-card);
+  border: 1px solid var(--t-border);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.30);
+  padding: 20px 14px;
+}
+.nv-v3 .nv-item { position: relative; padding: 11px 14px 11px 18px; border-radius: 12px; margin-bottom: 3px; }
+.nv-v3 .nv-item--active { background: var(--t-bg-elevated); color: var(--t-text); }
+.nv-v3 .nv-item--active::before {
+  content: ''; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 3px;
+  border-radius: 999px; background: var(--t-accent);
+}
+.nv-v3 .nv-item--active svg { color: var(--t-accent); }
+.nv-v3 .nv-shape { width: 240px; height: 120px; left: 0; top: -40px; border-radius: 0; background: linear-gradient(180deg, var(--t-accent-soft), transparent); }
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADERS
+   ═══════════════════════════════════════════════════════════════ */
+.nv-header {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 14px;
+  height: 64px; padding: 0 18px;
+  border-radius: 16px;
+  background: var(--t-bg-header);
+  border: 1px solid var(--t-border);
+  backdrop-filter: blur(12px);
+}
+.nv-icon-btn {
+  width: 40px; height: 40px; border-radius: 999px; flex-shrink: 0;
+  display: grid; place-items: center; color: var(--t-text-secondary);
+  background: transparent; transition: background .18s, color .18s; cursor: pointer;
+}
+.nv-icon-btn:hover { background: var(--t-bg-elevated); color: var(--t-text); }
+.nv-icon-btn svg { width: 20px; height: 20px; }
+
+/* Header A — Material top app bar: filled tonal search */
+.nv-search {
+  display: flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 16px; border-radius: 999px; flex: 1; max-width: 420px;
+  background: var(--t-bg-input);
+  border: 1px solid var(--t-border-light);
+  color: var(--t-text-muted); font-size: 13px;
+}
+.nv-search svg { width: 18px; height: 18px; }
+
+/* Header B — segmented + accent shape */
+.nv-headerB-shape {
+  position: absolute; right: -30px; top: -40px; width: 180px; height: 140px;
+  background: radial-gradient(circle, var(--t-accent-soft), transparent 70%);
+  pointer-events: none;
+}
+.nv-seg { display: flex; background: var(--t-bg-input); border-radius: 999px; padding: 3px; gap: 2px; }
+.nv-seg span { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--t-text-muted); cursor: pointer; }
+.nv-seg span.is-active { background: var(--t-accent); color: #fff; }
+.nv-avatar {
+  width: 38px; height: 38px; border-radius: 999px; flex-shrink: 0;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px;
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-gradient-via));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-cube { animation: none !important; }
+}

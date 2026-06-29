@@ -1,0 +1,273 @@
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN LAB — brand-identity exploration
+   All variants adapt to the active theme via --t-* tokens.
+   Prefixed .dl-* to avoid collisions. Respects reduced-motion.
+   ═══════════════════════════════════════════════════════════════ */
+
+.dl-wrap { --dl-r: 20px; }
+
+/* ─── Section frame ─────────────────────────────────────────── */
+.dl-demo {
+  position: relative;
+  border-radius: var(--dl-r);
+  overflow: hidden;
+  border: 1px solid var(--t-border);
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+}
+.dl-label {
+  position: absolute;
+  top: 10px; left: 12px;
+  z-index: 5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--t-bg-card);
+  color: var(--t-text-secondary);
+  border: 1px solid var(--t-border);
+  backdrop-filter: blur(8px);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATED BACKGROUNDS
+   ═══════════════════════════════════════════════════════════════ */
+
+/* BG A — Aurora: drifting blurred gradient blobs */
+.dl-bg-aurora { background: var(--t-bg-card); }
+.dl-bg-aurora .dl-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(46px);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+.dl-bg-aurora .dl-blob:nth-child(1) { width: 260px; height: 260px; background: var(--t-accent);       top: -60px; left: -40px;  animation: dl-drift1 14s ease-in-out infinite; }
+.dl-bg-aurora .dl-blob:nth-child(2) { width: 220px; height: 220px; background: var(--t-gradient-via); bottom: -70px; right: -30px; animation: dl-drift2 18s ease-in-out infinite; }
+.dl-bg-aurora .dl-blob:nth-child(3) { width: 180px; height: 180px; background: var(--t-gradient-from);top: 40%; left: 45%;     animation: dl-drift3 12s ease-in-out infinite; }
+@keyframes dl-drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(60px,40px) scale(1.15); } }
+@keyframes dl-drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-50px,-30px) scale(1.2); } }
+@keyframes dl-drift3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-40px,50px) scale(0.85); } }
+
+/* BG B — Floating 3D orbs (glossy spheres rising) */
+.dl-bg-orbs { background: linear-gradient(160deg, var(--t-bg-card), var(--t-bg-elevated)); perspective: 600px; }
+.dl-orb {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255,255,255,0.85), rgba(255,255,255,0.15) 18%, transparent 42%),
+    radial-gradient(circle at 70% 80%, var(--t-accent), var(--t-gradient-via));
+  box-shadow: 0 10px 30px var(--t-accent-glow), inset 0 -6px 14px rgba(0,0,0,0.35);
+}
+.dl-orb:nth-child(1){ width:54px;height:54px; left:14%; bottom:-60px; animation: dl-rise 9s linear infinite; }
+.dl-orb:nth-child(2){ width:34px;height:34px; left:40%; bottom:-60px; animation: dl-rise 7s linear infinite 1.5s; }
+.dl-orb:nth-child(3){ width:72px;height:72px; left:62%; bottom:-90px; animation: dl-rise 11s linear infinite 0.6s; }
+.dl-orb:nth-child(4){ width:26px;height:26px; left:82%; bottom:-40px; animation: dl-rise 6s linear infinite 2.4s; }
+@keyframes dl-rise {
+  0%   { transform: translateY(0) rotateZ(0); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-320px) rotateZ(180deg); opacity: 0; }
+}
+
+/* BG C — Perspective neon grid floor */
+.dl-bg-grid { background: var(--t-bg-card); }
+.dl-bg-grid .dl-grid {
+  position: absolute;
+  inset: 50% -50% -50% -50%;
+  background-image:
+    linear-gradient(var(--t-accent-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--t-accent-soft) 1px, transparent 1px);
+  background-size: 38px 38px;
+  transform: perspective(340px) rotateX(60deg);
+  transform-origin: top center;
+  animation: dl-gridmove 4s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent, #000 60%);
+}
+.dl-bg-grid .dl-grid-glow {
+  position: absolute;
+  left: 50%; top: 48%;
+  width: 220px; height: 120px;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(ellipse, var(--t-accent-glow), transparent 70%);
+  filter: blur(20px);
+}
+@keyframes dl-gridmove { from { background-position: 0 0; } to { background-position: 0 38px; } }
+
+/* 3D rotating cube — brand mark */
+.dl-cube-stage { perspective: 700px; }
+.dl-cube {
+  position: relative;
+  width: 84px; height: 84px;
+  transform-style: preserve-3d;
+  animation: dl-spin 9s linear infinite;
+}
+.dl-cube span {
+  position: absolute;
+  width: 84px; height: 84px;
+  border: 1px solid var(--t-accent);
+  background: var(--t-accent-soft);
+  backdrop-filter: blur(4px);
+  box-shadow: inset 0 0 24px var(--t-accent-glow);
+}
+.dl-cube span:nth-child(1){ transform: rotateY(0deg)   translateZ(42px); }
+.dl-cube span:nth-child(2){ transform: rotateY(90deg)  translateZ(42px); }
+.dl-cube span:nth-child(3){ transform: rotateY(180deg) translateZ(42px); }
+.dl-cube span:nth-child(4){ transform: rotateY(270deg) translateZ(42px); }
+.dl-cube span:nth-child(5){ transform: rotateX(90deg)  translateZ(42px); }
+.dl-cube span:nth-child(6){ transform: rotateX(-90deg) translateZ(42px); }
+@keyframes dl-spin { from { transform: rotateX(-20deg) rotateY(0); } to { transform: rotateX(-20deg) rotateY(360deg); } }
+
+/* ═══════════════════════════════════════════════════════════════
+   CARDS
+   ═══════════════════════════════════════════════════════════════ */
+.dl-card {
+  position: relative;
+  border-radius: var(--dl-r);
+  padding: 22px;
+  background: var(--t-bg-card);
+  border: 1px solid var(--t-border);
+  color: var(--t-text);
+  overflow: hidden;
+  isolation: isolate;
+}
+.dl-card h3 { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+.dl-card p  { color: var(--t-text-muted); font-size: 0.8rem; }
+.dl-card .dl-val { font-size: 1.6rem; font-weight: 800; margin-top: 12px; }
+
+/* Card A — Glass */
+.dl-card--glass {
+  background: color-mix(in srgb, var(--t-bg-card) 60%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--t-accent) 30%, var(--t-border));
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+/* Card B — Animated gradient (conic) border */
+.dl-card--gradborder { border: none; background: var(--t-bg-card); }
+.dl-card--gradborder::before {
+  content: ''; position: absolute; inset: -2px; z-index: -1; border-radius: inherit;
+  background: conic-gradient(from 0deg, var(--t-accent), var(--t-gradient-via), var(--t-gradient-from), var(--t-accent));
+  animation: dl-spin360 5s linear infinite;
+}
+.dl-card--gradborder::after {
+  content: ''; position: absolute; inset: 2px; z-index: -1; border-radius: calc(var(--dl-r) - 2px);
+  background: var(--t-bg-card);
+}
+@keyframes dl-spin360 { to { transform: rotate(360deg); } }
+
+/* Card C — Glow on hover */
+.dl-card--glow { transition: box-shadow .3s, transform .3s, border-color .3s; }
+.dl-card--glow:hover {
+  transform: translateY(-4px);
+  border-color: var(--t-accent);
+  box-shadow: 0 16px 40px var(--t-accent-glow), 0 0 0 1px var(--t-accent-soft);
+}
+
+/* Card D — 3D tilt (JS sets --rx/--ry) */
+.dl-card--tilt {
+  transition: transform .12s ease-out;
+  transform: perspective(800px) rotateX(var(--ry, 0deg)) rotateY(var(--rx, 0deg));
+  transform-style: preserve-3d;
+}
+.dl-card--tilt .dl-tilt-layer { transform: translateZ(40px); }
+
+/* Card E — Spotlight follows cursor (JS sets --mx/--my) */
+.dl-card--spot::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background: radial-gradient(220px circle at var(--mx,50%) var(--my,0%), var(--t-accent-soft), transparent 60%);
+  opacity: 0; transition: opacity .25s;
+}
+.dl-card--spot:hover::before { opacity: 1; }
+.dl-card--spot > * { position: relative; z-index: 1; }
+
+/* Card F — Soft neumorphic */
+.dl-card--soft {
+  background: var(--t-bg-elevated);
+  border: none;
+  box-shadow: 8px 8px 20px rgba(0,0,0,0.25), -8px -8px 20px rgba(255,255,255,0.04);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BUTTONS
+   ═══════════════════════════════════════════════════════════════ */
+.dl-btn {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-weight: 600; font-size: 0.9rem;
+  cursor: pointer; border: none;
+  color: #fff;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform .15s, box-shadow .2s, background .2s, color .2s;
+}
+
+/* Btn 1 — Gradient + glow */
+.dl-btn--grad {
+  background: linear-gradient(120deg, var(--t-gradient-from), var(--t-gradient-via));
+  box-shadow: 0 6px 18px var(--t-accent-glow);
+}
+.dl-btn--grad:hover { transform: translateY(-2px); box-shadow: 0 10px 26px var(--t-accent-glow); }
+
+/* Btn 2 — 3D press */
+.dl-btn--press {
+  background: var(--t-accent);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--t-accent) 60%, #000);
+}
+.dl-btn--press:active { transform: translateY(4px); box-shadow: 0 1px 0 color-mix(in srgb, var(--t-accent) 60%, #000); }
+
+/* Btn 3 — Shimmer sheen */
+.dl-btn--shimmer { background: linear-gradient(120deg, var(--t-gradient-from), var(--t-gradient-via)); }
+.dl-btn--shimmer::after {
+  content: ''; position: absolute; top: 0; left: -120%; width: 80%; height: 100%;
+  background: linear-gradient(110deg, transparent, rgba(255,255,255,0.45), transparent);
+  transform: skewX(-20deg);
+  animation: dl-shimmer 2.6s ease-in-out infinite;
+}
+@keyframes dl-shimmer { 0% { left: -120%; } 60%,100% { left: 130%; } }
+
+/* Btn 4 — Outline → fill */
+.dl-btn--outline {
+  background: transparent; color: var(--t-accent);
+  border: 1.5px solid var(--t-accent);
+}
+.dl-btn--outline::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background: var(--t-accent); transform: scaleX(0); transform-origin: left;
+  transition: transform .3s ease;
+}
+.dl-btn--outline:hover { color: #fff; }
+.dl-btn--outline:hover::before { transform: scaleX(1); }
+
+/* Btn 5 — Magnetic scale + glow ring */
+.dl-btn--magnetic {
+  background: var(--t-bg-elevated); color: var(--t-text);
+  border: 1px solid var(--t-border);
+}
+.dl-btn--magnetic:hover {
+  transform: scale(1.06);
+  border-color: var(--t-accent);
+  box-shadow: 0 0 0 4px var(--t-accent-soft);
+  color: var(--t-accent);
+}
+
+/* Btn 6 — Glass */
+.dl-btn--glass {
+  background: color-mix(in srgb, var(--t-accent) 18%, transparent);
+  color: var(--t-text);
+  border: 1px solid color-mix(in srgb, var(--t-accent) 40%, transparent);
+  backdrop-filter: blur(8px);
+}
+.dl-btn--glass:hover { background: color-mix(in srgb, var(--t-accent) 30%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dl-blob, .dl-orb, .dl-grid, .dl-cube,
+  .dl-card--gradborder::before, .dl-btn--shimmer::after {
+    animation: none !important;
+  }
+}

@@ -102,12 +102,36 @@ class StatsController extends Controller
             ")
             ->first();
 
+        // Last 6 months of paid revenue (oldest → newest) for the sparkline,
+        // plus this-month-vs-last-month trend. One grouped query.
+        $since = Carbon::now()->startOfMonth()->subMonths(5);
+        $monthly = $user->invoices()
+            ->where('status', 'paid')
+            ->where('invoice_date', '>=', $since)
+            ->selectRaw("DATE_FORMAT(invoice_date, '%Y-%m') as ym, COALESCE(SUM(total), 0) as total")
+            ->groupBy('ym')
+            ->pluck('total', 'ym');
+
+        $sparkline = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $key = Carbon::now()->startOfMonth()->subMonths($i)->format('Y-m');
+            $sparkline[] = round((float) ($monthly[$key] ?? 0), 2);
+        }
+
+        $thisMonth = $sparkline[5];
+        $lastMonth = $sparkline[4];
+        $revenueTrend = $lastMonth > 0
+            ? round(($thisMonth - $lastMonth) / $lastMonth * 100, 1)
+            : ($thisMonth > 0 ? 100.0 : 0.0);
+
         return response()->json([
             'total_revenue' => (float) $agg->total_revenue,
             'total_clients' => $user->clients()->count(),
             'total_invoices' => (int) $agg->total_invoices,
             'paid_count' => (int) $agg->paid_count,
             'unpaid_count' => (int) $agg->unpaid_count,
+            'revenue_sparkline' => $sparkline,
+            'revenue_trend' => $revenueTrend,
         ]);
     }
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { invoices, clients as clientsApi } from '@/lib/api'
+import { invoices, clients as clientsApi, catalog, CatalogItem } from '@/lib/api'
 import { toast } from 'react-toastify'
 
 interface InvoiceItem {
@@ -31,6 +31,8 @@ export default function NewInvoice() {
   const [clientSearch, setClientSearch] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
+  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([])
+  const [showCatalog, setShowCatalog] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -43,9 +45,53 @@ export default function NewInvoice() {
 
   useEffect(() => {
     loadClients()
+    catalog.list().then(setCatalogItems).catch(() => {})
     const saved = localStorage.getItem('savedDescriptions')
     if (saved) setSavedDescriptions(JSON.parse(saved))
   }, [])
+
+  // Insert a catalog preset as a new item row; if it has a {} placeholder,
+  // focus the description and place the caret where the variable goes.
+  const insertFromCatalog = (ci: CatalogItem) => {
+    const ph = ci.description.indexOf('{}')
+    const desc = ph >= 0 ? ci.description.replace('{}', '') : ci.description
+    const caret = ph >= 0 ? ph : desc.length
+    setForm(prev => {
+      const items = [...prev.items]
+      const newItem = { description: desc, unit: ci.unit || 'h', quantity: 1, price: Number(ci.price) || 0 }
+      const last = items[items.length - 1]
+      let target: number
+      if (last && !last.description && !last.price) { items[items.length - 1] = newItem; target = items.length - 1 }
+      else { items.push(newItem); target = items.length - 1 }
+      setTimeout(() => {
+        const el = document.querySelector<HTMLInputElement>(`input[data-desc-index="${target}"]`)
+        if (el) { el.focus(); el.setSelectionRange(caret, caret) }
+      }, 30)
+      return { ...prev, items }
+    })
+    setShowCatalog(false)
+  }
+
+  const saveToCatalog = async (item: InvoiceItem) => {
+    if (!item.description.trim()) { toast.info('Add a description first'); return }
+    try {
+      await catalog.create({ description: item.description, unit: item.unit, price: item.price })
+      const list = await catalog.list()
+      setCatalogItems(list)
+      toast.success('Saved to catalog')
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save')
+    }
+  }
+
+  const deleteFromCatalog = async (id: number) => {
+    try {
+      await catalog.delete(id)
+      setCatalogItems(prev => prev.filter(c => c.id !== id))
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete')
+    }
+  }
 
   const loadClients = async () => {
     try {
@@ -115,7 +161,7 @@ export default function NewInvoice() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
@@ -202,6 +248,7 @@ export default function NewInvoice() {
                     <input
                       type="text"
                       list="descriptions"
+                      data-desc-index={index}
                       placeholder="Description"
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
@@ -237,20 +284,47 @@ export default function NewInvoice() {
                       min="0"
                       step="0.01"
                     />
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="col-span-1 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="col-span-1 flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => saveToCatalog(item)}
+                        title="Save to catalog"
+                        className="transition-colors"
+                        style={{ color: 'var(--t-text-muted)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--t-accent)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--t-text-muted)')}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        title="Remove"
+                        className="flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   {/* Mobile stacked */}
                   <div className="md:hidden bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-gray-500 dark:text-gray-400 text-sm">Item {index + 1}</span>
+                      <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => saveToCatalog(item)}
+                        title="Save to catalog"
+                        style={{ color: 'var(--t-text-muted)' }}
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                      </button>
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
@@ -260,6 +334,7 @@ export default function NewInvoice() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
+                      </div>
                     </div>
                     <input
                       type="text"
@@ -308,16 +383,70 @@ export default function NewInvoice() {
                 </div>
               ))}
             </div>
-            <button 
-              type="button" 
-              onClick={addItem} 
-              className="mt-3 text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add item
-            </button>
+            <div className="mt-3 flex items-center gap-5 flex-wrap">
+              <button
+                type="button"
+                onClick={addItem}
+                className="text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add item
+              </button>
+
+              {/* Service catalog picker */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCatalog(s => !s)}
+                  className="flex items-center gap-1.5 text-sm font-medium transition-colors"
+                  style={{ color: 'var(--t-text-secondary)' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                  From catalog
+                  <svg className={`w-3 h-3 transition-transform ${showCatalog ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 12 12"><path d="M5.9 8.4L.5 3l1.4-1.4 4 4 4-4L11.3 3z" /></svg>
+                </button>
+
+                {showCatalog && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowCatalog(false)} />
+                    <div className="absolute left-0 mt-2 w-80 max-w-[90vw] z-20 rounded-xl shadow-2xl overflow-hidden"
+                      style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border)', backdropFilter: 'blur(16px)' }}>
+                      <div className="px-3 py-2 text-[11px] uppercase tracking-wider font-bold t-text-muted" style={{ borderBottom: '1px solid var(--t-border-light)' }}>
+                        Service catalog
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        {catalogItems.length === 0 ? (
+                          <div className="px-3 py-6 text-center text-sm t-text-muted">
+                            No saved services yet.<br />Use the ★ on a row to save one.
+                          </div>
+                        ) : catalogItems.map(ci => (
+                          <div key={ci.id} className="flex items-center gap-2 px-3 py-2 transition-colors"
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--t-bg-elevated)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <button type="button" onClick={() => insertFromCatalog(ci)} className="flex-1 min-w-0 text-left">
+                              <span className="block text-sm t-text truncate">{ci.description}</span>
+                              <span className="block text-xs t-text-muted">{ci.unit} · {Number(ci.price).toFixed(2)} €</span>
+                            </button>
+                            <button type="button" onClick={() => deleteFromCatalog(ci.id)} title="Delete from catalog"
+                              className="shrink-0 text-red-400 hover:text-red-300 transition-colors">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="px-3 py-2 text-[11px] t-text-muted" style={{ borderTop: '1px solid var(--t-border-light)', background: 'var(--t-bg-elevated)' }}>
+                        Tip: put <code className="px-1 rounded" style={{ background: 'var(--t-bg-card)' }}>{'{}'}</code> in a saved description where the name goes — e.g. <span className="t-text-secondary">Puslapio redagavimo paslaugos „{'{}'}"</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
             <datalist id="descriptions">
               {savedDescriptions.map((desc, i) => <option key={i} value={desc} />)}
             </datalist>
@@ -345,7 +474,7 @@ export default function NewInvoice() {
               <button 
                 type="submit"
                 disabled={saving}
-                className="flex-1 sm:flex-initial btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-initial btn-gradient bd-clip-sm px-8 py-3 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? (
                   <>

@@ -8,6 +8,7 @@ use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\TimeEntryController;
+use App\Http\Controllers\CatalogItemController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Password;
@@ -69,6 +70,11 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::delete('/profile/signature', [ProfileController::class, 'deleteSignature']);
 
     Route::apiResource('clients', ClientController::class);
+
+    Route::get('/catalog-items', [CatalogItemController::class, 'index']);
+    Route::post('/catalog-items', [CatalogItemController::class, 'store']);
+    Route::put('/catalog-items/{id}', [CatalogItemController::class, 'update']);
+    Route::delete('/catalog-items/{id}', [CatalogItemController::class, 'destroy']);
 
     Route::get('/stats', [StatsController::class, 'index']);
     Route::get('/stats/clients', [StatsController::class, 'clientBreakdown']);

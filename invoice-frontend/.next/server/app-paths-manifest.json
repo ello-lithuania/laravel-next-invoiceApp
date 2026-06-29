@@ -1,4 +1,24 @@
 {
+  "/(dashboard)/clients/edit/page": "app/(dashboard)/clients/edit/page.js",
+  "/(dashboard)/clients/new/page": "app/(dashboard)/clients/new/page.js",
+  "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js",
+  "/(dashboard)/clients/view/page": "app/(dashboard)/clients/view/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js"
+  "/(dashboard)/invoices/edit/page": "app/(dashboard)/invoices/edit/page.js",
+  "/(dashboard)/invoices/new/page": "app/(dashboard)/invoices/new/page.js",
+  "/(dashboard)/invoices/page": "app/(dashboard)/invoices/page.js",
+  "/(dashboard)/profile/page": "app/(dashboard)/profile/page.js",
+  "/(dashboard)/settings/page": "app/(dashboard)/settings/page.js",
+  "/(dashboard)/time-tracking/page": "app/(dashboard)/time-tracking/page.js",
+  "/(dashboard)/year-summary/page": "app/(dashboard)/year-summary/page.js",
+  "/(public)/forgot-password/page": "app/(public)/forgot-password/page.js",
+  "/(public)/login/page": "app/(public)/login/page.js",
+  "/(public)/page": "app/(public)/page.js",
+  "/(public)/register/page": "app/(public)/register/page.js",
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/concepts/page": "app/concepts/page.js",
+  "/design-lab/page": "app/design-lab/page.js",
+  "/icon.svg/route": "app/icon.svg/route.js",
+  "/nav-preview/page": "app/nav-preview/page.js"
 }

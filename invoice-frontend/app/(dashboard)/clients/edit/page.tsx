@@ -73,7 +73,7 @@ function EditClientForm() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6">
             <div>
@@ -147,7 +147,7 @@ function EditClientForm() {
             <button 
               type="submit"
               disabled={saving}
-              className="btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2 bd-clip-sm"
             >
               {saving ? (
                 <>

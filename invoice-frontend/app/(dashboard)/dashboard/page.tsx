@@ -34,6 +34,36 @@ function AnimatedNumber({ value, prefix = '', suffix = '', duration = 1000 }: { 
   return <span ref={ref}>{prefix}{formatted}{suffix}</span>
 }
 
+// Lightweight inline-SVG sparkline (no chart lib needed for a tiny trend line).
+function Sparkline({ data, color, width = 96, height = 28 }: { data: number[]; color: string; width?: number; height?: number }) {
+  if (!data || data.length < 2) return null
+  const max = Math.max(...data)
+  const min = Math.min(...data)
+  const range = max - min || 1
+  const stepX = width / (data.length - 1)
+  const points = data.map((v, i) => {
+    const x = i * stepX
+    const y = height - ((v - min) / range) * (height - 4) - 2
+    return [x, y] as const
+  })
+  const line = points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  const area = `${line} L${width},${height} L0,${height} Z`
+  const gradId = `spark-${color.replace(/[^a-z0-9]/gi, '')}`
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible" aria-hidden="true">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${gradId})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={points[points.length - 1][0]} cy={points[points.length - 1][1]} r="2.2" fill={color} />
+    </svg>
+  )
+}
+
 interface ChartData {
   month?: string
   date?: string
@@ -58,29 +88,6 @@ const periods = [
   { value: '1y', label: 'This Year' },
 ]
 
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-8">
-      <div>
-        <Skeleton className="h-9 w-48 mb-2" />
-        <Skeleton className="h-5 w-64" />
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
-      </div>
-      <div className="t-card rounded-xl p-6">
-        <Skeleton className="h-7 w-56 mb-6" />
-        <div className="space-y-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-12" />)}
-        </div>
-      </div>
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2"><Skeleton className="h-96 rounded-xl" /></div>
-        <div><Skeleton className="h-96 rounded-xl" /></div>
-      </div>
-    </div>
-  )
-}
 
 function useThemeVar(varName: string, fallback: string): string {
   const [val, setVal] = useState(fallback)
@@ -102,10 +109,27 @@ export default function Dashboard() {
   const [statsData, setStatsData] = useState<StatsData | null>(null)
   const [clientBreakdown, setClientBreakdown] = useState<ClientBreakdownResponse>({ clients: [], year: new Date().getFullYear(), year_total: 0 })
   const [unpaidInvoices, setUnpaidInvoices] = useState<Invoice[]>([])
-  const [quickStatsData, setQuickStatsData] = useState<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number } | null>(null)
+  const [quickStatsData, setQuickStatsData] = useState<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number; revenue_sparkline: number[]; revenue_trend: number } | null>(null)
   const [activePeriod, setActivePeriod] = useState('1m')
-  const [loading, setLoading] = useState(true)
+  // Per-section loading so each part reveals as soon as its own request lands,
+  // instead of one all-or-nothing skeleton waiting on the slowest call.
+  const [quickLoading, setQuickLoading] = useState(true)
+  const [unpaidLoading, setUnpaidLoading] = useState(true)
+  const [breakdownLoading, setBreakdownLoading] = useState(true)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [unpaidFilter, setUnpaidFilter] = useState<'all' | 'this_week' | 'this_month' | 'overdue'>('all')
+  const [yearGoal, setYearGoal] = useState<number>(0)
+  const [editingGoal, setEditingGoal] = useState(false)
+
+  useEffect(() => {
+    const g = localStorage.getItem('year-goal')
+    if (g) setYearGoal(Number(g) || 0)
+  }, [])
+
+  const saveGoal = (v: number) => {
+    setYearGoal(v)
+    localStorage.setItem('year-goal', String(v))
+  }
 
   const chartBar = useThemeVar('--t-chart-bar', '#38bdf8')
   const chartGrid = useThemeVar('--t-chart-grid', '#1e293b')
@@ -114,32 +138,35 @@ export default function Dashboard() {
   const textMuted = useThemeVar('--t-text-muted', '#64748b')
   const accent = useThemeVar('--t-accent', '#38bdf8')
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    let active = true
+    // Fire independently (not Promise.all) so the fastest section paints first.
+    stats.quickStats()
+      .then(d => { if (active) setQuickStatsData(d) })
+      .catch(e => toast.error(e.message || 'Failed to load stats'))
+      .finally(() => { if (active) setQuickLoading(false) })
+    invoices.unpaid()
+      .then(d => { if (active) setUnpaidInvoices(d) })
+      .catch(e => toast.error(e.message || 'Failed to load invoices'))
+      .finally(() => { if (active) setUnpaidLoading(false) })
+    stats.clientBreakdown()
+      .then(d => { if (active) setClientBreakdown(d) })
+      .catch(e => toast.error(e.message || 'Failed to load clients'))
+      .finally(() => { if (active) setBreakdownLoading(false) })
+    return () => { active = false }
+  }, [])
+
   useEffect(() => { loadStats() }, [activePeriod])
 
-  const loadData = async () => {
-    try {
-      const [breakdownData, unpaidData, qStats] = await Promise.all([
-        stats.clientBreakdown(),
-        invoices.unpaid(),
-        stats.quickStats()
-      ])
-      setClientBreakdown(breakdownData)
-      setUnpaidInvoices(unpaidData)
-      setQuickStatsData(qStats)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load dashboard data')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const loadStats = async () => {
+    setStatsLoading(true)
     try {
       const data = await stats.get(activePeriod)
       setStatsData(data)
     } catch (e: any) {
       toast.error(e.message || 'Failed to load statistics')
+    } finally {
+      setStatsLoading(false)
     }
   }
 
@@ -196,47 +223,94 @@ export default function Dashboard() {
   }, [unpaidInvoices, unpaidFilter])
 
   const filteredUnpaidTotal = filteredUnpaid.reduce((sum, inv) => sum + Number(inv.total || 0), 0)
-  
-  if (loading) return <DashboardSkeleton />
 
+  // Receivables aging — bucket unpaid invoices by how overdue they are
+  const aging = useMemo(() => {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const b = {
+      notDue: { count: 0, amount: 0, label: 'Not due yet', color: '#10b981' },
+      d0_30: { count: 0, amount: 0, label: '0–30 days', color: '#f59e0b' },
+      d31_60: { count: 0, amount: 0, label: '31–60 days', color: '#fb923c' },
+      d60: { count: 0, amount: 0, label: '60+ days', color: '#ef4444' },
+    }
+    unpaidInvoices.forEach(inv => {
+      const due = new Date(inv.due_date)
+      const days = Math.floor((today.getTime() - due.getTime()) / 86400000)
+      const amt = Number(inv.total || 0)
+      const k = days < 0 ? 'notDue' : days <= 30 ? 'd0_30' : days <= 60 ? 'd31_60' : 'd60'
+      b[k].count++; b[k].amount += amt
+    })
+    const total = b.notDue.amount + b.d0_30.amount + b.d31_60.amount + b.d60.amount
+    return { ...b, total }
+  }, [unpaidInvoices])
+
+  const goalProgress = yearGoal > 0 ? Math.min((clientBreakdown.year_total / yearGoal) * 100, 100) : 0
+  
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
+      <div className="reveal">
         <h1 className="text-2xl md:text-3xl font-bold mb-2 t-text">Dashboard</h1>
-        <p className="t-text-muted">Welcome back, {user?.name || ''}</p>
+        <p className="t-text-muted" suppressHydrationWarning>Welcome back, {user?.name || ''}</p>
       </div>
 
       {/* Stat Cards */}
-      {quickStatsData && (
+      {quickLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+        </div>
+      ) : quickStatsData && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
           {[
-            { label: 'Total Revenue', value: quickStatsData.total_revenue, suffix: ' €', sub: 'From paid invoices', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: '#10b981' },
+            { label: 'Total Revenue', value: quickStatsData.total_revenue, suffix: ' €', sub: 'From paid invoices', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: '#10b981', trend: quickStatsData.revenue_trend, spark: quickStatsData.revenue_sparkline },
             { label: 'Total Invoices', value: quickStatsData.total_invoices, sub: `${quickStatsData.paid_count} paid`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: accent },
             { label: 'Clients', value: quickStatsData.total_clients, sub: 'Active clients', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: '#a855f7' },
             { label: 'Paid Ratio', value: quickStatsData.total_invoices > 0 ? Math.round((quickStatsData.paid_count / quickStatsData.total_invoices) * 100) : 0, suffix: '%', sub: `${quickStatsData.unpaid_count} unpaid`, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: '#f59e0b' },
           ].map((stat, i) => (
-            <div key={i} className="t-stat-card">
+            <div key={i} className="t-stat-card prism-card hover-lift">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${stat.color}15` }}>
-                  <svg className="w-5 h-5" style={{ color: stat.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bd-clip-sm flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${stat.color}, ${stat.color}bb)` }}>
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
                   </svg>
                 </div>
                 <p className="text-xs uppercase tracking-wider font-medium t-text-muted">{stat.label}</p>
+                {stat.trend !== undefined && (
+                  <span
+                    className="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums px-1.5 py-0.5 rounded-md"
+                    style={{
+                      color: stat.trend >= 0 ? '#10b981' : '#ef4444',
+                      background: stat.trend >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+                    }}
+                    title="vs. last month"
+                  >
+                    {stat.trend >= 0 ? '↑' : '↓'}{Math.abs(stat.trend)}%
+                  </span>
+                )}
               </div>
-              <p className="text-2xl font-bold t-text">
+              <p className="text-3xl font-extrabold tracking-tight t-text">
                 <AnimatedNumber value={stat.value} suffix={stat.suffix} />
               </p>
-              <p className="text-xs mt-1" style={{ color: stat.color }}>{stat.sub}</p>
+              <div className="flex items-end justify-between gap-2 mt-1">
+                <p className="text-xs" style={{ color: stat.color }}>{stat.sub}</p>
+                {stat.spark && <Sparkline data={stat.spark} color={stat.color} />}
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {/* Unpaid Invoices */}
-      {unpaidInvoices.length > 0 && (
-        <div className="t-card rounded-xl p-6">
+      {unpaidLoading ? (
+        <div className="t-card prism-card p-6">
+          <Skeleton className="h-7 w-56 mb-6" />
+          <div className="space-y-3">
+            {[1,2,3].map(i => <Skeleton key={i} className="h-12" />)}
+          </div>
+        </div>
+      ) : unpaidInvoices.length > 0 && (
+        <div className="t-card prism-card p-6 reveal">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 className="text-xl font-semibold t-text flex items-center gap-2">
               <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +436,7 @@ export default function Dashboard() {
                   <div key={inv.id} className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <Link href={`/invoices/edit?id=${inv.id}`} className="t-text font-medium hover:underline">{inv.series} {inv.number}</Link>
-                      <span className="t-text font-semibold">{inv.total} EUR</span>
+                      <span className="t-text font-semibold tabular-nums">{formatCurrency(Number(inv.total))}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="t-text-muted text-sm">{inv.client?.name}</span>
@@ -394,11 +468,97 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Analytics: receivables aging + year goal */}
+      {!unpaidLoading && (
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Aging */}
+          <div className="t-card prism-card p-6 lg:col-span-2 reveal">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-lg font-semibold t-text">Receivables Aging</h2>
+              <span className="text-sm font-bold tabular-nums t-text">{formatCurrency(aging.total)}</span>
+            </div>
+            <p className="text-xs t-text-muted mb-5">Outstanding amounts by how overdue they are</p>
+
+            {aging.total === 0 ? (
+              <div className="py-8 text-center t-text-muted text-sm">🎉 Nothing outstanding — all invoices are paid.</div>
+            ) : (
+              <>
+                {/* stacked bar */}
+                <div className="flex h-3 rounded-full overflow-hidden mb-5" style={{ background: 'var(--t-bg-elevated)' }}>
+                  {[aging.notDue, aging.d0_30, aging.d31_60, aging.d60].map((s, i) => (
+                    s.amount > 0 ? <div key={i} style={{ width: `${(s.amount / aging.total) * 100}%`, background: s.color }} title={`${s.label}: ${formatCurrency(s.amount)}`} /> : null
+                  ))}
+                </div>
+                {/* buckets */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[aging.notDue, aging.d0_30, aging.d31_60, aging.d60].map((s, i) => (
+                    <div key={i} className="rounded-lg p-3" style={{ background: 'var(--t-bg-elevated)' }}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                        <span className="text-xs t-text-muted truncate">{s.label}</span>
+                      </div>
+                      <p className="text-lg font-bold tabular-nums t-text">{formatCurrency(s.amount)}</p>
+                      <p className="text-xs t-text-muted">{s.count} {s.count === 1 ? 'invoice' : 'invoices'}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Year goal */}
+          <div className="t-card prism-card p-6 reveal">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-lg font-semibold t-text">Year Goal {clientBreakdown.year}</h2>
+              <button onClick={() => setEditingGoal(v => !v)} className="t-text-muted hover:t-accent transition-colors" title="Edit goal">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </button>
+            </div>
+            <p className="text-xs t-text-muted mb-4">Paid income vs. your target</p>
+
+            {editingGoal ? (
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="number" min="0" autoFocus
+                  defaultValue={yearGoal || ''}
+                  placeholder="e.g. 30000"
+                  onKeyDown={e => { if (e.key === 'Enter') { saveGoal(Number((e.target as HTMLInputElement).value) || 0); setEditingGoal(false) } }}
+                  className="flex-1 p-2 text-sm bd-clip-sm"
+                  style={{ background: 'var(--t-bg-input)', border: '1px solid var(--t-border)', color: 'var(--t-text)' }}
+                />
+                <button
+                  onClick={e => { const inp = (e.currentTarget.previousElementSibling as HTMLInputElement); saveGoal(Number(inp.value) || 0); setEditingGoal(false) }}
+                  className="px-3 py-2 text-sm font-semibold text-white btn-gradient bd-clip-sm"
+                >Save</button>
+              </div>
+            ) : yearGoal > 0 ? (
+              <>
+                <div className="flex items-end justify-between mb-2">
+                  <span className="text-2xl font-extrabold tabular-nums t-text">{formatCurrency(clientBreakdown.year_total)}</span>
+                  <span className="text-sm t-text-muted">/ {formatCurrency(yearGoal)}</span>
+                </div>
+                <div className="w-full h-3 rounded-full overflow-hidden mb-2" style={{ background: 'var(--t-bg-elevated)' }}>
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${goalProgress}%`, background: 'linear-gradient(90deg, var(--t-gradient-from), var(--t-accent))' }} />
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold t-accent">{goalProgress.toFixed(0)}% reached</span>
+                  <span className="t-text-muted">{formatCurrency(Math.max(yearGoal - clientBreakdown.year_total, 0))} to go</span>
+                </div>
+              </>
+            ) : (
+              <button onClick={() => setEditingGoal(true)} className="w-full py-6 rounded-lg text-sm t-text-muted transition-colors" style={{ border: '1px dashed var(--t-border)' }}>
+                + Set a revenue goal for {clientBreakdown.year}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Charts + Sidebar */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {/* Invoice Statistics */}
-          <div className="t-card rounded-xl p-6">
+          <div className="t-card prism-card p-6 reveal">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <h2 className="text-xl font-semibold t-text">Invoice Statistics</h2>
               <div className="flex flex-wrap gap-2">
@@ -406,7 +566,7 @@ export default function Dashboard() {
                   <button
                     key={p.value}
                     onClick={() => setActivePeriod(p.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-2 bd-clip-sm text-sm font-medium transition-all ${
                       activePeriod === p.value ? 'btn-gradient' : ''
                     }`}
                     style={activePeriod !== p.value ? {
@@ -451,7 +611,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {statsData?.chart && statsData.chart.length > 0 ? (
+            {statsLoading ? (
+              <Skeleton className="h-80 rounded-xl" />
+            ) : statsData?.chart && statsData.chart.length > 0 ? (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={statsData.chart.map(d => ({ ...d, label: formatDate(d.date || d.month) }))}>
@@ -485,7 +647,7 @@ export default function Dashboard() {
           </div>
 
           {/* Top 10 Clients (current year, paid only) */}
-          <div className="t-card rounded-xl p-6">
+          <div className="t-card prism-card p-6 reveal">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-6">
               <div>
                 <h2 className="text-xl font-semibold t-text">Top 10 Clients ({clientBreakdown.year})</h2>
@@ -496,8 +658,12 @@ export default function Dashboard() {
                 <span className="text-base font-bold t-accent">{formatCurrency(clientBreakdown.year_total)}</span>
               </div>
             </div>
-            {clientBreakdown.clients.length > 0 ? (
+            {breakdownLoading ? (
               <div className="space-y-3">
+                {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-10 rounded-lg" />)}
+              </div>
+            ) : clientBreakdown.clients.length > 0 ? (
+              <div className="space-y-3 stagger">
                 {clientBreakdown.clients.map((c, i) => (
                   <div key={i} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3">
@@ -541,7 +707,7 @@ export default function Dashboard() {
         {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <div className="t-card rounded-xl p-6">
+          <div className="t-card prism-card p-6 reveal">
             <h2 className="text-xl font-semibold t-text mb-4">Quick Actions</h2>
             <div className="space-y-3">
               {[
@@ -556,10 +722,10 @@ export default function Dashboard() {
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--t-bg-elevated)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${action.gradient ? 'btn-gradient' : ''}`}
-                    style={!action.gradient ? { backgroundColor: `${action.color}18` } : {}}
+                  <div className={`w-10 h-10 bd-clip-sm flex items-center justify-center shrink-0 ${action.gradient ? 'btn-gradient' : ''}`}
+                    style={!action.gradient ? { background: `linear-gradient(135deg, ${action.color}, ${action.color}bb)` } : {}}
                   >
-                    <svg className="w-5 h-5" style={{ color: action.gradient ? '#fff' : action.color }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
                     </svg>
                   </div>
@@ -573,7 +739,7 @@ export default function Dashboard() {
           </div>
 
           {/* Status Overview */}
-          <div className="t-card rounded-xl p-6">
+          <div className="t-card prism-card p-6 reveal">
             <h2 className="text-lg font-semibold t-text mb-4">Invoice Status Overview</h2>
             {(() => {
               const statusCounts = unpaidInvoices.reduce((acc, inv) => {

@@ -17,7 +17,7 @@ function ClientsSkeleton() {
         <Skeleton className="h-12 w-36 rounded-xl" />
       </div>
       <Skeleton className="h-12 w-full rounded-xl" />
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
         <table className="w-full">
           <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
             <tr className="border-b border-gray-200 dark:border-gray-700/60">
@@ -121,7 +121,7 @@ export default function Clients() {
         </div>
         <Link
           href="/clients/new"
-          className="w-full sm:w-auto text-center btn-gradient px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto text-center btn-gradient px-6 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 bd-clip-sm"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -156,7 +156,7 @@ export default function Clients() {
         )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
         {/* Desktop table */}
         <div className="hidden md:block">
         <table className="w-full">
