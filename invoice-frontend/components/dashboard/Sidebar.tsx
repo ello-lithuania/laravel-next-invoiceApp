@@ -70,14 +70,15 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
   const sidebar = useRef<HTMLDivElement>(null)
   const [unpaidCount, setUnpaidCount] = useState(0)
 
-  // Live unpaid badge on the Invoices item
+  // Live unpaid badge on the Invoices item — fetch once on mount
+  // (not on every navigation; the dashboard already loads quick stats).
   useEffect(() => {
     let active = true
     stats.quickStats()
       .then(d => { if (active) setUnpaidCount(d.unpaid_count) })
       .catch(() => { /* badge is best-effort */ })
     return () => { active = false }
-  }, [pathname])
+  }, [])
 
   const renderItem = (item: { label: string; href: string; icon: React.ReactNode; addHref?: string }) => {
     const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))

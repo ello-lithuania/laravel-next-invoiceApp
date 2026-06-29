@@ -6,7 +6,13 @@ import { toast } from 'react-toastify'
 import { statusColors, formatCurrency } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import { useUser } from '@/contexts/UserContext'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import dynamic from 'next/dynamic'
+
+// Lazy-load the chart so recharts/d3 stays out of the dashboard's initial bundle.
+const RevenueChart = dynamic(() => import('@/components/dashboard/RevenueChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-80 rounded-xl" />,
+})
 
 function AnimatedNumber({ value, prefix = '', suffix = '', duration = 1000 }: { value: number; prefix?: string; suffix?: string; duration?: number }) {
   const [display, setDisplay] = useState(0)
@@ -614,25 +620,14 @@ export default function Dashboard() {
             {statsLoading ? (
               <Skeleton className="h-80 rounded-xl" />
             ) : statsData?.chart && statsData.chart.length > 0 ? (
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={statsData.chart.map(d => ({ ...d, label: formatDate(d.date || d.month) }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                    <XAxis dataKey="label" stroke={textMuted} fontSize={12} />
-                    <YAxis stroke={textMuted} fontSize={12} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: tooltipBg,
-                        border: `1px solid ${tooltipBorder}`,
-                        borderRadius: '8px',
-                      }}
-                      labelStyle={{ color: '#fff' }}
-                      formatter={(value: number) => [formatCurrency(value), 'Amount']}
-                    />
-                    <Bar dataKey="total" name="Amount" fill={chartBar} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <RevenueChart
+                data={statsData.chart.map(d => ({ ...d, label: formatDate(d.date || d.month) }))}
+                grid={chartGrid}
+                text={textMuted}
+                tooltipBg={tooltipBg}
+                tooltipBorder={tooltipBorder}
+                bar={chartBar}
+              />
             ) : (
               <div className="h-80 flex items-center justify-center t-text-muted">
                 <div className="text-center">

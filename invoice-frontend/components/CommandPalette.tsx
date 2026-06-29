@@ -58,7 +58,12 @@ export default function CommandPalette() {
   useEffect(() => {
     if (!open || loadedRef.current) return
     loadedRef.current = true
-    Promise.all([clients.list().catch(() => [] as Client[]), invoices.list().catch(() => [] as Invoice[])])
+    Promise.all([
+      clients.list().catch(() => [] as Client[]),
+      // Only the 50 most recent invoices — keeps the payload light.
+      // Deep/full search is still available via the header search bar.
+      invoices.listPaginated('per_page=50').then(r => r.data).catch(() => [] as Invoice[]),
+    ])
       .then(([cs, invs]) => {
         const items: Item[] = [
           ...cs.map(c => ({ id: `c-${c.id}`, group: 'Client' as const, label: c.name, sub: c.email || c.company_code || 'Client', href: `/clients/view?id=${c.id}`, icon: ICON.client })),
