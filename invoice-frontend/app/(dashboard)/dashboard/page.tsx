@@ -262,6 +262,25 @@ export default function Dashboard() {
   }, [unpaidInvoices])
 
   const goalProgress = yearGoal > 0 ? Math.min((clientBreakdown.year_total / yearGoal) * 100, 100) : 0
+
+  // Pace projection: extrapolate the current daily earning rate across the whole
+  // year to see whether you're on track to hit the goal, and what monthly pace
+  // the remainder needs.
+  const goalNow = new Date()
+  const goalStart = new Date(goalNow.getFullYear(), 0, 1)
+  const goalEnd = new Date(goalNow.getFullYear() + 1, 0, 1)
+  const goalDayMs = 86400000
+  const daysInYear = Math.round((goalEnd.getTime() - goalStart.getTime()) / goalDayMs)
+  const daysElapsed = Math.max(1, Math.floor((goalNow.getTime() - goalStart.getTime()) / goalDayMs) + 1)
+  const daysLeft = Math.max(0, daysInYear - daysElapsed)
+  const monthsElapsed = goalNow.getMonth() + 1
+  const monthsLeft = 12 - monthsElapsed
+  const projectedYear = (clientBreakdown.year_total / daysElapsed) * daysInYear
+  const monthlyAvg = clientBreakdown.year_total / monthsElapsed
+  const remainingToGoal = Math.max(yearGoal - clientBreakdown.year_total, 0)
+  const neededPerMonth = monthsLeft > 0 ? remainingToGoal / monthsLeft : remainingToGoal
+  const onTrack = projectedYear >= yearGoal
+  const projectedPct = yearGoal > 0 ? Math.min((projectedYear / yearGoal) * 100, 100) : 0
   
   return (
     <div className="space-y-8">
@@ -559,6 +578,22 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold t-accent">{goalProgress.toFixed(0)}% reached</span>
                   <span className="t-text-muted">{formatCurrency(Math.max(yearGoal - clientBreakdown.year_total, 0))} to go</span>
+                </div>
+
+                {/* Pace projection — are you on track to hit the goal? */}
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--t-border-light)' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs t-text-muted">Projected year-end</span>
+                    <span className="text-sm font-bold tabular-nums" style={{ color: onTrack ? '#10b981' : '#fb923c' }}>{formatCurrency(projectedYear)}</span>
+                  </div>
+                  <div className="text-xs font-semibold" style={{ color: onTrack ? '#10b981' : '#fb923c' }}>
+                    {onTrack
+                      ? `▲ On track — ~${formatCurrency(projectedYear - yearGoal)} over goal`
+                      : `▼ Behind — need ${formatCurrency(neededPerMonth)}/mo${monthsLeft > 0 ? ` for ${monthsLeft} mo` : ''}`}
+                  </div>
+                  <p className="text-[11px] t-text-muted mt-1">
+                    Avg {formatCurrency(monthlyAvg)}/mo · {daysLeft} days left · {projectedPct.toFixed(0)}% of goal on pace
+                  </p>
                 </div>
               </>
             ) : (

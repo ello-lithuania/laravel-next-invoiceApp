@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useLayoutEffect, Suspense } from 'react'
 import Sidebar from '@/components/dashboard/Sidebar'
 import Header from '@/components/dashboard/Header'
 import StatsBar from '@/components/dashboard/StatsBar'
@@ -7,19 +7,23 @@ import Breadcrumbs from '@/components/Breadcrumbs'
 import { UserProvider } from '@/contexts/UserContext'
 import CommandPalette from '@/components/CommandPalette'
 
+// useLayoutEffect on the client (runs before paint → no flash), useEffect on
+// the server render (avoids the SSR warning during static generation).
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  // Read the saved state synchronously so the first client render already
-  // matches the pre-paint markup set by the blocking script in the root
-  // layout — no expand→collapse flicker on load.
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('sidebar-expanded') !== 'false'
-  })
+  // Must start at the SAME value the static HTML was built with (expanded),
+  // or hydration mismatches (React #418). The blocking script in the root
+  // layout + the pre-hydration CSS bridge make the collapsed rail *paint*
+  // correctly before this effect runs, so there's still no visible flicker.
+  const [sidebarExpanded, setSidebarExpanded] = useState(true)
 
-  // Once React controls the sidebar, drop the pre-hydration bridge so the
-  // CSS overrides step aside and runtime toggling animates normally.
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
+    // Apply the saved state right after hydration but before the browser paints,
+    // so the collapsed markup and the bridge removal commit together — no flash,
+    // and no hydration mismatch (first render matched the static HTML).
+    if (localStorage.getItem('sidebar-expanded') === 'false') setSidebarExpanded(false)
     document.documentElement.classList.remove('pre-hydration')
   }, [])
 

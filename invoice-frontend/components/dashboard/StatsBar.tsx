@@ -31,12 +31,6 @@ export default function StatsBar() {
   const pathname = usePathname()
   const [data, setData] = useState<QuickStats | null>(null)
   const [goal, setGoal] = useState(0)
-  const [collapsed, setCollapsed] = useState(false)
-
-  useEffect(() => {
-    const stored = localStorage.getItem('statsbar-collapsed')
-    if (stored === 'true') setCollapsed(true)
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -48,14 +42,6 @@ export default function StatsBar() {
     window.addEventListener(STATS_REFRESH_EVENT, load)
     return () => { active = false; window.removeEventListener(STATS_REFRESH_EVENT, load) }
   }, [pathname])
-
-  const toggle = () => {
-    setCollapsed(c => {
-      const next = !c
-      localStorage.setItem('statsbar-collapsed', String(next))
-      return next
-    })
-  }
 
   if (!data) return null
 
@@ -102,53 +88,34 @@ export default function StatsBar() {
       }}
     >
       <div className="px-4 sm:px-6 lg:px-8">
-        {collapsed ? (
-          <div className="h-10 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-4 min-w-0 overflow-x-auto no-scrollbar">
-              <span className="text-xs font-semibold tabular-nums whitespace-nowrap" style={{ color: '#10b981' }}>
-                {formatCurrency(data.year_revenue)} <span className="t-text-muted font-normal">earned</span>
-              </span>
-              <span className="text-xs font-semibold tabular-nums whitespace-nowrap" style={{ color: '#fb923c' }}>
-                {formatCurrency(data.unpaid_total)} <span className="t-text-muted font-normal">due</span>
-              </span>
-            </div>
-            <button onClick={toggle} className="shrink-0 t-text-muted hover:t-accent transition-colors p-1" title="Show stats">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-            </button>
+        <div className="h-16 flex items-center gap-2">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-3 min-w-0">
+            {items.map((it, i) => (
+              <Link
+                key={i}
+                href={it.href}
+                className="group flex items-center gap-2.5 min-w-0 rounded-lg px-2 py-1 -mx-1 transition-colors hover:bg-[var(--t-bg-elevated)]"
+              >
+                <span className="w-1.5 h-8 rounded-full shrink-0 transition-all group-hover:h-9" style={{ background: it.color }} />
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-xs uppercase tracking-wider font-medium t-text-muted truncate">{it.label}</p>
+                  <p className="text-sm sm:text-base font-bold tabular-nums t-text leading-tight truncate">
+                    {it.value}
+                    {it.sub && <span className="ml-1.5 text-[10px] font-normal t-text-muted">{it.sub}</span>}
+                  </p>
+                </div>
+              </Link>
+            ))}
           </div>
-        ) : (
-          <div className="h-16 flex items-center gap-2">
-            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-3 min-w-0">
-              {items.map((it, i) => (
-                <Link
-                  key={i}
-                  href={it.href}
-                  className="group flex items-center gap-2.5 min-w-0 rounded-lg px-2 py-1 -mx-1 transition-colors hover:bg-[var(--t-bg-elevated)]"
-                >
-                  <span className="w-1.5 h-8 rounded-full shrink-0 transition-all group-hover:h-9" style={{ background: it.color }} />
-                  <div className="min-w-0">
-                    <p className="text-[10px] sm:text-xs uppercase tracking-wider font-medium t-text-muted truncate">{it.label}</p>
-                    <p className="text-sm sm:text-base font-bold tabular-nums t-text leading-tight truncate">
-                      {it.value}
-                      {it.sub && <span className="ml-1.5 text-[10px] font-normal t-text-muted">{it.sub}</span>}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <div className="hidden md:flex items-center gap-2 shrink-0 pl-2" title="Paid revenue, last 6 months">
-              <MiniSpark data={data.revenue_sparkline} color="#10b981" />
-              {data.revenue_trend !== 0 && (
-                <span className="text-xs font-semibold tabular-nums" style={{ color: data.revenue_trend >= 0 ? '#10b981' : '#ef4444' }}>
-                  {data.revenue_trend >= 0 ? '↑' : '↓'}{Math.abs(data.revenue_trend)}%
-                </span>
-              )}
-            </div>
-            <button onClick={toggle} className="shrink-0 t-text-muted hover:t-accent transition-colors p-1" title="Collapse stats">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
+          <div className="hidden md:flex items-center gap-2 shrink-0 pl-2" title="Paid revenue, last 6 months">
+            <MiniSpark data={data.revenue_sparkline} color="#10b981" />
+            {data.revenue_trend !== 0 && (
+              <span className="text-xs font-semibold tabular-nums" style={{ color: data.revenue_trend >= 0 ? '#10b981' : '#ef4444' }}>
+                {data.revenue_trend >= 0 ? '↑' : '↓'}{Math.abs(data.revenue_trend)}%
+              </span>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

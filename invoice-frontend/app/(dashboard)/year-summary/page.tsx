@@ -35,13 +35,14 @@ export default function YearSummary() {
   const [data, setData] = useState<YearSummaryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [availableYears, setAvailableYears] = useState<number[]>([])
+  const [clientPage, setClientPage] = useState(1)
 
   useEffect(() => {
     loadYears()
   }, [])
 
   useEffect(() => {
-    if (year) loadData()
+    if (year) { loadData(); setClientPage(1) }
   }, [year])
 
   const loadYears = async () => {
@@ -100,9 +101,11 @@ export default function YearSummary() {
   const isCurrentYear = year === now.getFullYear()
   const visibleMonths = data.months.filter(m => !isCurrentYear || m.month <= now.getMonth() + 1)
   const maxMonth = Math.max(...visibleMonths.map(m => m.total), 1)
-  // Hours only come from time tracking; if nobody has any, drop the column
-  // rather than showing a wall of "—".
-  const showHours = data.clients.some(c => c.hours > 0)
+  // Clients ranked by share of revenue, paginated — no per-client hours (the
+  // point is who made up what % of the total).
+  const clientsPerPage = 10
+  const clientTotalPages = Math.max(1, Math.ceil(data.clients.length / clientsPerPage))
+  const pagedClients = data.clients.slice((clientPage - 1) * clientsPerPage, clientPage * clientsPerPage)
 
   return (
     <div className="space-y-6">
@@ -227,61 +230,63 @@ export default function YearSummary() {
         </div>
       </div>
 
-      {/* Client breakdown */}
+      {/* Client breakdown — ranked by share of revenue, paginated */}
       {data.clients.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
-          <div className="p-6 pb-3">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Clients</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Clients</h2>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Share of {fmt(data.total_revenue)} € total</p>
+            </div>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{data.clients.length} client{data.clients.length === 1 ? '' : 's'}</span>
           </div>
-          {/* Desktop */}
-          <div className="hidden md:block">
-            <table className="w-full">
-              <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
-                <tr>
-                  <th className="px-6 py-3 text-left">Client</th>
-                  <th className="px-6 py-3 text-right">Invoices</th>
-                  <th className="px-6 py-3 text-right">Amount</th>
-                  {showHours && <th className="px-6 py-3 text-right">Hours</th>}
-                  <th className="px-6 py-3 text-right">%</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-                {data.clients.map((c, i) => (
-                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <td className="px-6 py-3 font-medium text-gray-800 dark:text-gray-100">{c.name}</td>
-                    <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-400">{c.invoice_count}</td>
-                    <td className="px-6 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{fmt(c.total)} €</td>
-                    {showHours && (
-                      <td className="px-6 py-3 text-right text-gray-500 dark:text-gray-400">
-                        {c.hours > 0 ? `${c.hours.toFixed(1)} h` : '0 h'}
-                      </td>
-                    )}
-                    <td className="px-6 py-3 text-right">
-                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
-                        {data.total_revenue > 0 ? ((c.total / data.total_revenue) * 100).toFixed(1) : 0}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          <div className="space-y-3">
+            {pagedClients.map((c, i) => {
+              const rank = (clientPage - 1) * clientsPerPage + i + 1
+              const pct = data.total_revenue > 0 ? (c.total / data.total_revenue) * 100 : 0
+              return (
+                <div key={rank} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)' }}>{rank}</span>
+                      <span className="font-medium text-sm truncate text-gray-800 dark:text-gray-100">{c.name}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">({c.invoice_count} inv.)</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="font-semibold tabular-nums text-sm text-gray-800 dark:text-gray-100">{fmt(c.total)} €</span>
+                      <span className="text-sm font-bold tabular-nums w-14 text-right" style={{ color: 'var(--t-accent)' }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full overflow-hidden ml-9" style={{ background: 'var(--t-bg-elevated)', maxWidth: 'calc(100% - 2.25rem)' }}>
+                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: 'var(--t-accent)' }} />
+                  </div>
+                </div>
+              )
+            })}
           </div>
-          {/* Mobile */}
-          <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
-            {data.clients.map((c, i) => (
-              <div key={i} className="p-4 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-800 dark:text-gray-100">{c.name}</span>
-                  <span className="font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(c.total)} €</span>
-                </div>
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{c.invoice_count} inv.</span>
-                  {showHours && <span>{c.hours > 0 ? c.hours.toFixed(1) : '0'} h</span>}
-                  <span>{data.total_revenue > 0 ? ((c.total / data.total_revenue) * 100).toFixed(1) : 0}%</span>
-                </div>
+
+          {clientTotalPages > 1 && (
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+              <span className="text-xs text-gray-400 dark:text-gray-500">Page {clientPage} of {clientTotalPages}</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setClientPage(p => Math.max(1, p - 1))}
+                  disabled={clientPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Prev
+                </button>
+                <button
+                  onClick={() => setClientPage(p => Math.min(clientTotalPages, p + 1))}
+                  disabled={clientPage === clientTotalPages}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

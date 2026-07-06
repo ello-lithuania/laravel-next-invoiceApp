@@ -14,11 +14,13 @@ class StatsController extends Controller
     {
         $period = $request->get('period', '1m');
 
+        // Start at the beginning of the month N-1 months back so each window
+        // spans exactly N calendar months (e.g. "3 Months" = 3 bars, not 4).
         $startDate = match($period) {
             '1m' => Carbon::now()->startOfMonth(),
-            '3m' => Carbon::now()->subMonths(3),
-            '6m' => Carbon::now()->subMonths(6),
-            '9m' => Carbon::now()->subMonths(9),
+            '3m' => Carbon::now()->startOfMonth()->subMonths(2),
+            '6m' => Carbon::now()->startOfMonth()->subMonths(5),
+            '9m' => Carbon::now()->startOfMonth()->subMonths(8),
             '1y' => Carbon::now()->startOfYear(),
             default => Carbon::now()->startOfMonth(),
         };
@@ -198,6 +200,11 @@ class StatsController extends Controller
         $bestMonth = null;
         $worstMonth = null;
         if (count($monthsWithRevenue) > 0) {
+            // The current month (of the current year) is still in progress, so its
+            // partial total shouldn't be eligible for "worst" — early in the month
+            // it would always look like the lowest.
+            $currentMonth = ($year === (int) now()->year) ? (int) now()->month : null;
+
             // Find the best/worst month by total among months that had invoices.
             // (array_keys() against a scalar can't match the array rows, so scan.)
             $bestIdx = null;
@@ -212,7 +219,8 @@ class StatsController extends Controller
                     $bestVal = $m['total'];
                     $bestIdx = $idx;
                 }
-                if ($m['total'] < $worstVal) {
+                $isCurrentIncomplete = $currentMonth !== null && ($idx + 1) === $currentMonth;
+                if (!$isCurrentIncomplete && $m['total'] < $worstVal) {
                     $worstVal = $m['total'];
                     $worstIdx = $idx;
                 }
