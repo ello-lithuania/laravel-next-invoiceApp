@@ -5,19 +5,25 @@ import { usePathname } from 'next/navigation'
 import { stats, QuickStats } from '@/lib/api'
 import { formatCurrency, STATS_REFRESH_EVENT } from '@/lib/utils'
 
-// Tiny inline sparkline (values 0–100) — used for the monthly paid-ratio trend.
-function MiniSpark({ data, color }: { data: number[]; color: string }) {
+// Tiny inline sparkline. Optional `reference` draws a dashed horizontal line
+// (e.g. the monthly goal target) so you can see which months cleared it.
+function MiniSpark({ data, color, reference }: { data: number[]; color: string; reference?: number }) {
   if (!data || data.length < 2) return null
   const w = 76, h = 26
-  const max = Math.max(...data), min = Math.min(...data)
+  const vals = reference != null ? [...data, reference] : data
+  const max = Math.max(...vals), min = Math.min(...vals)
   const range = max - min || 1
+  const yOf = (v: number) => h - ((v - min) / range) * (h - 6) - 3
   const step = w / (data.length - 1)
-  const pts = data.map((v, i) => [i * step, h - ((v - min) / range) * (h - 6) - 3] as const)
+  const pts = data.map((v, i) => [i * step, yOf(v)] as const)
   const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden="true">
       <path d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.12" />
       <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {reference != null && (
+        <line x1="0" y1={yOf(reference)} x2={w} y2={yOf(reference)} stroke="var(--t-text-muted)" strokeWidth="1" strokeDasharray="2 2" opacity="0.8" />
+      )}
       <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2" fill={color} />
     </svg>
   )
@@ -116,9 +122,9 @@ export default function StatsBar() {
             ))}
           </div>
           {earnedSpark.some(v => v > 0) && (
-            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid revenue per completed month">
+            <div className="hidden md:block leading-tight shrink-0 pl-3" title={goal > 0 ? 'Paid revenue per completed month · dashed line = monthly goal (goal ÷ 12)' : 'Paid revenue per completed month'}>
               <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted mb-0.5">Earned / mo</p>
-              <MiniSpark data={earnedSpark} color="#10b981" />
+              <MiniSpark data={earnedSpark} color="#10b981" reference={goal > 0 ? goal / 12 : undefined} />
             </div>
           )}
           {goal > 0 && (
