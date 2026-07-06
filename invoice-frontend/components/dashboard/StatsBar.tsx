@@ -22,7 +22,7 @@ function MiniSpark({ data, color, reference }: { data: number[]; color: string; 
       <path d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.12" />
       <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       {reference != null && (
-        <line x1="0" y1={yOf(reference)} x2={w} y2={yOf(reference)} stroke="var(--t-text-muted)" strokeWidth="1" strokeDasharray="2 2" opacity="0.8" />
+        <line x1="0" y1={yOf(reference)} x2={w} y2={yOf(reference)} stroke="var(--t-accent)" strokeWidth="1.25" strokeDasharray="3 2" opacity="0.95" />
       )}
       <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2" fill={color} />
     </svg>
