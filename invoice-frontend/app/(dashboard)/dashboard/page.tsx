@@ -264,10 +264,14 @@ export default function Dashboard() {
   const daysInYear = Math.round((goalEnd.getTime() - goalStart.getTime()) / goalDayMs)
   const daysElapsed = Math.max(1, Math.floor((goalNow.getTime() - goalStart.getTime()) / goalDayMs) + 1)
   const daysLeft = Math.max(0, daysInYear - daysElapsed)
-  const monthsElapsed = goalNow.getMonth() + 1
-  const monthsLeft = 12 - monthsElapsed
-  const projectedYear = (clientBreakdown.year_total / daysElapsed) * daysInYear
-  const monthlyAvg = clientBreakdown.year_total / monthsElapsed
+  const monthsLeft = 12 - (goalNow.getMonth() + 1)
+  // Project from completed months only — the current month isn't over yet, so
+  // its partial total shouldn't drag the run-rate.
+  const monthIdx = goalNow.getMonth() // whole months already finished
+  const currentMonthPaid = quickStatsData?.revenue_sparkline?.[quickStatsData.revenue_sparkline.length - 1] ?? 0
+  const completedRevenue = Math.max(0, clientBreakdown.year_total - currentMonthPaid)
+  const monthlyAvg = monthIdx >= 1 ? completedRevenue / monthIdx : clientBreakdown.year_total
+  const projectedYear = monthIdx >= 1 ? monthlyAvg * 12 : clientBreakdown.year_total
   const remainingToGoal = Math.max(yearGoal - clientBreakdown.year_total, 0)
   const neededPerMonth = monthsLeft > 0 ? remainingToGoal / monthsLeft : remainingToGoal
   const onTrack = projectedYear >= yearGoal
@@ -324,38 +328,30 @@ export default function Dashboard() {
         <div className="t-card prism-card p-6 reveal">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <h2 className="text-xl font-semibold t-text flex items-center gap-2">
-              <svg className="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 t-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Unpaid Invoices ({unpaidInvoices.length})
             </h2>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(251, 146, 60, 0.12)', border: '1px solid rgba(251, 146, 60, 0.3)' }}>
-                <span className="text-xs uppercase tracking-wider font-medium" style={{ color: '#fb923c' }}>{unpaidFilter === 'all' ? 'Total Outstanding' : 'Filtered Total'}</span>
-                <span className="text-base font-bold" style={{ color: '#fb923c' }}>{formatCurrency(filteredUnpaidTotal)}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'var(--t-accent-soft)', border: '1px solid var(--t-border)' }}>
+                <span className="text-xs uppercase tracking-wider font-medium t-text-muted">{unpaidFilter === 'all' ? 'Total Outstanding' : 'Filtered Total'}</span>
+                <span className="text-base font-bold t-accent">{formatCurrency(filteredUnpaidTotal)}</span>
               </div>
               <Link href="/invoices" className="t-accent text-sm hover:underline">View all →</Link>
             </div>
           </div>
 
-          {/* Quick filter chips */}
+          {/* Quick filter chips — only when there's more than one age bucket;
+              if everything is "up to 1 month" the chips would just duplicate "All". */}
+          {(aging.over1m.count > 0 || aging.over2m.count > 0) && (
           <div className="flex flex-wrap gap-2 mb-5">
             {(() => {
-              const now = new Date()
-              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-              const daysOf = (inv: Invoice) => Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / 86400000)
-              const counts = {
-                all: unpaidInvoices.length,
-                up_to_1m: unpaidInvoices.filter(i => daysOf(i) <= 30).length,
-                over_1m: unpaidInvoices.filter(i => { const d = daysOf(i); return d > 30 && d <= 60 }).length,
-                over_2m: unpaidInvoices.filter(i => daysOf(i) > 60).length,
-              }
-              // Only show the "over" buckets when they actually contain something.
               const chips: Array<{ key: typeof unpaidFilter; label: string; count: number; severe?: boolean }> = [
-                { key: 'all', label: 'All', count: counts.all },
-                { key: 'up_to_1m', label: 'Up to 1 month', count: counts.up_to_1m },
-                ...(counts.over_1m > 0 ? [{ key: 'over_1m' as const, label: 'Over 1 month', count: counts.over_1m, severe: true }] : []),
-                ...(counts.over_2m > 0 ? [{ key: 'over_2m' as const, label: 'Over 2 months', count: counts.over_2m, severe: true }] : []),
+                { key: 'all', label: 'All', count: unpaidInvoices.length },
+                { key: 'up_to_1m', label: 'Up to 1 month', count: aging.upTo1m.count },
+                ...(aging.over1m.count > 0 ? [{ key: 'over_1m' as const, label: 'Over 1 month', count: aging.over1m.count, severe: true }] : []),
+                ...(aging.over2m.count > 0 ? [{ key: 'over_2m' as const, label: 'Over 2 months', count: aging.over2m.count, severe: true }] : []),
               ]
               return chips.map(chip => {
                 const active = unpaidFilter === chip.key
@@ -377,6 +373,7 @@ export default function Dashboard() {
               })
             })()}
           </div>
+          )}
 
           <div className="overflow-x-auto">
             {filteredUnpaid.length === 0 ? (
@@ -431,7 +428,7 @@ export default function Dashboard() {
               <tfoot>
                 <tr style={{ borderTop: '2px solid var(--t-border)' }}>
                   <td colSpan={3} className="px-4 py-3 text-sm font-semibold t-text text-right">Total Unpaid:</td>
-                  <td className="px-4 py-3 text-right text-lg font-bold tabular-nums" style={{ color: '#fb923c' }}>{formatCurrency(filteredUnpaidTotal)}</td>
+                  <td className="px-4 py-3 text-right text-lg font-bold tabular-nums t-accent">{formatCurrency(filteredUnpaidTotal)}</td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -469,7 +466,7 @@ export default function Dashboard() {
               })}
               <div className="p-4 flex items-center justify-between" style={{ borderTop: '2px solid var(--t-border)' }}>
                 <span className="text-sm font-semibold t-text">Total Unpaid:</span>
-                <span className="text-lg font-bold tabular-nums" style={{ color: '#fb923c' }}>{formatCurrency(filteredUnpaidTotal)}</span>
+                <span className="text-lg font-bold tabular-nums t-accent">{formatCurrency(filteredUnpaidTotal)}</span>
               </div>
             </div>
             </>)}

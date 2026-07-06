@@ -57,7 +57,12 @@ export default function StatsBar() {
   const daysElapsed = Math.max(1, Math.floor((now.getTime() - startOfYear.getTime()) / dayMs) + 1)
   const daysLeft = Math.max(0, daysInYear - daysElapsed)
   const remaining = Math.max(goal - data.year_revenue, 0)
-  const projected = (data.year_revenue / daysElapsed) * daysInYear
+  // Project from completed months only — the current month is still in progress,
+  // so its partial (and lagging-paid) total would skew the run-rate.
+  const monthIdx = now.getMonth() // number of whole months already finished
+  const currentMonthPaid = data.revenue_sparkline?.[data.revenue_sparkline.length - 1] ?? 0
+  const completedRevenue = Math.max(0, data.year_revenue - currentMonthPaid)
+  const projected = monthIdx >= 1 ? (completedRevenue / monthIdx) * 12 : data.year_revenue
   const chance = goal > 0 ? Math.round((projected / goal) * 100) : 0
   const goalColor = remaining === 0 ? '#10b981' : chance >= 100 ? '#10b981' : chance >= 60 ? 'var(--t-accent)' : '#fb923c'
 
@@ -107,10 +112,10 @@ export default function StatsBar() {
               </Link>
             ))}
           </div>
-          {data.paid_ratio_sparkline?.some(v => v > 0) && (
-            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid ratio over the last 6 months">
-              <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted mb-0.5">Paid % / mo</p>
-              <MiniSpark data={data.paid_ratio_sparkline} color="#a855f7" />
+          {data.revenue_sparkline?.some(v => v > 0) && (
+            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid revenue per month, last 6 months">
+              <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted mb-0.5">Earned / mo</p>
+              <MiniSpark data={data.revenue_sparkline} color="#10b981" />
             </div>
           )}
           {goal > 0 && (
