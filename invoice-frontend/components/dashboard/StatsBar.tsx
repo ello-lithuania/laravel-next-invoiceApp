@@ -64,6 +64,9 @@ export default function StatsBar() {
   const completedRevenue = Math.max(0, data.year_revenue - currentMonthPaid)
   const projected = monthIdx >= 1 ? (completedRevenue / monthIdx) * 12 : data.year_revenue
   const chance = goal > 0 ? Math.round((projected / goal) * 100) : 0
+  // Sparkline of completed months only — drop the current, still-in-progress
+  // month so it doesn't show a misleading dip at the end.
+  const earnedSpark = data.revenue_sparkline ? data.revenue_sparkline.slice(0, -1) : []
   const goalColor = remaining === 0 ? '#10b981' : chance >= 100 ? '#10b981' : chance >= 60 ? 'var(--t-accent)' : '#fb923c'
 
   const goalItem = goal > 0
@@ -112,10 +115,10 @@ export default function StatsBar() {
               </Link>
             ))}
           </div>
-          {data.revenue_sparkline?.some(v => v > 0) && (
-            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid revenue per month, last 6 months">
+          {earnedSpark.some(v => v > 0) && (
+            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid revenue per completed month">
               <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted mb-0.5">Earned / mo</p>
-              <MiniSpark data={data.revenue_sparkline} color="#10b981" />
+              <MiniSpark data={earnedSpark} color="#10b981" />
             </div>
           )}
           {goal > 0 && (
