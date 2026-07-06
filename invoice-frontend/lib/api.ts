@@ -294,9 +294,24 @@ export const clients = {
     api<{ message: string }>(`/clients/${id}`, { method: 'DELETE' }),
 }
 
+export interface ClientHistoryItem {
+  description: string
+  unit: string
+  price: number
+  last_used: string
+  count: number
+}
+
+export interface ClientHistory {
+  items: ClientHistoryItem[]
+  invoices: Pick<Invoice, 'id' | 'series' | 'number' | 'invoice_date' | 'total' | 'status'>[]
+}
+
 export const invoices = {
-  list: () => 
+  list: () =>
     api<Invoice[]>('/invoices'),
+  clientHistory: (clientId: number | string) =>
+    api<ClientHistory>(`/invoices/client-history?client_id=${clientId}`),
   listPaginated: (params: string) => 
     api<PaginatedResponse<Invoice>>(`/invoices?${params}`),
   unpaid: () =>
@@ -327,13 +342,26 @@ export const invoices = {
     api<Invoice>(`/invoices/${id}/duplicate`, { method: 'POST' }),
 }
 
+export interface QuickStats {
+  total_revenue: number
+  year_revenue: number
+  year: number
+  total_clients: number
+  total_invoices: number
+  paid_count: number
+  unpaid_count: number
+  unpaid_total: number
+  revenue_sparkline: number[]
+  revenue_trend: number
+}
+
 export const stats = {
-  get: (period: string) => 
+  get: (period: string) =>
     api<StatsData>(`/stats?period=${period}`),
   clientBreakdown: (year?: number) =>
     api<ClientBreakdownResponse>(`/stats/clients${year ? `?year=${year}` : ''}`),
   quickStats: () =>
-    api<{ total_revenue: number; total_clients: number; total_invoices: number; paid_count: number; unpaid_count: number; revenue_sparkline: number[]; revenue_trend: number }>('/stats/quick'),
+    api<QuickStats>('/stats/quick'),
   availableYears: () =>
     api<number[]>('/stats/available-years'),
   yearSummary: (year: number) =>

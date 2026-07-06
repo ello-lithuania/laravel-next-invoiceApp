@@ -16,19 +16,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                var el = document.documentElement;
                 try {
                   var color = localStorage.getItem('app-color-theme') || localStorage.getItem('app-theme') || 'midnight';
                   if (color === 'frost') color = 'midnight';
                   var modeStr = localStorage.getItem('app-theme-mode');
                   var isDark = modeStr ? modeStr === 'dark' : true;
-                  document.documentElement.setAttribute('data-theme', color);
-                  document.documentElement.setAttribute('data-mode', isDark ? 'dark' : 'light');
-                  if (isDark) document.documentElement.classList.add('dark');
+                  el.setAttribute('data-theme', color);
+                  el.setAttribute('data-mode', isDark ? 'dark' : 'light');
+                  if (isDark) el.classList.add('dark');
                 } catch (e) {
-                  document.documentElement.classList.add('dark');
-                  document.documentElement.setAttribute('data-theme', 'midnight');
-                  document.documentElement.setAttribute('data-mode', 'dark');
+                  el.classList.add('dark');
+                  el.setAttribute('data-theme', 'midnight');
+                  el.setAttribute('data-mode', 'dark');
                 }
+                // Apply the saved sidebar state before first paint so the
+                // collapsed rail never flickers open then narrow on load.
+                try {
+                  el.classList.add('pre-hydration');
+                  if (localStorage.getItem('sidebar-expanded') === 'false') {
+                    el.classList.add('sidebar-collapsed');
+                  }
+                } catch (e) {}
               })();
             `,
           }}

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { stats } from '@/lib/api'
+import { STATS_REFRESH_EVENT } from '@/lib/utils'
 
 interface SidebarProps {
   sidebarOpen: boolean
@@ -70,14 +71,16 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
   const sidebar = useRef<HTMLDivElement>(null)
   const [unpaidCount, setUnpaidCount] = useState(0)
 
-  // Live unpaid badge on the Invoices item — fetch once on mount
-  // (not on every navigation; the dashboard already loads quick stats).
+  // Live unpaid badge on the Invoices item — fetch on mount and refresh
+  // whenever a status change fires the global stats-refresh event.
   useEffect(() => {
     let active = true
-    stats.quickStats()
+    const load = () => stats.quickStats()
       .then(d => { if (active) setUnpaidCount(d.unpaid_count) })
       .catch(() => { /* badge is best-effort */ })
-    return () => { active = false }
+    load()
+    window.addEventListener(STATS_REFRESH_EVENT, load)
+    return () => { active = false; window.removeEventListener(STATS_REFRESH_EVENT, load) }
   }, [])
 
   const renderItem = (item: { label: string; href: string; icon: React.ReactNode; addHref?: string }) => {
@@ -91,7 +94,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
           <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: 'linear-gradient(var(--t-gradient-from), var(--t-accent))' }} />
         )}
         {badge !== null && !sidebarExpanded && (
-          <span className="hidden lg:block absolute top-1 right-2 w-2 h-2 rounded-full z-10" style={{ background: 'var(--t-accent)' }} />
+          <span
+            className="hidden lg:flex absolute top-0.5 right-1.5 min-w-[16px] h-4 px-1 items-center justify-center rounded-full z-10 text-[10px] font-bold leading-none text-white tabular-nums"
+            style={{ background: 'var(--t-accent)' }}
+            title={`${badge} unpaid invoice${badge === 1 ? '' : 's'}`}
+          >
+            {badge > 9 ? '9+' : badge}
+          </span>
         )}
         {item.addHref && sidebarExpanded && (
           <Link
@@ -119,7 +128,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
             <span style={isActive ? { color: 'var(--t-accent)' } : { color: 'var(--t-text-muted)' }}>
               {item.icon}
             </span>
-            <span className={`font-medium duration-200 ${
+            <span className={`nav-label font-medium duration-200 ${
               sidebarExpanded
                 ? 'text-sm ml-4 truncate'
                 : 'text-sm ml-4 truncate lg:ml-0 lg:text-[10px] lg:leading-tight lg:font-semibold lg:text-center lg:whitespace-normal lg:overflow-visible'
@@ -128,7 +137,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
             </span>
             {badge !== null && sidebarExpanded && (
               <span className="ml-auto text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded-full"
-                style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
+                style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}
+                title={`${badge} unpaid invoice${badge === 1 ? '' : 's'}`}>
                 {badge}
               </span>
             )}
@@ -176,6 +186,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
 
       {/* Sidebar */}
       <div
+        id="sidebar"
         ref={sidebar}
         className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 p-4 transition-all duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
@@ -210,12 +221,12 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
 
         {/* Navigation */}
         <div>
-          <h3 className="text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3">
-            <span className={`${sidebarExpanded ? 'block' : 'hidden lg:block lg:text-center'}`}>
-              {sidebarExpanded ? 'Menu' : '•••'}
-            </span>
+          {/* Section label only makes sense when expanded — a lone "•••" reads
+              as noise on the collapsed rail, so drop it entirely there. */}
+          <h3 className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? 'block' : 'hidden'}`}>
+            Menu
           </h3>
-          <ul className="mt-3">{navItems.map(renderItem)}</ul>
+          <ul className={sidebarExpanded ? 'mt-3' : 'mt-3 lg:mt-0'}>{navItems.map(renderItem)}</ul>
         </div>
       </div>
     </div>

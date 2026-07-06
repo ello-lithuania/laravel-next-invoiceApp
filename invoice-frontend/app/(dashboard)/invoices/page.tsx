@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { invoices, clients as clientsApi, getToken, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors } from '@/lib/utils'
+import { statusColors, refreshStats } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 
@@ -169,6 +169,7 @@ function InvoicesContent() {
           toast.success('Invoice deleted')
           loadInvoices()
           loadMonths()
+          refreshStats()
         } catch (e: any) {
           toast.error(e.message || 'Failed to delete invoice')
         }
@@ -181,6 +182,7 @@ function InvoicesContent() {
       await invoices.updateStatus(id, status)
       toast.success('Status updated')
       loadInvoices()
+      refreshStats()
     } catch (e: any) {
       toast.error(e.message || 'Failed to update status')
     }
@@ -222,6 +224,7 @@ function InvoicesContent() {
           setSelected([])
           loadInvoices()
           loadMonths()
+          refreshStats()
         } catch (e: any) {
           toast.error(e.message || 'Failed to delete invoices')
         }
@@ -245,6 +248,7 @@ function InvoicesContent() {
       toast.success(`${selected.length} invoice(s) updated to ${status}`)
       setSelected([])
       loadInvoices()
+      refreshStats()
     } catch (e: any) {
       toast.error(e.message || 'Failed to update statuses')
     }

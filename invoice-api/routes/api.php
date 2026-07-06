@@ -88,6 +88,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/invoices/months', [InvoiceController::class, 'months']);
     Route::get('/invoices/unpaid', [InvoiceController::class, 'unpaid']);
     Route::get('/invoices/trackable', [InvoiceController::class, 'trackable']);
+    Route::get('/invoices/client-history', [InvoiceController::class, 'clientHistory']);
     Route::post('/invoices/bulk-delete', [InvoiceController::class, 'bulkDelete']);
     Route::post('/invoices/bulk-status', [InvoiceController::class, 'bulkUpdateStatus']);
     Route::apiResource('invoices', InvoiceController::class);

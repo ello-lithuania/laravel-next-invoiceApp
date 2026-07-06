@@ -567,6 +567,25 @@
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Pre-hydration sidebar collapse bridge.
+   The blocking script in the root layout adds .pre-hydration (+ .sidebar-collapsed
+   when the saved state is collapsed) before first paint. The static HTML is built
+   with the sidebar expanded, so without this the rail would paint wide then animate
+   narrow once React hydrates. These rules force the collapsed look for the very first
+   frame only — the dashboard layout removes .pre-hydration on mount, after which
+   React's own classes drive the width and toggling animates normally. Desktop only;
+   on mobile the sidebar is an off-canvas full-width drawer. */
+@media (min-width: 1024px) {
+  html.pre-hydration.sidebar-collapsed #sidebar {
+    width: 5rem;
+    transition: none !important;
+  }
+  html.pre-hydration.sidebar-collapsed #sidebar .nav-label,
+  html.pre-hydration.sidebar-collapsed #sidebar .bd-wordmark {
+    display: none;
+  }
+}
+
 * { -webkit-tap-highlight-color: transparent; }
 
 html.transition-colors,

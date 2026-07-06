@@ -19,3 +19,10 @@ export function formatCurrency(value: number): string {
 export function formatStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
+
+// Fired after any mutation that changes revenue/paid/unpaid totals so the
+// global StatsBar can re-fetch. Pages call refreshStats() after such changes.
+export const STATS_REFRESH_EVENT = 'stats:refresh'
+export function refreshStats(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(STATS_REFRESH_EVENT))
+}

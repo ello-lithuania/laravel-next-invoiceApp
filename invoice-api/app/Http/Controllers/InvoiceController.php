@@ -399,6 +399,68 @@ class InvoiceController extends Controller
         return response()->json($result);
     }
 
+    /**
+     * Per-client billing history for the invoice form: the distinct line items
+     * this client has been billed before (with their most recent price, so the
+     * 11 €/12 € difference between clients is preserved) plus a few recent
+     * invoices. Lets the user pick from history instead of re-typing everything.
+     */
+    public function clientHistory(Request $request)
+    {
+        $user = $request->user();
+        $clientId = (int) $request->get('client_id');
+
+        if (!$clientId || !$user->clients()->where('id', $clientId)->exists()) {
+            return response()->json(['message' => 'Invalid client.'], 422);
+        }
+
+        // Every line item ever billed to this client, newest invoice first.
+        $rows = InvoiceItem::query()
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->where('invoices.user_id', $user->id)
+            ->where('invoices.client_id', $clientId)
+            ->orderBy('invoices.invoice_date', 'desc')
+            ->orderBy('invoice_items.id', 'desc')
+            ->get([
+                'invoice_items.description',
+                'invoice_items.unit',
+                'invoice_items.price',
+                'invoices.invoice_date',
+            ]);
+
+        // Collapse to distinct description+unit. Because rows are newest-first,
+        // the first time we see a key its price is the most recent one used.
+        $seen = [];
+        foreach ($rows as $row) {
+            $key = mb_strtolower(trim($row->description)) . '|' . mb_strtolower(trim($row->unit));
+            if (!isset($seen[$key])) {
+                $seen[$key] = [
+                    'description' => $row->description,
+                    'unit' => $row->unit,
+                    'price' => (float) $row->price,
+                    'last_used' => $row->invoice_date,
+                    'count' => 0,
+                ];
+            }
+            $seen[$key]['count']++;
+        }
+
+        $items = array_values($seen);
+        // Most-used first, so the everyday service floats to the top.
+        usort($items, fn ($a, $b) => $b['count'] <=> $a['count']);
+
+        $recentInvoices = $user->invoices()
+            ->where('client_id', $clientId)
+            ->orderBy('invoice_date', 'desc')
+            ->limit(5)
+            ->get(['id', 'series', 'number', 'invoice_date', 'total', 'status']);
+
+        return response()->json([
+            'items' => $items,
+            'invoices' => $recentInvoices,
+        ]);
+    }
+
     public function bulkDelete(Request $request)
     {
         $validated = $request->validate([

@@ -92,13 +92,17 @@ class StatsController extends Controller
     {
         $user = $request->user();
 
-        // Single aggregate pass over invoices instead of 4 separate queries.
+        $year = (int) now()->year;
+
+        // Single aggregate pass over invoices instead of separate queries.
         $agg = $user->invoices()
             ->selectRaw("
                 COUNT(*) as total_invoices,
                 COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) as total_revenue,
                 COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) as paid_count,
-                COALESCE(SUM(CASE WHEN status <> 'paid' THEN 1 ELSE 0 END), 0) as unpaid_count
+                COALESCE(SUM(CASE WHEN status <> 'paid' THEN 1 ELSE 0 END), 0) as unpaid_count,
+                COALESCE(SUM(CASE WHEN status <> 'paid' THEN total ELSE 0 END), 0) as unpaid_total,
+                COALESCE(SUM(CASE WHEN status = 'paid' AND YEAR(invoice_date) = {$year} THEN total ELSE 0 END), 0) as year_revenue
             ")
             ->first();
 
@@ -126,10 +130,13 @@ class StatsController extends Controller
 
         return response()->json([
             'total_revenue' => (float) $agg->total_revenue,
+            'year_revenue' => (float) $agg->year_revenue,
+            'year' => $year,
             'total_clients' => $user->clients()->count(),
             'total_invoices' => (int) $agg->total_invoices,
             'paid_count' => (int) $agg->paid_count,
             'unpaid_count' => (int) $agg->unpaid_count,
+            'unpaid_total' => (float) $agg->unpaid_total,
             'revenue_sparkline' => $sparkline,
             'revenue_trend' => $revenueTrend,
         ]);

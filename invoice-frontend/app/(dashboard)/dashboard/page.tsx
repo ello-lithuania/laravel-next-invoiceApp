@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { stats, invoices, Invoice, ClientBreakdownResponse } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency } from '@/lib/utils'
+import { statusColors, formatCurrency, refreshStats } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import { useUser } from '@/contexts/UserContext'
 import dynamic from 'next/dynamic'
@@ -179,8 +179,18 @@ export default function Dashboard() {
   const handleStatusChange = async (id: number, status: string) => {
     try {
       await invoices.updateStatus(id, status)
-      const unpaidData = await invoices.unpaid()
+      // Refresh everything the status touches — not just the unpaid list, but
+      // the revenue/paid-ratio cards and the year total too, so marking an
+      // invoice paid updates the whole dashboard instead of leaving stale numbers.
+      const [unpaidData, quick, breakdown] = await Promise.all([
+        invoices.unpaid(),
+        stats.quickStats().catch(() => null),
+        stats.clientBreakdown().catch(() => null),
+      ])
       setUnpaidInvoices(unpaidData)
+      if (quick) setQuickStatsData(quick)
+      if (breakdown) setClientBreakdown(breakdown)
+      refreshStats() // keep the global stats bar in sync too
       toast.success(`Invoice status changed to ${status}`)
     } catch (e: any) {
       toast.error(e.message || 'Failed to update status')

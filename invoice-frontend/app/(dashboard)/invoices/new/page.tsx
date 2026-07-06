@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { invoices, clients as clientsApi, catalog, CatalogItem } from '@/lib/api'
+import { invoices, clients as clientsApi, catalog, CatalogItem, ClientHistory, ClientHistoryItem } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { statusColors, formatCurrency, refreshStats } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -33,6 +34,8 @@ export default function NewInvoice() {
   const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([])
   const [showCatalog, setShowCatalog] = useState(false)
+  const [clientHistory, setClientHistory] = useState<ClientHistory | null>(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -49,6 +52,32 @@ export default function NewInvoice() {
     const saved = localStorage.getItem('savedDescriptions')
     if (saved) setSavedDescriptions(JSON.parse(saved))
   }, [])
+
+  // Pull this client's billing history whenever the selected client changes,
+  // so we can suggest the exact services + prices used for *them* before.
+  useEffect(() => {
+    if (!form.client_id) { setClientHistory(null); return }
+    let active = true
+    setHistoryLoading(true)
+    invoices.clientHistory(form.client_id)
+      .then(h => { if (active) setClientHistory(h) })
+      .catch(() => { if (active) setClientHistory(null) })
+      .finally(() => { if (active) setHistoryLoading(false) })
+    return () => { active = false }
+  }, [form.client_id])
+
+  // Insert a remembered line item (description + unit + the price used for this
+  // client) as a new row, reusing the empty trailing row if there is one.
+  const insertHistoryItem = (hi: ClientHistoryItem) => {
+    setForm(prev => {
+      const items = [...prev.items]
+      const newItem = { description: hi.description, unit: hi.unit || 'h', quantity: 1, price: Number(hi.price) || 0 }
+      const last = items[items.length - 1]
+      if (last && !last.description && !last.price) items[items.length - 1] = newItem
+      else items.push(newItem)
+      return { ...prev, items }
+    })
+  }
 
   // Insert a catalog preset as a new item row; if it has a {} placeholder,
   // focus the description and place the caret where the variable goes.
@@ -113,6 +142,7 @@ export default function NewInvoice() {
         localStorage.setItem('savedDescriptions', JSON.stringify(updated))
       }
       await invoices.create({ ...form, client_id: Number(form.client_id) })
+      refreshStats()
       toast.success('Invoice created successfully')
       router.push('/invoices')
     } catch (e: any) {
@@ -230,6 +260,79 @@ export default function NewInvoice() {
               />
             </div>
           </div>
+
+          {/* Per-client history — remembers the services & prices used for this
+              specific client so they don't have to be re-typed each time. */}
+          {form.client_id && (
+            <div className="mb-6 rounded-xl overflow-hidden" style={{ background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border-light)' }}>
+              <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--t-border-light)' }}>
+                <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--t-accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm font-semibold t-text">History for {selectedClient?.name}</span>
+                {clientHistory && clientHistory.invoices.length > 0 && (
+                  <span className="text-xs t-text-muted">· {clientHistory.invoices.length} recent invoice{clientHistory.invoices.length === 1 ? '' : 's'}</span>
+                )}
+              </div>
+
+              <div className="p-4 space-y-4">
+                {historyLoading ? (
+                  <p className="text-sm t-text-muted">Loading history…</p>
+                ) : !clientHistory || clientHistory.items.length === 0 ? (
+                  <p className="text-sm t-text-muted">No previous invoices for this client yet. Items you bill now will be suggested next time.</p>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-xs uppercase tracking-wider font-medium t-text-muted mb-2">Previously billed — tap to add</p>
+                      <div className="flex flex-wrap gap-2">
+                        {clientHistory.items.map((hi, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => insertHistoryItem(hi)}
+                            title={`Used ${hi.count}× · last ${hi.last_used?.split('T')[0]}`}
+                            className="group inline-flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full text-sm transition-all"
+                            style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border)', color: 'var(--t-text-secondary)' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--t-accent)'; e.currentTarget.style.color = 'var(--t-text)' }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--t-border)'; e.currentTarget.style.color = 'var(--t-text-secondary)' }}
+                          >
+                            <span className="truncate max-w-[220px]">{hi.description}</span>
+                            <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: 'var(--t-accent)' }}>
+                              {Number(hi.price).toFixed(2)} €{hi.unit ? `/${hi.unit}` : ''}
+                            </span>
+                            <svg className="w-3.5 h-3.5 shrink-0 opacity-50 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {clientHistory.invoices.length > 0 && (
+                      <div>
+                        <p className="text-xs uppercase tracking-wider font-medium t-text-muted mb-2">Recent invoices</p>
+                        <div className="flex flex-wrap gap-2">
+                          {clientHistory.invoices.map(inv => (
+                            <Link
+                              key={inv.id}
+                              href={`/invoices/edit?id=${inv.id}`}
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors"
+                              style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border-light)' }}
+                            >
+                              <span className="font-medium t-text">{inv.series} {inv.number}</span>
+                              <span className="t-text-muted">{inv.invoice_date?.split('T')[0]}</span>
+                              <span className="font-semibold tabular-nums t-text">{formatCurrency(Number(inv.total))}</span>
+                              <span className={`px-2 py-0.5 rounded-full font-medium ${statusColors[inv.status || 'draft']}`}>{inv.status}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mb-6">
             <label className="block text-gray-500 dark:text-gray-400 text-sm mb-3">Items</label>
