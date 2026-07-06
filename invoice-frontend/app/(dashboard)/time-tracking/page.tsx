@@ -163,6 +163,16 @@ export default function TimeTracking() {
     toast.success(`Tracking against ${invoice.series} ${invoice.number}`)
   }, [trackableInvoices, urlParamHandled, savedRates, router])
 
+  // ?new=1 (from the header "New → Time Entry") opens the add-entry form directly.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('new')) {
+      setShowForm(true)
+      router.replace('/time-tracking')
+    }
+  }, [router])
+
   const startTimerInterval = useCallback((entry: TimeEntry) => {
     if (timerRef.current) clearInterval(timerRef.current)
     const startedAt = new Date(entry.started_at!).getTime()

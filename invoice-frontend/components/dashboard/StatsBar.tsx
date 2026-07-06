@@ -5,24 +5,6 @@ import { usePathname } from 'next/navigation'
 import { stats, QuickStats } from '@/lib/api'
 import { formatCurrency, STATS_REFRESH_EVENT } from '@/lib/utils'
 
-// Tiny inline sparkline of the last 6 months' paid revenue.
-function MiniSpark({ data, color }: { data: number[]; color: string }) {
-  if (!data || data.length < 2) return null
-  const w = 88, h = 30
-  const max = Math.max(...data), min = Math.min(...data)
-  const range = max - min || 1
-  const step = w / (data.length - 1)
-  const pts = data.map((v, i) => [i * step, h - ((v - min) / range) * (h - 6) - 3] as const)
-  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-  return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden="true">
-      <path d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.12" />
-      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2" fill={color} />
-    </svg>
-  )
-}
-
 // Persistent bar pinned to the bottom of the dashboard — an at-a-glance
 // snapshot of earnings & outstanding that stays visible like the side menu.
 // Refreshes on navigation and whenever a page fires STATS_REFRESH_EVENT
@@ -107,17 +89,14 @@ export default function StatsBar() {
               </Link>
             ))}
           </div>
-          <div className="hidden md:flex items-center gap-3 shrink-0 pl-3">
-            <span title="Paid revenue, last 6 months"><MiniSpark data={data.revenue_sparkline} color="#10b981" /></span>
-            {goal > 0 && (
-              <div className="text-right leading-tight" title="Projected year-end vs. your goal at the current pace">
-                <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted">Pace</p>
-                <p className="text-sm font-bold tabular-nums" style={{ color: goalColor }}>
-                  {chance}%<span className="ml-1 text-[10px] font-normal" style={{ color: goalColor }}>{chance >= 100 ? 'on track' : 'on pace'}</span>
-                </p>
-              </div>
-            )}
-          </div>
+          {goal > 0 && (
+            <div className="hidden md:block text-right leading-tight shrink-0 pl-3" title="Projected year-end vs. your goal at the current pace">
+              <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted">Pace</p>
+              <p className="text-sm font-bold tabular-nums" style={{ color: goalColor }}>
+                {chance}%<span className="ml-1 text-[10px] font-normal" style={{ color: goalColor }}>{chance >= 100 ? 'on track' : 'on pace'}</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

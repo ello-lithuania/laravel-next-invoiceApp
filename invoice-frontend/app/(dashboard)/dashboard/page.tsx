@@ -245,19 +245,18 @@ export default function Dashboard() {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const b = {
-      notDue: { count: 0, amount: 0, label: 'Not due yet', color: '#10b981' },
-      d0_30: { count: 0, amount: 0, label: '0–30 days', color: '#f59e0b' },
-      d31_60: { count: 0, amount: 0, label: '31–60 days', color: '#fb923c' },
-      d60: { count: 0, amount: 0, label: '60+ days', color: '#ef4444' },
+      upTo1m: { count: 0, amount: 0, label: 'Up to 1 month', color: '#10b981' },
+      over1m: { count: 0, amount: 0, label: 'Over 1 month', color: '#fb923c' },
+      over2m: { count: 0, amount: 0, label: 'Over 2 months', color: '#ef4444' },
     }
     unpaidInvoices.forEach(inv => {
       const due = new Date(inv.due_date)
       const days = Math.floor((today.getTime() - due.getTime()) / 86400000)
       const amt = Number(inv.total || 0)
-      const k = days < 0 ? 'notDue' : days <= 30 ? 'd0_30' : days <= 60 ? 'd31_60' : 'd60'
+      const k = days <= 30 ? 'upTo1m' : days <= 60 ? 'over1m' : 'over2m'
       b[k].count++; b[k].amount += amt
     })
-    const total = b.notDue.amount + b.d0_30.amount + b.d31_60.amount + b.d60.amount
+    const total = b.upTo1m.amount + b.over1m.amount + b.over2m.amount
     return { ...b, total }
   }, [unpaidInvoices])
 
@@ -298,7 +297,7 @@ export default function Dashboard() {
       ) : quickStatsData && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
           {[
-            { label: 'Total Revenue', value: quickStatsData.total_revenue, suffix: ' €', sub: 'From paid invoices', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: '#10b981', trend: quickStatsData.revenue_trend, spark: quickStatsData.revenue_sparkline },
+            { label: 'Total Revenue', value: quickStatsData.total_revenue, suffix: ' €', sub: 'From paid invoices', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: '#10b981' },
             { label: 'Total Invoices', value: quickStatsData.total_invoices, sub: `${quickStatsData.paid_count} paid`, icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: accent },
             { label: 'Clients', value: quickStatsData.total_clients, sub: 'Active clients', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: '#a855f7' },
             { label: 'Paid Ratio', value: quickStatsData.total_invoices > 0 ? Math.round((quickStatsData.paid_count / quickStatsData.total_invoices) * 100) : 0, suffix: '%', sub: `${quickStatsData.unpaid_count} unpaid`, icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: '#f59e0b' },
@@ -311,26 +310,11 @@ export default function Dashboard() {
                   </svg>
                 </div>
                 <p className="text-xs uppercase tracking-wider font-medium t-text-muted">{stat.label}</p>
-                {stat.trend !== undefined && (
-                  <span
-                    className="ml-auto inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums px-1.5 py-0.5 rounded-md"
-                    style={{
-                      color: stat.trend >= 0 ? '#10b981' : '#ef4444',
-                      background: stat.trend >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
-                    }}
-                    title="vs. last month"
-                  >
-                    {stat.trend >= 0 ? '↑' : '↓'}{Math.abs(stat.trend)}%
-                  </span>
-                )}
               </div>
               <p className="text-3xl font-extrabold tracking-tight t-text">
                 <AnimatedNumber value={stat.value} suffix={stat.suffix} />
               </p>
-              <div className="flex items-end justify-between gap-2 mt-1">
-                <p className="text-xs" style={{ color: stat.color }}>{stat.sub}</p>
-                {stat.spark && <Sparkline data={stat.spark} color={stat.color} />}
-              </div>
+              <p className="text-xs mt-1" style={{ color: stat.color }}>{stat.sub}</p>
             </div>
           ))}
         </div>
@@ -378,7 +362,6 @@ export default function Dashboard() {
               }
               const chips: Array<{ key: typeof unpaidFilter; label: string; count: number }> = [
                 { key: 'all', label: 'All', count: counts.all },
-                { key: 'this_week', label: 'This Week', count: counts.this_week },
                 { key: 'this_month', label: 'This Month', count: counts.this_month },
                 { key: 'overdue', label: 'Overdue', count: counts.overdue },
               ]
@@ -520,13 +503,13 @@ export default function Dashboard() {
               <>
                 {/* stacked bar */}
                 <div className="flex h-3 rounded-full overflow-hidden mb-5" style={{ background: 'var(--t-bg-elevated)' }}>
-                  {[aging.notDue, aging.d0_30, aging.d31_60, aging.d60].map((s, i) => (
+                  {[aging.upTo1m, aging.over1m, aging.over2m].map((s, i) => (
                     s.amount > 0 ? <div key={i} style={{ width: `${(s.amount / aging.total) * 100}%`, background: s.color }} title={`${s.label}: ${formatCurrency(s.amount)}`} /> : null
                   ))}
                 </div>
                 {/* buckets */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[aging.notDue, aging.d0_30, aging.d31_60, aging.d60].map((s, i) => (
+                <div className="grid grid-cols-3 gap-3">
+                  {[aging.upTo1m, aging.over1m, aging.over2m].map((s, i) => (
                     <div key={i} className="rounded-lg p-3" style={{ background: 'var(--t-bg-elevated)' }}>
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
