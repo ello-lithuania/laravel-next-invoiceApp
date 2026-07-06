@@ -367,8 +367,10 @@ export const stats = {
   yearSummary: (year: number) =>
     api<{ year: number; data: YearSummaryData }>(`/stats/year-summary?year=${year}`),
   yearSummaryPdfUrl: (year: number, download = false) => {
-    const token = getCookie('auth_token')
-    return `${API_URL}/stats/year-summary/pdf?year=${year}${download ? '&download=1' : ''}&token=${token}`
+    // Auth token lives in the 'token' cookie (see setToken); 'auth_token'
+    // was wrong and produced an "Invalid token" response.
+    const token = getToken()
+    return `${API_URL}/stats/year-summary/pdf?year=${year}${download ? '&download=1' : ''}&token=${token || ''}`
   },
 }
 

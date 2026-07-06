@@ -36,6 +36,7 @@ export default function NewInvoice() {
   const [showCatalog, setShowCatalog] = useState(false)
   const [clientHistory, setClientHistory] = useState<ClientHistory | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [repeating, setRepeating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -65,6 +66,33 @@ export default function NewInvoice() {
       .finally(() => { if (active) setHistoryLoading(false) })
     return () => { active = false }
   }, [form.client_id])
+
+  // One-click "repeat last invoice": pull the client's most recent invoice in
+  // full and copy its line items (and notes) into the form — ideal for the
+  // same monthly retainer billing.
+  const repeatLastInvoice = async () => {
+    const last = clientHistory?.invoices?.[0]
+    if (!last) return
+    setRepeating(true)
+    try {
+      const full = await invoices.get(last.id)
+      const items = (full.items || []).map(it => ({
+        description: it.description,
+        unit: it.unit || 'h',
+        quantity: Number(it.quantity) || 1,
+        price: Number(it.price) || 0,
+      }))
+      setForm(prev => ({
+        ...prev,
+        items: items.length ? items : prev.items,
+        notes: full.notes || prev.notes,
+      }))
+      toast.success(`Copied items from ${last.series} ${last.number}`)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load that invoice')
+    }
+    setRepeating(false)
+  }
 
   // Insert a remembered line item (description + unit + the price used for this
   // client) as a new row, reusing the empty trailing row if there is one.
@@ -273,6 +301,21 @@ export default function NewInvoice() {
                 {clientHistory && clientHistory.invoices.length > 0 && (
                   <span className="text-xs t-text-muted">· {clientHistory.invoices.length} recent invoice{clientHistory.invoices.length === 1 ? '' : 's'}</span>
                 )}
+                {clientHistory && clientHistory.invoices.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={repeatLastInvoice}
+                    disabled={repeating}
+                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-60"
+                    style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}
+                    title={`Copy all items from ${clientHistory.invoices[0].series} ${clientHistory.invoices[0].number}`}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {repeating ? 'Copying…' : 'Repeat last invoice'}
+                  </button>
+                )}
               </div>
 
               <div className="p-4 space-y-4">
@@ -480,7 +523,7 @@ export default function NewInvoice() {
                       />
                     </div>
                     <div className="text-right text-gray-600 dark:text-gray-300 text-sm">
-                      Subtotal: {(item.quantity * item.price).toFixed(2)} EUR
+                      Subtotal: {formatCurrency(item.quantity * item.price)}
                     </div>
                   </div>
                 </div>
@@ -566,7 +609,7 @@ export default function NewInvoice() {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700/60">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">Total: {getTotal()} EUR</div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">Total: {formatCurrency(Number(getTotal()))}</div>
             <div className="flex gap-4 w-full sm:w-auto">
               <Link 
                 href="/invoices"

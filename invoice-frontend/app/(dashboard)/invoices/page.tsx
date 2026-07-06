@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { invoices, clients as clientsApi, getToken, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, refreshStats } from '@/lib/utils'
+import { statusColors, refreshStats, formatCurrency } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
+import SearchableSelect from '@/components/SearchableSelect'
 
 interface PaginatedResponse {
   data: InvoiceType[]
@@ -254,6 +255,14 @@ function InvoicesContent() {
     }
   }
 
+  // Days a still-unpaid invoice is past its due date (0 if paid or not yet due).
+  const overdueDays = (inv: InvoiceType) => {
+    if (inv.status === 'paid' || !inv.due_date) return 0
+    const due = new Date(inv.due_date)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    return Math.floor((today.getTime() - due.getTime()) / 86400000)
+  }
+
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
@@ -343,28 +352,22 @@ function InvoicesContent() {
           )}
         </div>
         <div className="flex-1 min-w-[200px]">
-          <select
+          <SearchableSelect
             value={filterMonth}
-            onChange={(e) => { setFilterMonth(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
-          >
-            <option value="">All months</option>
-            {getMonthOptions().map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
-            ))}
-          </select>
+            onChange={(v) => { setFilterMonth(v); handleFilterChange() }}
+            options={getMonthOptions().map(m => ({ value: m.value, label: m.label }))}
+            allLabel="All months"
+            placeholder="Search months…"
+          />
         </div>
         <div className="flex-1 min-w-[200px]">
-          <select
+          <SearchableSelect
             value={filterClient}
-            onChange={(e) => { setFilterClient(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
-          >
-            <option value="">All clients</option>
-            {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+            onChange={(v) => { setFilterClient(v); handleFilterChange() }}
+            options={clients.map(c => ({ value: String(c.id), label: c.name }))}
+            allLabel="All clients"
+            placeholder="Search clients…"
+          />
         </div>
         <div className="flex-1 min-w-[200px]">
           <select
@@ -468,17 +471,31 @@ function InvoicesContent() {
                     <svg className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    <p className="font-medium">No invoices found</p>
-                    {(filterMonth || filterClient || filterStatus) && (
-                      <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Try changing the filters</p>
+                    {(filterMonth || filterClient || filterStatus || filterSearch) ? (
+                      <>
+                        <p className="font-medium">No invoices match these filters</p>
+                        <button onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); setSearchInput(''); setFilterSearch(''); router.replace('/invoices') }} className="mt-3 text-sm t-accent hover:underline">Clear filters</button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-medium text-gray-600 dark:text-gray-300">No invoices yet</p>
+                        <p className="text-sm mt-1 mb-4">Create your first invoice to get started.</p>
+                        <Link href="/invoices/new" className="inline-flex items-center gap-2 btn-gradient px-5 py-2.5 rounded-xl font-medium bd-clip-sm">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                          Create Invoice
+                        </Link>
+                      </>
                     )}
                   </div>
                 </td>
               </tr>
             ) : (
-              list.map((inv) => (
+              list.map((inv) => {
+                const late = overdueDays(inv)
+                return (
                 <tr key={inv.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group ${selected.includes(inv.id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                  <td className="px-4 py-4 w-10">
+                  <td className="px-4 py-4 w-10 relative">
+                    {late > 0 && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-red-500" title={`${late} day${late === 1 ? '' : 's'} overdue`} />}
                     <input
                       type="checkbox"
                       checked={selected.includes(inv.id)}
@@ -492,8 +509,15 @@ function InvoicesContent() {
                     </Link>
                   </td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{inv.client?.name}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{inv.invoice_date?.split('T')[0]}</td>
-                  <td className="px-6 py-4 text-right text-gray-800 dark:text-gray-100 font-medium tabular-nums">{Number(inv.total).toFixed(2)} €</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className="text-gray-500 dark:text-gray-400">{inv.invoice_date?.split('T')[0]}</span>
+                    {late > 0 && (
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-500" title={`Due ${inv.due_date?.split('T')[0]}`}>
+                        {late}d late
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right text-gray-800 dark:text-gray-100 font-medium tabular-nums">{formatCurrency(Number(inv.total))}</td>
                   <td className="px-6 py-4">
                     <select
                       value={inv.status || 'draft'}
@@ -556,7 +580,8 @@ function InvoicesContent() {
                     </div>
                   </td>
                 </tr>
-              ))
+                )
+              })
             )}
           </tbody>
         </table>
@@ -570,9 +595,19 @@ function InvoicesContent() {
                 <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <p>No invoices found</p>
-                {(filterMonth || filterClient || filterStatus) && (
-                  <p className="text-sm mt-1">Try changing the filters</p>
+                {(filterMonth || filterClient || filterStatus || filterSearch) ? (
+                  <>
+                    <p>No invoices match these filters</p>
+                    <button onClick={() => { setFilterMonth(''); setFilterClient(''); setFilterStatus(''); setSearchInput(''); setFilterSearch(''); router.replace('/invoices') }} className="mt-3 text-sm t-accent hover:underline">Clear filters</button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium text-gray-600 dark:text-gray-300">No invoices yet</p>
+                    <Link href="/invoices/new" className="mt-4 inline-flex items-center gap-2 btn-gradient px-5 py-2.5 rounded-xl font-medium bd-clip-sm">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      Create Invoice
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -592,11 +627,16 @@ function InvoicesContent() {
                         {inv.series}-{String(inv.number).padStart(4, '0')}
                       </Link>
                     </div>
-                    <span className="text-gray-800 dark:text-gray-100 font-medium tabular-nums">{Number(inv.total).toFixed(2)} €</span>
+                    <span className="text-gray-800 dark:text-gray-100 font-medium tabular-nums">{formatCurrency(Number(inv.total))}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 dark:text-gray-400 text-sm">{inv.client?.name}</span>
-                    <span className="text-gray-400 dark:text-gray-500 text-sm">{inv.invoice_date?.split('T')[0]}</span>
+                    <span className="text-gray-400 dark:text-gray-500 text-sm">
+                      {inv.invoice_date?.split('T')[0]}
+                      {overdueDays(inv) > 0 && (
+                        <span className="ml-2 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-500">{overdueDays(inv)}d late</span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <select

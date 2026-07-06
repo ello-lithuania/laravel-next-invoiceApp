@@ -198,9 +198,25 @@ class StatsController extends Controller
         $bestMonth = null;
         $worstMonth = null;
         if (count($monthsWithRevenue) > 0) {
-            $activeMonths = array_filter($months, fn ($m) => in_array($m['month'], $monthsWithRevenue));
-            $bestIdx = array_keys($activeMonths, max(array_column($activeMonths, 'total')))[0] ?? null;
-            $worstIdx = array_keys($activeMonths, min(array_column($activeMonths, 'total')))[0] ?? null;
+            // Find the best/worst month by total among months that had invoices.
+            // (array_keys() against a scalar can't match the array rows, so scan.)
+            $bestIdx = null;
+            $worstIdx = null;
+            $bestVal = -INF;
+            $worstVal = INF;
+            foreach ($months as $idx => $m) {
+                if ($m['invoice_count'] <= 0) {
+                    continue;
+                }
+                if ($m['total'] > $bestVal) {
+                    $bestVal = $m['total'];
+                    $bestIdx = $idx;
+                }
+                if ($m['total'] < $worstVal) {
+                    $worstVal = $m['total'];
+                    $worstIdx = $idx;
+                }
+            }
             if ($bestIdx !== null) {
                 $months[$bestIdx]['is_best'] = true;
                 $bestMonth = $months[$bestIdx];

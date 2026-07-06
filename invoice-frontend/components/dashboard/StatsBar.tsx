@@ -1,8 +1,27 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { stats, QuickStats } from '@/lib/api'
 import { formatCurrency, STATS_REFRESH_EVENT } from '@/lib/utils'
+
+// Tiny inline sparkline of the last 6 months' paid revenue.
+function MiniSpark({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length < 2) return null
+  const w = 88, h = 30
+  const max = Math.max(...data), min = Math.min(...data)
+  const range = max - min || 1
+  const step = w / (data.length - 1)
+  const pts = data.map((v, i) => [i * step, h - ((v - min) / range) * (h - 6) - 3] as const)
+  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden="true">
+      <path d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.12" />
+      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2" fill={color} />
+    </svg>
+  )
+}
 
 // Persistent bar pinned to the bottom of the dashboard — an at-a-glance
 // snapshot of earnings & outstanding that stays visible like the side menu.
@@ -11,6 +30,7 @@ import { formatCurrency, STATS_REFRESH_EVENT } from '@/lib/utils'
 export default function StatsBar() {
   const pathname = usePathname()
   const [data, setData] = useState<QuickStats | null>(null)
+  const [goal, setGoal] = useState(0)
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -22,6 +42,9 @@ export default function StatsBar() {
     let active = true
     const load = () => stats.quickStats().then(d => { if (active) setData(d) }).catch(() => {})
     load()
+    // Re-read the year goal here too — it's set on the dashboard and stored
+    // in localStorage, so navigating back picks up any change.
+    setGoal(Number(localStorage.getItem('year-goal')) || 0)
     window.addEventListener(STATS_REFRESH_EVENT, load)
     return () => { active = false; window.removeEventListener(STATS_REFRESH_EVENT, load) }
   }, [pathname])
@@ -38,11 +61,35 @@ export default function StatsBar() {
 
   const paidRatio = data.total_invoices > 0 ? Math.round((data.paid_count / data.total_invoices) * 100) : 0
 
+  // Year-goal projection: how much is left, and — extrapolating the current
+  // daily pace across the whole year — the chance of hitting the goal.
+  const now = new Date()
+  const startOfYear = new Date(now.getFullYear(), 0, 1)
+  const endOfYear = new Date(now.getFullYear() + 1, 0, 1)
+  const dayMs = 86400000
+  const daysInYear = Math.round((endOfYear.getTime() - startOfYear.getTime()) / dayMs)
+  const daysElapsed = Math.max(1, Math.floor((now.getTime() - startOfYear.getTime()) / dayMs) + 1)
+  const daysLeft = Math.max(0, daysInYear - daysElapsed)
+  const remaining = Math.max(goal - data.year_revenue, 0)
+  const projected = (data.year_revenue / daysElapsed) * daysInYear
+  const chance = goal > 0 ? Math.round((projected / goal) * 100) : 0
+  const goalColor = remaining === 0 ? '#10b981' : chance >= 100 ? '#10b981' : chance >= 60 ? 'var(--t-accent)' : '#fb923c'
+
+  const goalItem = goal > 0
+    ? {
+        label: remaining > 0 ? 'To year goal' : `Goal ${now.getFullYear()} reached`,
+        value: remaining > 0 ? formatCurrency(remaining) : '✓ Done',
+        sub: remaining > 0 ? `${chance}% on pace · ${daysLeft}d left` : `${formatCurrency(data.year_revenue)} earned`,
+        color: goalColor,
+        href: '/dashboard',
+      }
+    : { label: 'Year goal', value: 'Set a goal →', color: 'var(--t-text-muted)', href: '/dashboard', sub: undefined as string | undefined }
+
   const items = [
-    { label: `Earned ${data.year}`, value: formatCurrency(data.year_revenue), color: '#10b981' },
-    { label: 'Outstanding', value: formatCurrency(data.unpaid_total), sub: `${data.unpaid_count} unpaid`, color: '#fb923c' },
-    { label: 'Total earned', value: formatCurrency(data.total_revenue), color: 'var(--t-accent)' },
-    { label: 'Paid ratio', value: `${paidRatio}%`, sub: `${data.paid_count}/${data.total_invoices}`, color: '#a855f7' },
+    { label: `Earned ${data.year}`, value: formatCurrency(data.year_revenue), color: '#10b981', href: '/year-summary' as string, sub: undefined as string | undefined },
+    goalItem,
+    { label: 'Outstanding', value: formatCurrency(data.unpaid_total), sub: `${data.unpaid_count} unpaid` as string | undefined, color: '#fb923c', href: '/dashboard' },
+    { label: 'Paid ratio', value: `${paidRatio}%`, sub: `${data.paid_count}/${data.total_invoices}` as string | undefined, color: '#a855f7', href: '/year-summary' },
   ]
 
   return (
@@ -71,10 +118,14 @@ export default function StatsBar() {
           </div>
         ) : (
           <div className="h-16 flex items-center gap-2">
-            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-6 min-w-0">
+            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-3 min-w-0">
               {items.map((it, i) => (
-                <div key={i} className="flex items-center gap-2.5 min-w-0">
-                  <span className="w-1.5 h-8 rounded-full shrink-0" style={{ background: it.color }} />
+                <Link
+                  key={i}
+                  href={it.href}
+                  className="group flex items-center gap-2.5 min-w-0 rounded-lg px-2 py-1 -mx-1 transition-colors hover:bg-[var(--t-bg-elevated)]"
+                >
+                  <span className="w-1.5 h-8 rounded-full shrink-0 transition-all group-hover:h-9" style={{ background: it.color }} />
                   <div className="min-w-0">
                     <p className="text-[10px] sm:text-xs uppercase tracking-wider font-medium t-text-muted truncate">{it.label}</p>
                     <p className="text-sm sm:text-base font-bold tabular-nums t-text leading-tight truncate">
@@ -82,8 +133,16 @@ export default function StatsBar() {
                       {it.sub && <span className="ml-1.5 text-[10px] font-normal t-text-muted">{it.sub}</span>}
                     </p>
                   </div>
-                </div>
+                </Link>
               ))}
+            </div>
+            <div className="hidden md:flex items-center gap-2 shrink-0 pl-2" title="Paid revenue, last 6 months">
+              <MiniSpark data={data.revenue_sparkline} color="#10b981" />
+              {data.revenue_trend !== 0 && (
+                <span className="text-xs font-semibold tabular-nums" style={{ color: data.revenue_trend >= 0 ? '#10b981' : '#ef4444' }}>
+                  {data.revenue_trend >= 0 ? '↑' : '↓'}{Math.abs(data.revenue_trend)}%
+                </span>
+              )}
             </div>
             <button onClick={toggle} className="shrink-0 t-text-muted hover:t-accent transition-colors p-1" title="Collapse stats">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>

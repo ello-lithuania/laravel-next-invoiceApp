@@ -91,7 +91,8 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
         style={isActive ? { background: 'var(--t-bg-elevated)' } : {}}
       >
         {isActive && (
-          <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: 'linear-gradient(var(--t-gradient-from), var(--t-accent))' }} />
+          // Hidden on the collapsed lg rail — there it overlaps the centered text.
+          <span className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full ${sidebarExpanded ? '' : 'lg:hidden'}`} style={{ background: 'linear-gradient(var(--t-gradient-from), var(--t-accent))' }} />
         )}
         {badge !== null && !sidebarExpanded && (
           <span
