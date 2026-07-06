@@ -5,6 +5,24 @@ import { usePathname } from 'next/navigation'
 import { stats, QuickStats } from '@/lib/api'
 import { formatCurrency, STATS_REFRESH_EVENT } from '@/lib/utils'
 
+// Tiny inline sparkline (values 0–100) — used for the monthly paid-ratio trend.
+function MiniSpark({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length < 2) return null
+  const w = 76, h = 26
+  const max = Math.max(...data), min = Math.min(...data)
+  const range = max - min || 1
+  const step = w / (data.length - 1)
+  const pts = data.map((v, i) => [i * step, h - ((v - min) / range) * (h - 6) - 3] as const)
+  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible" aria-hidden="true">
+      <path d={`${line} L${w},${h} L0,${h} Z`} fill={color} fillOpacity="0.12" />
+      <path d={line} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={pts[pts.length - 1][0]} cy={pts[pts.length - 1][1]} r="2" fill={color} />
+    </svg>
+  )
+}
+
 // Persistent bar pinned to the bottom of the dashboard — an at-a-glance
 // snapshot of earnings & outstanding that stays visible like the side menu.
 // Refreshes on navigation and whenever a page fires STATS_REFRESH_EVENT
@@ -89,6 +107,12 @@ export default function StatsBar() {
               </Link>
             ))}
           </div>
+          {data.paid_ratio_sparkline?.some(v => v > 0) && (
+            <div className="hidden md:block leading-tight shrink-0 pl-3" title="Paid ratio over the last 6 months">
+              <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted mb-0.5">Paid % / mo</p>
+              <MiniSpark data={data.paid_ratio_sparkline} color="#a855f7" />
+            </div>
+          )}
           {goal > 0 && (
             <div className="hidden md:block text-right leading-tight shrink-0 pl-3" title="Projected year-end vs. your goal at the current pace">
               <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted">Pace</p>

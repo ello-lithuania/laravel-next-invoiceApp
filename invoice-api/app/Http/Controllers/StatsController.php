@@ -130,6 +130,22 @@ class StatsController extends Controller
             ? round(($thisMonth - $lastMonth) / $lastMonth * 100, 1)
             : ($thisMonth > 0 ? 100.0 : 0.0);
 
+        // Paid ratio per month over the last 6 months (paid invoices / all
+        // invoices issued that month) — shows how collection trends over time.
+        $monthlyCounts = $user->invoices()
+            ->where('invoice_date', '>=', $since)
+            ->selectRaw("DATE_FORMAT(invoice_date, '%Y-%m') as ym, COUNT(*) as total, SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid")
+            ->groupBy('ym')
+            ->get()
+            ->keyBy('ym');
+
+        $paidRatioSparkline = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $key = Carbon::now()->startOfMonth()->subMonths($i)->format('Y-m');
+            $row = $monthlyCounts[$key] ?? null;
+            $paidRatioSparkline[] = $row && $row->total > 0 ? (int) round($row->paid / $row->total * 100) : 0;
+        }
+
         return response()->json([
             'total_revenue' => (float) $agg->total_revenue,
             'year_revenue' => (float) $agg->year_revenue,
@@ -141,6 +157,7 @@ class StatsController extends Controller
             'unpaid_total' => (float) $agg->unpaid_total,
             'revenue_sparkline' => $sparkline,
             'revenue_trend' => $revenueTrend,
+            'paid_ratio_sparkline' => $paidRatioSparkline,
         ]);
     }
 

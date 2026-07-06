@@ -353,6 +353,7 @@ export interface QuickStats {
   unpaid_total: number
   revenue_sparkline: number[]
   revenue_trend: number
+  paid_ratio_sparkline: number[]
 }
 
 export const stats = {

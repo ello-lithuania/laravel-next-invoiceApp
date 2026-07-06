@@ -123,7 +123,7 @@ export default function Dashboard() {
   const [unpaidLoading, setUnpaidLoading] = useState(true)
   const [breakdownLoading, setBreakdownLoading] = useState(true)
   const [statsLoading, setStatsLoading] = useState(true)
-  const [unpaidFilter, setUnpaidFilter] = useState<'all' | 'this_week' | 'this_month' | 'overdue'>('all')
+  const [unpaidFilter, setUnpaidFilter] = useState<'all' | 'up_to_1m' | 'over_1m' | 'over_2m'>('all')
   const [yearGoal, setYearGoal] = useState<number>(0)
   const [editingGoal, setEditingGoal] = useState(false)
 
@@ -215,25 +215,17 @@ export default function Dashboard() {
 
   const unpaidTotal = unpaidInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0)
 
+  // Bucket unpaid invoices by how overdue they are — same buckets as the
+  // Receivables Aging card (≤1 month, >1 month, >2 months).
   const filteredUnpaid = useMemo(() => {
     if (unpaidFilter === 'all') return unpaidInvoices
     const now = new Date()
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     return unpaidInvoices.filter(inv => {
-      const due = new Date(inv.due_date)
-      if (unpaidFilter === 'this_week') {
-        // Mon-Sun ISO week
-        const day = (now.getDay() + 6) % 7 // 0=Mon
-        const start = new Date(todayStart); start.setDate(todayStart.getDate() - day)
-        const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23, 59, 59, 999)
-        return due >= start && due <= end
-      }
-      if (unpaidFilter === 'this_month') {
-        return due.getFullYear() === now.getFullYear() && due.getMonth() === now.getMonth()
-      }
-      if (unpaidFilter === 'overdue') {
-        return due < todayStart
-      }
+      const days = Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / 86400000)
+      if (unpaidFilter === 'up_to_1m') return days <= 30
+      if (unpaidFilter === 'over_1m') return days > 30 && days <= 60
+      if (unpaidFilter === 'over_2m') return days > 60
       return true
     })
   }, [unpaidInvoices, unpaidFilter])
@@ -350,32 +342,31 @@ export default function Dashboard() {
           <div className="flex flex-wrap gap-2 mb-5">
             {(() => {
               const now = new Date()
-              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-              const day = (now.getDay() + 6) % 7
-              const weekStart = new Date(todayStart); weekStart.setDate(todayStart.getDate() - day)
-              const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999)
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+              const daysOf = (inv: Invoice) => Math.floor((today.getTime() - new Date(inv.due_date).getTime()) / 86400000)
               const counts = {
                 all: unpaidInvoices.length,
-                this_week: unpaidInvoices.filter(i => { const d = new Date(i.due_date); return d >= weekStart && d <= weekEnd }).length,
-                this_month: unpaidInvoices.filter(i => { const d = new Date(i.due_date); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() }).length,
-                overdue: unpaidInvoices.filter(i => new Date(i.due_date) < todayStart).length,
+                up_to_1m: unpaidInvoices.filter(i => daysOf(i) <= 30).length,
+                over_1m: unpaidInvoices.filter(i => { const d = daysOf(i); return d > 30 && d <= 60 }).length,
+                over_2m: unpaidInvoices.filter(i => daysOf(i) > 60).length,
               }
-              const chips: Array<{ key: typeof unpaidFilter; label: string; count: number }> = [
+              // Only show the "over" buckets when they actually contain something.
+              const chips: Array<{ key: typeof unpaidFilter; label: string; count: number; severe?: boolean }> = [
                 { key: 'all', label: 'All', count: counts.all },
-                { key: 'this_month', label: 'This Month', count: counts.this_month },
-                { key: 'overdue', label: 'Overdue', count: counts.overdue },
+                { key: 'up_to_1m', label: 'Up to 1 month', count: counts.up_to_1m },
+                ...(counts.over_1m > 0 ? [{ key: 'over_1m' as const, label: 'Over 1 month', count: counts.over_1m, severe: true }] : []),
+                ...(counts.over_2m > 0 ? [{ key: 'over_2m' as const, label: 'Over 2 months', count: counts.over_2m, severe: true }] : []),
               ]
               return chips.map(chip => {
                 const active = unpaidFilter === chip.key
-                const isOverdue = chip.key === 'overdue'
                 return (
                   <button
                     key={chip.key}
                     onClick={() => setUnpaidFilter(chip.key)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${active ? 'btn-gradient' : ''}`}
                     style={!active ? {
-                      background: isOverdue && chip.count > 0 ? 'rgba(239, 68, 68, 0.10)' : 'var(--t-bg-elevated)',
-                      color: isOverdue && chip.count > 0 ? '#ef4444' : 'var(--t-text-secondary)',
+                      background: chip.severe ? 'rgba(239, 68, 68, 0.10)' : 'var(--t-bg-elevated)',
+                      color: chip.severe ? '#ef4444' : 'var(--t-text-secondary)',
                       border: '1px solid var(--t-border-light)',
                     } : {}}
                   >
@@ -507,9 +498,12 @@ export default function Dashboard() {
                     s.amount > 0 ? <div key={i} style={{ width: `${(s.amount / aging.total) * 100}%`, background: s.color }} title={`${s.label}: ${formatCurrency(s.amount)}`} /> : null
                   ))}
                 </div>
-                {/* buckets */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[aging.upTo1m, aging.over1m, aging.over2m].map((s, i) => (
+                {/* buckets — only show the "over" ones when they hold something */}
+                {(() => {
+                const buckets = [aging.upTo1m, ...(aging.over1m.amount > 0 ? [aging.over1m] : []), ...(aging.over2m.amount > 0 ? [aging.over2m] : [])]
+                return (
+                <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))` }}>
+                  {buckets.map((s, i) => (
                     <div key={i} className="rounded-lg p-3" style={{ background: 'var(--t-bg-elevated)' }}>
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
@@ -520,6 +514,8 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
+                )
+                })()}
               </>
             )}
           </div>
