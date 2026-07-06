@@ -592,7 +592,7 @@ export default function Dashboard() {
                       : `▼ Behind — need ${formatCurrency(neededPerMonth)}/mo${monthsLeft > 0 ? ` for ${monthsLeft} mo` : ''}`}
                   </div>
                   <p className="text-[11px] t-text-muted mt-1">
-                    Avg {formatCurrency(monthlyAvg)}/mo · {daysLeft} days left · {projectedPct.toFixed(0)}% of goal on pace
+                    Avg {formatCurrency(monthlyAvg)}/mo · {Math.round((daysLeft / daysInYear) * 100)}% of year left · {projectedPct.toFixed(0)}% of goal on pace
                   </p>
                 </div>
               </>

@@ -30,7 +30,7 @@ jobs:
         run: npm run build
         
       - name: Deploy Frontend
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -70,7 +70,7 @@ jobs:
           php artisan key:generate
           
       - name: Deploy API
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.FTP_API_SERVER }}
           username: ${{ secrets.FTP_API_USERNAME }}

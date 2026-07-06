@@ -94,7 +94,8 @@ class InvoiceController extends Controller
                 'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total' => 0,
-                'status' => 'draft',
+                // New invoices default to "sent" — they're created to be issued.
+                'status' => 'sent',
             ]);
 
             $user->update(['next_invoice_number' => $nextNumber + 1]);

@@ -84,15 +84,18 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
   }, [])
 
   const renderItem = (item: { label: string; href: string; icon: React.ReactNode; addHref?: string }) => {
-    const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+    // trailingSlash: true makes usePathname() return e.g. "/dashboard/" — strip
+    // it so the exact match for the Dashboard item works (not just startsWith).
+    const path = pathname.replace(/\/+$/, '') || '/'
+    const isActive = path === item.href || (item.href !== '/dashboard' && path.startsWith(item.href + '/'))
     const badge = item.href === '/invoices' && unpaidCount > 0 ? unpaidCount : null
     return (
-      <li key={item.href} className={`relative mb-1 last:mb-0 rounded-lg transition-all`}
-        style={isActive ? { background: 'var(--t-accent-soft)' } : {}}
-      >
+      <li key={item.href} className={`relative isolate mb-1 last:mb-0 transition-all`}>
         {isActive && (
-          // Hidden on the collapsed lg rail — there it overlaps the centered text.
-          <span className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full ${sidebarExpanded ? '' : 'lg:hidden'}`} style={{ background: 'linear-gradient(var(--t-gradient-from), var(--t-accent))' }} />
+          // Full-bleed accent band: fills to the sidebar's inner edges (cancels
+          // the p-4 via -left-4/-right-4), no radius, no white side gaps. Sits
+          // behind the content (-z-10) so icon/label stay on top.
+          <span className="absolute inset-y-0 -left-4 -right-4 -z-10" style={{ background: 'var(--t-accent-soft)' }} aria-hidden="true" />
         )}
         {badge !== null && !sidebarExpanded && (
           <span

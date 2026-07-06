@@ -65,7 +65,7 @@ export default function StatsBar() {
     ? {
         label: remaining > 0 ? 'To year goal' : `Goal ${now.getFullYear()} reached`,
         value: remaining > 0 ? formatCurrency(remaining) : '✓ Done',
-        sub: remaining > 0 ? `${chance}% on pace · ${daysLeft}d left` : `${formatCurrency(data.year_revenue)} earned`,
+        sub: remaining > 0 ? `${Math.round((daysLeft / daysInYear) * 100)}% of year left` : `${formatCurrency(data.year_revenue)} earned`,
         color: goalColor,
         href: '/dashboard',
       }
@@ -107,12 +107,15 @@ export default function StatsBar() {
               </Link>
             ))}
           </div>
-          <div className="hidden md:flex items-center gap-2 shrink-0 pl-2" title="Paid revenue, last 6 months">
-            <MiniSpark data={data.revenue_sparkline} color="#10b981" />
-            {data.revenue_trend !== 0 && (
-              <span className="text-xs font-semibold tabular-nums" style={{ color: data.revenue_trend >= 0 ? '#10b981' : '#ef4444' }}>
-                {data.revenue_trend >= 0 ? '↑' : '↓'}{Math.abs(data.revenue_trend)}%
-              </span>
+          <div className="hidden md:flex items-center gap-3 shrink-0 pl-3">
+            <span title="Paid revenue, last 6 months"><MiniSpark data={data.revenue_sparkline} color="#10b981" /></span>
+            {goal > 0 && (
+              <div className="text-right leading-tight" title="Projected year-end vs. your goal at the current pace">
+                <p className="text-[10px] uppercase tracking-wider font-medium t-text-muted">Pace</p>
+                <p className="text-sm font-bold tabular-nums" style={{ color: goalColor }}>
+                  {chance}%<span className="ml-1 text-[10px] font-normal" style={{ color: goalColor }}>{chance >= 100 ? 'on track' : 'on pace'}</span>
+                </p>
+              </div>
             )}
           </div>
         </div>
