@@ -55,6 +55,10 @@ export async function api<T = unknown>(endpoint: string, options: RequestOptions
   const token = getToken()
   
   const config: RequestInit = {
+    // Never serve API responses from the HTTP cache. Stats/totals must reflect
+    // the latest mutation immediately (e.g. the StatsBar re-fetch after an
+    // invoice is marked paid) — a cached GET would show stale numbers.
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -81,6 +85,33 @@ export async function api<T = unknown>(endpoint: string, options: RequestOptions
   }
 
   return data
+}
+
+// Fetch a binary endpoint (e.g. a PDF) with the Authorization header and return
+// a short-lived object URL. Keeps the auth token OUT of the URL/query string —
+// window.open/iframe-src links used to embed `?token=`, which leaked the token
+// into server logs, browser history and the Referer header. Callers should
+// URL.revokeObjectURL(url) when done (e.g. when a preview modal closes).
+export async function apiBlobUrl(endpoint: string): Promise<string> {
+  const token = getToken()
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    cache: 'no-store',
+    headers: {
+      'Accept': 'application/pdf',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+  })
+
+  if (response.status === 401) {
+    removeToken()
+    if (typeof window !== 'undefined') window.location.href = '/login'
+    throw new ApiError('Unauthorized', 401)
+  }
+  if (!response.ok) {
+    throw new ApiError('Failed to generate PDF', response.status)
+  }
+
+  return URL.createObjectURL(await response.blob())
 }
 
 export interface User {
@@ -330,10 +361,15 @@ export const invoices = {
     api<Invoice>(`/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   delete: (id: number) => 
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
-  pdf: (id: number, template?: string) => 
-    `${API_URL}/invoices/${id}/pdf?token=${getToken() || ''}${template ? `&template=${template}` : ''}`,
-  samplePdf: (template: string) =>
-    `${API_URL}/sample-invoice-pdf?token=${getToken() || ''}&template=${template}`,
+  pdfBlobUrl: (id: number, opts?: { template?: string; download?: boolean }) => {
+    const params = new URLSearchParams()
+    if (opts?.template) params.set('template', opts.template)
+    if (opts?.download) params.set('download', '1')
+    const qs = params.toString()
+    return apiBlobUrl(`/invoices/${id}/pdf${qs ? `?${qs}` : ''}`)
+  },
+  samplePdfBlobUrl: (template: string) =>
+    apiBlobUrl(`/sample-invoice-pdf?template=${encodeURIComponent(template)}`),
   bulkDelete: (ids: number[]) =>
     api<{ message: string }>('/invoices/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   bulkUpdateStatus: (ids: number[], status: string) =>
@@ -367,12 +403,8 @@ export const stats = {
     api<number[]>('/stats/available-years'),
   yearSummary: (year: number) =>
     api<{ year: number; data: YearSummaryData }>(`/stats/year-summary?year=${year}`),
-  yearSummaryPdfUrl: (year: number, download = false) => {
-    // Auth token lives in the 'token' cookie (see setToken); 'auth_token'
-    // was wrong and produced an "Invalid token" response.
-    const token = getToken()
-    return `${API_URL}/stats/year-summary/pdf?year=${year}${download ? '&download=1' : ''}&token=${token || ''}`
-  },
+  yearSummaryPdfBlobUrl: (year: number, download = false) =>
+    apiBlobUrl(`/stats/year-summary/pdf?year=${year}${download ? '&download=1' : ''}`),
 }
 
 export interface Activity {
@@ -387,6 +419,25 @@ export interface Activity {
 export const activity = {
   list: () =>
     api<Activity[]>('/activity'),
+}
+
+export interface AuditLogEntry {
+  id: number
+  user_id: number | null
+  event: string
+  category: 'invoice' | 'client' | 'auth' | 'security' | 'general'
+  subject_type: string | null
+  subject_id: number | null
+  description: string | null
+  ip_address: string | null
+  user_agent: string | null
+  meta: Record<string, unknown> | null
+  created_at: string
+}
+
+export const auditLogs = {
+  list: (params?: string) =>
+    api<PaginatedResponse<AuditLogEntry>>(`/audit-logs${params ? `?${params}` : ''}`),
 }
 
 export interface CatalogItem {

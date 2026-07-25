@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TimeEntry;
 use App\Models\Invoice;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -271,7 +272,8 @@ class TimeEntryController extends Controller
 
         return DB::transaction(function () use ($user, $entries, $validated, $clientId) {
             $series = $user->invoice_series ?? 'INV';
-            $nextNumber = $user->next_invoice_number ?? 1;
+            // Row-locked allocation so concurrent creates can't reuse a number.
+            $nextNumber = $user->allocateInvoiceNumber();
 
             $invoice = $user->invoices()->create([
                 'series' => $series,
@@ -283,8 +285,6 @@ class TimeEntryController extends Controller
                 'total' => 0,
                 'status' => 'draft',
             ]);
-
-            $user->update(['next_invoice_number' => $nextNumber + 1]);
 
             $total = 0;
             foreach ($entries as $entry) {
@@ -307,6 +307,12 @@ class TimeEntryController extends Controller
             }
 
             $invoice->update(['total' => $total]);
+
+            Audit::log('invoice.created', [
+                'subject' => $invoice,
+                'description' => "Created invoice {$series}-{$nextNumber} from " . $entries->count() . ' time entry(ies)',
+                'meta' => ['total' => $total, 'time_entry_ids' => $entries->pluck('id')->all()],
+            ]);
 
             return $invoice->load('client', 'items');
         });

@@ -1,0 +1,29 @@
+# Security headers for the static frontend (Apache / Hostinger).
+# Guarded by IfModule so the site still serves if a module is unavailable.
+
+<IfModule mod_headers.c>
+    # Don't let browsers MIME-sniff a response into a different type.
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Disallow this site being framed (clickjacking). frame-ancestors below is
+    # the modern equivalent; both are set for older-browser coverage.
+    Header always set X-Frame-Options "DENY"
+
+    # Never send the URL (which may carry query params) to other origins.
+    Header always set Referrer-Policy "no-referrer"
+
+    # Drop powerful features the app doesn't use.
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+
+    # Force HTTPS for a year (only meaningful when already served over HTTPS).
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+    # Content Security Policy.
+    #  - script/style 'unsafe-inline': the static export ships an inline theme
+    #    bootstrap script and the app uses inline style props heavily.
+    #  - img/font data: + blob:  base64 signatures and blob-URL PDFs.
+    #  - frame-src blob:         the PDF preview iframes (invoice + template).
+    #  - connect-src https:      XHR/fetch to the API on its own https origin.
+    # If the API is served over plain HTTP, or the app needs eval, adjust here.
+    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https:; frame-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; form-action 'self'"
+</IfModule>

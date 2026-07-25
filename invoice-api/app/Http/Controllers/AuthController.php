@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,12 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token', ['*'], Carbon::now()->addDays(7))->plainTextToken;
 
+        Audit::log('auth.register', [
+            'user_id' => $user->id,
+            'category' => 'security',
+            'description' => 'Account registered',
+        ]);
+
         return response()->json([
             'user' => $user,
             'token' => $token,
@@ -42,6 +49,13 @@ class AuthController extends Controller
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user || !Hash::check($validated['password'], $user->password)) {
+            Audit::log('auth.login_failed', [
+                'user_id' => $user?->id,
+                'category' => 'security',
+                'description' => 'Failed login attempt',
+                'meta' => ['email' => $validated['email']],
+            ]);
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -54,6 +68,12 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken('auth_token', ['*'], Carbon::now()->addDays(7))->plainTextToken;
+
+        Audit::log('auth.login', [
+            'user_id' => $user->id,
+            'category' => 'security',
+            'description' => 'Signed in',
+        ]);
 
         return response()->json([
             'user' => $user,
@@ -69,12 +89,22 @@ class AuthController extends Controller
             $token->delete();
         }
 
+        Audit::log('auth.logout', [
+            'category' => 'security',
+            'description' => 'Signed out',
+        ]);
+
         return response()->json(['message' => 'Logged out']);
     }
 
     public function logoutAll(Request $request)
     {
         $request->user()->tokens()->delete();
+
+        Audit::log('auth.logout_all', [
+            'category' => 'security',
+            'description' => 'Signed out of all devices',
+        ]);
 
         return response()->json(['message' => 'Logged out from all devices']);
     }
@@ -123,6 +153,12 @@ class AuthController extends Controller
         }
 
         $token->delete();
+
+        Audit::log('auth.session_revoked', [
+            'category' => 'security',
+            'description' => 'Revoked a session',
+            'meta' => ['token_id' => $token->id],
+        ]);
 
         return response()->json(['message' => 'Session revoked']);
     }

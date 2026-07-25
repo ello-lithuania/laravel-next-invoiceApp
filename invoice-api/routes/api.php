@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
@@ -84,6 +85,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
 
     Route::put('/password', [PasswordController::class, 'update']);
     Route::get('/activity', [ActivityController::class, 'index']);
+    Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
     Route::get('/invoices/months', [InvoiceController::class, 'months']);
     Route::get('/invoices/unpaid', [InvoiceController::class, 'unpaid']);
@@ -102,8 +104,13 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/time-entries/convert-to-invoice', [TimeEntryController::class, 'convertToInvoice']);
     Route::post('/time-entries/bulk-delete', [TimeEntryController::class, 'bulkDelete']);
     Route::apiResource('time-entries', TimeEntryController::class)->except(['show']);
-});
 
-Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
-Route::get('/sample-invoice-pdf', [InvoiceController::class, 'samplePdf']);
-Route::get('/stats/year-summary/pdf', [StatsController::class, 'yearSummaryPdf']);
+    // PDF endpoints are authenticated like everything else (Bearer header).
+    // They used to sit outside this group and read the token from the query
+    // string, which (a) leaked the long-lived token into logs/history/referrer
+    // and (b) bypassed token-expiry/logout revocation. The frontend now fetches
+    // these as blobs with the Authorization header.
+    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+    Route::get('/sample-invoice-pdf', [InvoiceController::class, 'samplePdf']);
+    Route::get('/stats/year-summary/pdf', [StatsController::class, 'yearSummaryPdf']);
+});

@@ -38,31 +38,39 @@ export default function YearSummary() {
   const [clientPage, setClientPage] = useState(1)
 
   useEffect(() => {
-    loadYears()
+    init()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => {
-    if (year) { loadData(); setClientPage(1) }
-  }, [year])
-
-  const loadYears = async () => {
+  // Fetch the year list and the (current-year) summary in parallel instead of
+  // waterfalling list → summary. If the most recent year with data isn't the
+  // current year, fall back to loading that year's summary.
+  const init = async () => {
+    setLoading(true)
+    const current = new Date().getFullYear()
     try {
-      const years = await stats.availableYears()
+      const [years, res] = await Promise.all([
+        stats.availableYears(),
+        stats.yearSummary(current),
+      ])
       setAvailableYears(years)
-      if (years.length > 0) {
-        setYear(years[0])
-      } else {
+      const selected = years.length > 0 ? years[0] : current
+      setYear(selected)
+      if (selected === current) {
+        setData(res.data)
         setLoading(false)
+      } else {
+        await loadData(selected)
       }
     } catch {
       setLoading(false)
     }
   }
 
-  const loadData = async () => {
+  const loadData = async (y: number) => {
     setLoading(true)
     try {
-      const res = await stats.yearSummary(year!)
+      const res = await stats.yearSummary(y)
       setData(res.data)
     } catch (e: any) {
       toast.error('Failed to load year summary')
@@ -70,13 +78,29 @@ export default function YearSummary() {
     setLoading(false)
   }
 
-  const handleViewPdf = () => {
-    window.open(stats.yearSummaryPdfUrl(year!), '_blank')
+  const changeYear = (y: number) => {
+    setYear(y)
+    setClientPage(1)
+    loadData(y)
   }
 
-  const handleDownloadPdf = () => {
-    window.open(stats.yearSummaryPdfUrl(year!, true), '_blank')
+  // Open a blob in a new tab (token travels in the Authorization header, not
+  // the URL). The tab is reserved synchronously so the popup blocker allows it.
+  const openPdf = async (download: boolean) => {
+    const win = window.open('', '_blank')
+    try {
+      const url = await stats.yearSummaryPdfBlobUrl(year!, download)
+      if (win) win.location.href = url
+      else window.open(url, '_blank')
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (e: any) {
+      if (win) win.close()
+      toast.error(e.message || 'Failed to generate PDF')
+    }
   }
+
+  const handleViewPdf = () => openPdf(false)
+  const handleDownloadPdf = () => openPdf(true)
 
   if (loading) return <YearSummarySkeleton />
 
@@ -117,8 +141,8 @@ export default function YearSummary() {
         </div>
         <div className="flex items-center gap-3">
           <select
-            value={year}
-            onChange={e => setYear(Number(e.target.value))}
+            value={year ?? ''}
+            onChange={e => changeYear(Number(e.target.value))}
             className="px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-medium"
           >
             {availableYears.map(y => <option key={y} value={y}>{y}</option>)}

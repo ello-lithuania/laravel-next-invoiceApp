@@ -1,4 +1,5 @@
 {
+  "/(dashboard)/activity/page": "app/(dashboard)/activity/page.js",
   "/(dashboard)/clients/edit/page": "app/(dashboard)/clients/edit/page.js",
   "/(dashboard)/clients/new/page": "app/(dashboard)/clients/new/page.js",
   "/(dashboard)/clients/page": "app/(dashboard)/clients/page.js",

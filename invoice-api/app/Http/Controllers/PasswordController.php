@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
@@ -25,6 +26,12 @@ class PasswordController extends Controller
         $user->tokens()->delete();
 
         $token = $user->createToken('auth_token', ['*'], Carbon::now()->addDays(7))->plainTextToken;
+
+        Audit::log('auth.password_changed', [
+            'user_id' => $user->id,
+            'category' => 'security',
+            'description' => 'Password changed (all other sessions signed out)',
+        ]);
 
         return response()->json([
             'message' => 'Password changed successfully. All other sessions have been logged out.',

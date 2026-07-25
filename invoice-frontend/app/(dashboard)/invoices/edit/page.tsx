@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { invoices, clients as clientsApi, getToken, Client } from '@/lib/api'
+import { invoices, clients as clientsApi, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
 
 interface InvoiceItem {
@@ -95,9 +95,20 @@ function EditInvoiceForm() {
     setDuplicating(false)
   }
 
-  const downloadPdf = () => {
-    const token = getToken()
-    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
+  const downloadPdf = async () => {
+    if (!id) return
+    // Reserve the tab synchronously (inside the click gesture) so the popup
+    // blocker allows it, then point it at the blob once the fetch resolves.
+    const win = window.open('', '_blank')
+    try {
+      const url = await invoices.pdfBlobUrl(Number(id))
+      if (win) win.location.href = url
+      else window.open(url, '_blank')
+      setTimeout(() => URL.revokeObjectURL(url), 60000)
+    } catch (e: any) {
+      if (win) win.close()
+      toast.error(e.message || 'Failed to load PDF')
+    }
   }
 
   const addItem = () => {

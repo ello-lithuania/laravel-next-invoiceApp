@@ -30,6 +30,7 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
     public function clients()
@@ -50,5 +51,28 @@ class User extends Authenticatable
     public function catalogItems()
     {
         return $this->hasMany(CatalogItem::class);
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
+    /**
+     * Atomically reserve the next invoice number.
+     *
+     * MUST be called inside a DB transaction: it locks this user's row
+     * (SELECT ... FOR UPDATE) so two concurrent invoice creations can't read
+     * the same next_invoice_number and produce duplicate numbers.
+     */
+    public function allocateInvoiceNumber(): int
+    {
+        $locked = static::whereKey($this->getKey())->lockForUpdate()->first();
+        $number = $locked->next_invoice_number ?? 1;
+        $locked->update(['next_invoice_number' => $number + 1]);
+        // Keep the in-memory instance in sync for any later reads this request.
+        $this->next_invoice_number = $number + 1;
+
+        return $number;
     }
 }

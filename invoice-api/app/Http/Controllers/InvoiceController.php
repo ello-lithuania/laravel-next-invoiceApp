@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\TimeEntry;
+use App\Support\Audit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,9 +18,12 @@ class InvoiceController extends Controller
         $query = $request->user()->invoices()->with('client');
 
         if ($request->has('month') && $request->month) {
-            $date = Carbon::createFromFormat('Y-m', $request->month);
-            $query->whereYear('invoice_date', $date->year)
-                  ->whereMonth('invoice_date', $date->month);
+            // Half-open range on the raw column so the (user_id, invoice_date)
+            // index is usable — whereYear()/whereMonth() wrap the column in a
+            // function and force a full scan + filesort.
+            $date = Carbon::createFromFormat('Y-m', $request->month)->startOfMonth();
+            $query->where('invoice_date', '>=', $date->toDateString())
+                  ->where('invoice_date', '<', $date->copy()->addMonth()->toDateString());
         }
 
         if ($request->has('client_id') && $request->client_id) {
@@ -42,8 +46,15 @@ class InvoiceController extends Controller
             });
         }
 
+        // Whitelist the sort column/direction — an arbitrary $sort_by would
+        // throw a DB error (leaking schema when APP_DEBUG is on) and an invalid
+        // direction would break the query.
         $sortBy = $request->get('sort_by', 'invoice_date');
-        $sortDir = $request->get('sort_dir', 'desc');
+        $allowedSorts = ['invoice_date', 'due_date', 'number', 'total', 'status', 'created_at', 'client_name'];
+        if (!in_array($sortBy, $allowedSorts, true)) {
+            $sortBy = 'invoice_date';
+        }
+        $sortDir = strtolower($request->get('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if ($sortBy === 'client_name') {
             $query->join('clients', 'invoices.client_id', '=', 'clients.id')
@@ -53,7 +64,8 @@ class InvoiceController extends Controller
             $query->orderBy($sortBy, $sortDir);
         }
 
-        $perPage = $request->get('per_page', 10);
+        // Clamp per_page so a request can't ask for an unbounded page size.
+        $perPage = min(max((int) $request->get('per_page', 10), 1), 100);
 
         return $query->paginate($perPage);
     }
@@ -84,7 +96,8 @@ class InvoiceController extends Controller
 
         return DB::transaction(function () use ($user, $validated) {
             $series = $user->invoice_series ?? 'INV';
-            $nextNumber = $user->next_invoice_number ?? 1;
+            // Row-locked allocation so concurrent creates can't reuse a number.
+            $nextNumber = $user->allocateInvoiceNumber();
 
             $invoice = $user->invoices()->create([
                 'series' => $series,
@@ -97,8 +110,6 @@ class InvoiceController extends Controller
                 // New invoices default to "sent" — they're created to be issued.
                 'status' => 'sent',
             ]);
-
-            $user->update(['next_invoice_number' => $nextNumber + 1]);
 
             $total = 0;
             foreach ($validated['items'] as $item) {
@@ -115,6 +126,12 @@ class InvoiceController extends Controller
             }
 
             $invoice->update(['total' => $total]);
+
+            Audit::log('invoice.created', [
+                'subject' => $invoice,
+                'description' => "Created invoice {$series}-{$nextNumber}",
+                'meta' => ['total' => $total, 'client_id' => $invoice->client_id],
+            ]);
 
             return $invoice->load('client', 'items');
         });
@@ -182,6 +199,12 @@ class InvoiceController extends Controller
 
             $invoice->update(['total' => $total]);
 
+            Audit::log('invoice.updated', [
+                'subject' => $invoice,
+                'description' => "Updated invoice {$invoice->series}-{$invoice->number}",
+                'meta' => ['total' => $total],
+            ]);
+
             return $invoice->load('client', 'items');
         });
     }
@@ -192,10 +215,19 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
+        $label = "{$invoice->series}-{$invoice->number}";
+        $invoiceId = $invoice->id;
+
         DB::transaction(function () use ($invoice) {
             $invoice->items()->delete();
             $invoice->delete();
         });
+
+        Audit::log('invoice.deleted', [
+            'subject_type' => Invoice::class,
+            'subject_id' => $invoiceId,
+            'description' => "Deleted invoice {$label}",
+        ]);
 
         return response()->json(['message' => 'Invoice deleted']);
     }
@@ -222,24 +254,21 @@ class InvoiceController extends Controller
             'status' => 'required|in:draft,sent,paid,overdue'
         ]);
 
+        $oldStatus = $invoice->status;
         $invoice->update(['status' => $validated['status']]);
+
+        Audit::log('invoice.status_changed', [
+            'subject' => $invoice,
+            'description' => "Invoice {$invoice->series}-{$invoice->number}: {$oldStatus} → {$validated['status']}",
+            'meta' => ['from' => $oldStatus, 'to' => $validated['status']],
+        ]);
 
         return $invoice->load('client', 'items');
     }
 
     public function samplePdf(Request $request)
     {
-        $token = $request->query('token');
-        if (!$token) {
-            return response()->json(['message' => 'Token required'], 401);
-        }
-
-        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        if (!$accessToken) {
-            return response()->json(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $accessToken->tokenable;
+        $user = $request->user();
         $template = $request->query('template', $user->invoice_template ?? 'classic');
 
         $invoice = new \stdClass();
@@ -303,17 +332,7 @@ class InvoiceController extends Controller
 
     public function pdf(Request $request, Invoice $invoice)
     {
-        $token = $request->query('token');
-        if (!$token) {
-            return response()->json(['message' => 'Token required'], 401);
-        }
-
-        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        if (!$accessToken) {
-            return response()->json(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $accessToken->tokenable;
+        $user = $request->user();
         if ($invoice->user_id !== $user->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
@@ -480,6 +499,11 @@ class InvoiceController extends Controller
             }
         });
 
+        Audit::log('invoice.bulk_deleted', [
+            'description' => $deleted->count() . ' invoice(s) deleted',
+            'meta' => ['ids' => $deleted->pluck('id')->all()],
+        ]);
+
         return response()->json(['message' => $deleted->count() . ' invoice(s) deleted']);
     }
 
@@ -495,6 +519,11 @@ class InvoiceController extends Controller
             ->whereIn('id', $validated['ids'])
             ->update(['status' => $validated['status']]);
 
+        Audit::log('invoice.bulk_status', [
+            'description' => "{$updated} invoice(s) set to {$validated['status']}",
+            'meta' => ['ids' => $validated['ids'], 'status' => $validated['status']],
+        ]);
+
         return response()->json(['message' => $updated . ' invoice(s) updated']);
     }
 
@@ -508,7 +537,8 @@ class InvoiceController extends Controller
 
         return DB::transaction(function () use ($user, $invoice) {
             $series = $user->invoice_series ?? 'INV';
-            $nextNumber = $user->next_invoice_number ?? 1;
+            // Row-locked allocation so concurrent creates can't reuse a number.
+            $nextNumber = $user->allocateInvoiceNumber();
 
             $newInvoice = $user->invoices()->create([
                 'series' => $series,
@@ -521,8 +551,6 @@ class InvoiceController extends Controller
                 'status' => 'draft',
             ]);
 
-            $user->update(['next_invoice_number' => $nextNumber + 1]);
-
             foreach ($invoice->items as $item) {
                 $newInvoice->items()->create([
                     'description' => $item->description,
@@ -532,6 +560,12 @@ class InvoiceController extends Controller
                     'total' => $item->total,
                 ]);
             }
+
+            Audit::log('invoice.duplicated', [
+                'subject' => $newInvoice,
+                'description' => "Duplicated {$invoice->series}-{$invoice->number} → {$series}-{$nextNumber}",
+                'meta' => ['source_id' => $invoice->id],
+            ]);
 
             return $newInvoice->load('client', 'items');
         });

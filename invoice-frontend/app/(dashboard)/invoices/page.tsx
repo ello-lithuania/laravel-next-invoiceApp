@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { invoices, clients as clientsApi, getToken, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
+import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { statusColors, refreshStats, formatCurrency } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
@@ -189,15 +189,23 @@ function InvoicesContent() {
     }
   }
 
-  const downloadPdf = (id: number) => {
-    const token = getToken()
-    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${id}/pdf?token=${token}`, '_blank')
+  // Close the preview and free the blob URL it was holding.
+  const closePdfPreview = () => {
+    setPdfPreview(prev => {
+      if (prev.url) URL.revokeObjectURL(prev.url)
+      return { open: false, url: '', title: '' }
+    })
   }
 
-  const previewPdf = (inv: InvoiceType) => {
-    const token = getToken()
-    const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/invoices/${inv.id}/pdf?token=${token}`
-    setPdfPreview({ open: true, url, title: `${inv.series}-${String(inv.number).padStart(4, '0')}` })
+  const previewPdf = async (inv: InvoiceType) => {
+    const title = `${inv.series}-${String(inv.number).padStart(4, '0')}`
+    try {
+      // Fetched with the Authorization header (token no longer in the URL).
+      const url = await invoices.pdfBlobUrl(inv.id)
+      setPdfPreview({ open: true, url, title })
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load PDF')
+    }
   }
 
   const toggleSelect = (id: number) => {
@@ -724,14 +732,14 @@ function InvoicesContent() {
     {/* PDF Preview Modal */}
       {pdfPreview.open && (
         <div className="fixed inset-0 z-50 flex flex-col">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setPdfPreview({ open: false, url: '', title: '' })} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closePdfPreview} />
           <div className="relative bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
             <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700/60 shrink-0">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Invoice {pdfPreview.title}</h3>
               <div className="flex items-center gap-2">
                 <a
-                  href={pdfPreview.url + '&download=1'}
-                  target="_blank"
+                  href={pdfPreview.url}
+                  download={`invoice-${pdfPreview.title}.pdf`}
                   className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -740,7 +748,7 @@ function InvoicesContent() {
                   Download
                 </a>
                 <button
-                  onClick={() => setPdfPreview({ open: false, url: '', title: '' })}
+                  onClick={closePdfPreview}
                   className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

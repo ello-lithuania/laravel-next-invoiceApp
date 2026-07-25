@@ -1,7 +1,8 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { profile, auth, invoices as invoicesApi, Session } from '@/lib/api'
+import { profile, auth, Session } from '@/lib/api'
 import { toast } from 'react-toastify'
+import SamplePdfFrame from '@/components/SamplePdfFrame'
 
 interface User {
   name: string
@@ -314,9 +315,9 @@ export default function Profile() {
                         )}
                         {/* PDF iframe preview */}
                         <div className="relative bg-gray-100 dark:bg-gray-900" style={{ height: '280px' }}>
-                          <iframe
-                            src={invoicesApi.samplePdf(tmpl.id)}
-                            className="w-full h-full pointer-events-none"
+                          <SamplePdfFrame
+                            template={tmpl.id}
+                            className="w-full h-full pointer-events-none border-0"
                             title={`${tmpl.name} template preview`}
                             style={{ transform: 'scale(0.55)', transformOrigin: 'top left', width: '182%', height: '182%' }}
                           />

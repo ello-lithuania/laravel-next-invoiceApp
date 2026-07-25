@@ -168,7 +168,7 @@ class StatsController extends Controller
 
         $invoices = $user->invoices()
             ->whereBetween('invoice_date', [$startOfYear, $endOfYear])
-            ->with('client', 'items')
+            ->with('client')
             ->get();
 
         $timeEntries = TimeEntry::where('user_id', $user->id)
@@ -317,17 +317,7 @@ class StatsController extends Controller
 
     public function yearSummaryPdf(Request $request)
     {
-        $token = $request->query('token');
-        if (!$token) {
-            return response()->json(['message' => 'Token required'], 401);
-        }
-
-        $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-        if (!$accessToken) {
-            return response()->json(['message' => 'Invalid token'], 401);
-        }
-
-        $user = $accessToken->tokenable;
+        $user = $request->user();
         $year = (int) $request->get('year', now()->year);
         $data = $this->buildYearData($user, $year);
 

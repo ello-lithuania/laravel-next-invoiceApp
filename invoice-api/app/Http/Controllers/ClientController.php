@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 
 class ClientController extends Controller
@@ -46,6 +47,11 @@ class ClientController extends Controller
 
         $client = $request->user()->clients()->create($validated);
 
+        Audit::log('client.created', [
+            'subject' => $client,
+            'description' => "Created client {$client->name}",
+        ]);
+
         return response()->json($client, 201);
     }
 
@@ -84,6 +90,11 @@ class ClientController extends Controller
 
         $client->update($validated);
 
+        Audit::log('client.updated', [
+            'subject' => $client,
+            'description' => "Updated client {$client->name}",
+        ]);
+
         return response()->json($client);
     }
 
@@ -97,7 +108,15 @@ class ClientController extends Controller
             return response()->json(['message' => 'Cannot delete client with invoices'], 400);
         }
 
+        $clientName = $client->name;
+        $clientId = $client->id;
         $client->delete();
+
+        Audit::log('client.deleted', [
+            'subject_type' => Client::class,
+            'subject_id' => $clientId,
+            'description' => "Deleted client {$clientName}",
+        ]);
 
         return response()->json(['message' => 'Deleted']);
     }

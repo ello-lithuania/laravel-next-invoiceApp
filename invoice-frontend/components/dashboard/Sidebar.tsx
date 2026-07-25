@@ -63,6 +63,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    label: 'Activity',
+    href: '/activity',
+    icon: (
+      <svg className="shrink-0 fill-current" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM7 4a1 1 0 0 1 2 0v3.6l2.3 2.3a1 1 0 0 1-1.4 1.4l-2.6-2.6A1 1 0 0 1 7 8V4z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }: SidebarProps) {
