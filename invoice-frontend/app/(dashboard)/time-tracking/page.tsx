@@ -891,7 +891,7 @@ export default function TimeTracking() {
       </div>
 
       {/* Entries Table */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
         {/* Desktop */}
         <div className="hidden md:block">
           <table className="w-full">

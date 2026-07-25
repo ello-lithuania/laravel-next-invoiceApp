@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ReactNode } from 'react'
 import { stats, YearSummaryData } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
@@ -8,6 +8,56 @@ const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'Jul
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+// A primary metric card with a strong number and a readable, higher-contrast
+// sub-line (the old cards used gray-400 text that washed out on the light card).
+function StatCard({ label, value, valueColor, sub, icon }: {
+  label: string
+  value: ReactNode
+  valueColor?: string
+  sub?: ReactNode
+  icon?: ReactNode
+}) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">{label}</p>
+        {icon && (
+          <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
+            {icon}
+          </span>
+        )}
+      </div>
+      <p className={`text-2xl font-bold tabular-nums ${valueColor ? '' : 'text-gray-800 dark:text-gray-100'}`} style={valueColor ? { color: valueColor } : undefined}>
+        {value}
+      </p>
+      {sub != null && <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mt-1.5">{sub}</div>}
+    </div>
+  )
+}
+
+// A compact analytics card: big highlighted figure, optional progress bar and
+// a muted caption. Used for the derived "Insights" row.
+function InsightCard({ label, value, valueColor, caption, progress }: {
+  label: string
+  value: ReactNode
+  valueColor?: string
+  caption?: ReactNode
+  progress?: number
+}) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
+      <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">{label}</p>
+      <p className="text-2xl font-bold tabular-nums" style={valueColor ? { color: valueColor } : undefined}>{value}</p>
+      {progress != null && (
+        <div className="w-full h-1.5 rounded-full overflow-hidden mt-2.5" style={{ background: 'var(--t-bg-elevated)' }}>
+          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(Math.max(progress, 0), 100)}%`, background: valueColor || 'var(--t-accent)' }} />
+        </div>
+      )}
+      {caption != null && <p className="text-sm font-medium text-gray-600 dark:text-gray-300 mt-2">{caption}</p>}
+    </div>
+  )
 }
 
 function YearSummarySkeleton() {
@@ -131,6 +181,28 @@ export default function YearSummary() {
   const clientTotalPages = Math.max(1, Math.ceil(data.clients.length / clientsPerPage))
   const pagedClients = data.clients.slice((clientPage - 1) * clientsPerPage, clientPage * clientsPerPage)
 
+  // --- Derived analytics (computed client-side from the summary data) ---
+  const paidPct = data.total_revenue > 0 ? (data.paid_revenue / data.total_revenue) * 100 : 0
+  const activeMonths = data.months.filter(m => m.total > 0)
+  const avgActiveMonth = activeMonths.length ? data.total_revenue / activeMonths.length : 0
+  const topClient = data.clients[0] || null
+  const topClientPct = topClient && data.total_revenue > 0 ? (topClient.total / data.total_revenue) * 100 : 0
+  const top3Pct = data.total_revenue > 0
+    ? (data.clients.slice(0, 3).reduce((s, c) => s + c.total, 0) / data.total_revenue) * 100
+    : 0
+  // Completed months only (drop the still-in-progress current month for this year).
+  const completedMonths = data.months.filter(m => !isCurrentYear || m.month < now.getMonth() + 1)
+  const completedRevenue = completedMonths.reduce((s, m) => s + m.total, 0)
+  // Momentum: last 3 completed months vs the 3 before them.
+  const last3 = completedMonths.slice(-3).reduce((s, m) => s + m.total, 0)
+  const prev3 = completedMonths.slice(-6, -3).reduce((s, m) => s + m.total, 0)
+  const momentum = completedMonths.length >= 6 && prev3 > 0 ? ((last3 - prev3) / prev3) * 100 : null
+  // Projected year-end at the current run-rate (current year only).
+  const projectedYear = isCurrentYear && completedMonths.length > 0
+    ? (completedRevenue / completedMonths.length) * 12
+    : null
+  const collectionColor = paidPct >= 80 ? '#16a34a' : paidPct >= 50 ? 'var(--t-accent)' : '#d97706'
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -168,51 +240,93 @@ export default function YearSummary() {
         </div>
       </div>
 
-      {/* Key metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
-          <p className="text-2xl font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(data.total_revenue)} €</p>
-          <div className="flex gap-3 mt-2 text-xs font-medium">
-            <span className="text-green-600 dark:text-green-400">✓ {fmt(data.paid_revenue)} €</span>
-            <span className="text-amber-600 dark:text-amber-400">○ {fmt(data.unpaid_revenue)} €</span>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Invoices</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_invoices}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_invoice)} €</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Clients</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_clients}</p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_monthly)} €/mo</p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Hours</p>
-          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{data.total_hours > 0 ? `${data.total_hours.toFixed(1)} h` : '—'}</p>
-          {data.avg_hourly_rate > 0 && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">Avg. {fmt(data.avg_hourly_rate)} €/h</p>
+      {/* Primary metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Revenue"
+          value={`${fmt(data.total_revenue)} €`}
+          valueColor="var(--t-accent)"
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>}
+          sub={
+            <div className="flex gap-3">
+              <span className="text-green-600 dark:text-green-400">✓ {fmt(data.paid_revenue)} €</span>
+              <span className="text-amber-600 dark:text-amber-400">○ {fmt(data.unpaid_revenue)} €</span>
+            </div>
+          }
+        />
+        <StatCard
+          label="Invoices"
+          value={data.total_invoices}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+          sub={`Avg. ${fmt(data.avg_invoice)} € / invoice`}
+        />
+        <StatCard
+          label="Clients"
+          value={data.total_clients}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" /></svg>}
+          sub={`Avg. ${fmt(data.avg_monthly)} € / month`}
+        />
+        <StatCard
+          label="Billed Hours"
+          value={data.total_hours > 0 ? `${data.total_hours.toFixed(1)} h` : '—'}
+          icon={<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          sub={data.avg_hourly_rate > 0 ? `Avg. ${fmt(data.avg_hourly_rate)} € / h` : 'No hourly items'}
+        />
+      </div>
+
+      {/* Insights — derived analytics */}
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3">Insights</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <InsightCard
+            label="Collection Rate"
+            value={`${paidPct.toFixed(0)}%`}
+            valueColor={collectionColor}
+            progress={paidPct}
+            caption={`${fmt(data.unpaid_revenue)} € still outstanding`}
+          />
+          <InsightCard
+            label="Top Client Share"
+            value={topClient ? `${topClientPct.toFixed(0)}%` : '—'}
+            caption={topClient ? <span className="truncate block">{topClient.name} · top 3 = {top3Pct.toFixed(0)}%</span> : 'No clients yet'}
+          />
+          <InsightCard
+            label="Momentum"
+            value={momentum != null ? `${momentum >= 0 ? '+' : ''}${momentum.toFixed(0)}%` : '—'}
+            valueColor={momentum != null ? (momentum >= 0 ? '#16a34a' : '#dc2626') : undefined}
+            caption={momentum != null ? 'Last 3 months vs previous 3' : 'Needs 6+ months of data'}
+          />
+          {projectedYear != null ? (
+            <InsightCard
+              label="Projected Year-End"
+              value={`${fmt(projectedYear)} €`}
+              valueColor="var(--t-accent)"
+              caption="At the current pace"
+            />
+          ) : (
+            <InsightCard
+              label="Avg / Active Month"
+              value={`${fmt(avgActiveMonth)} €`}
+              caption={`${activeMonths.length} active month${activeMonths.length === 1 ? '' : 's'}`}
+            />
           )}
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Best Month</p>
-          {data.best_month ? (
-            <>
-              <p className="text-lg font-bold text-green-500">{monthNames[data.best_month.month - 1]}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.best_month.total)} € · {data.best_month.invoice_count} inv.</p>
-            </>
-          ) : <p className="text-lg text-gray-400">—</p>}
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Worst Month</p>
-          {data.worst_month ? (
-            <>
-              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{monthNames[data.worst_month.month - 1]}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.worst_month.total)} € · {data.worst_month.invoice_count} inv.</p>
-            </>
-          ) : <p className="text-lg text-gray-400">—</p>}
-        </div>
+      </div>
+
+      {/* Best / worst month */}
+      <div className="grid grid-cols-2 gap-4">
+        <StatCard
+          label="Best Month"
+          value={data.best_month ? monthNames[data.best_month.month - 1] : '—'}
+          valueColor={data.best_month ? '#16a34a' : undefined}
+          sub={data.best_month ? `${fmt(data.best_month.total)} € · ${data.best_month.invoice_count} inv.` : undefined}
+        />
+        <StatCard
+          label="Worst Month"
+          value={data.worst_month ? monthNames[data.worst_month.month - 1] : '—'}
+          valueColor={data.worst_month ? '#d97706' : undefined}
+          sub={data.worst_month ? `${fmt(data.worst_month.total)} € · ${data.worst_month.invoice_count} inv.` : undefined}
+        />
       </div>
 
       {/* Monthly chart */}
