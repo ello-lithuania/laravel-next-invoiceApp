@@ -288,13 +288,13 @@ export default function TimeTracking() {
     setSaving(false)
   }
 
-  const handleBulkGroup = async () => {
-    const group = groupValue.trim() || null
+  // Assign the current selection to a group (existing name, a new name, or null
+  // to remove). Regroups local state immediately, then reconciles via loadData.
+  const applyBulkGroup = async (group: string | null) => {
     const ids = selectedIds
+    if (ids.length === 0) return
     try {
       await timeEntries.bulkUpdateGroup(ids, group)
-      // Regroup immediately in local state so the sections re-render on click,
-      // without waiting for the refetch below (which just reconciles).
       setEntries(prev => prev.map(e => (ids.includes(e.id) ? { ...e, group_name: group } : e)))
       toast.success(group ? `Assigned to "${group}"` : 'Group removed')
       setShowGroupModal(false)
@@ -305,6 +305,8 @@ export default function TimeTracking() {
       toast.error(e.message || 'Failed to update group')
     }
   }
+
+  const handleBulkGroup = () => applyBulkGroup(groupValue.trim() || null)
 
   // Remove the group from every entry in a section (one click on the header).
   const handleUngroup = async (groupKey: string) => {
@@ -941,11 +943,15 @@ export default function TimeTracking() {
                   return (
                     <Fragment key={entry.id}>
                     {g && (g.key === '' ? (
-                      // Ungrouped entries: just a gap, no confusing label.
-                      <tr aria-hidden="true"><td colSpan={8} className="p-0"><div className="h-5" /></td></tr>
+                      // Ungrouped entries: a clear divider band (no confusing label).
+                      <tr aria-hidden="true">
+                        <td colSpan={8} className="p-0">
+                          <div className="h-7 border-y border-gray-200 dark:border-gray-700" style={{ background: 'var(--t-bg-elevated)' }} />
+                        </td>
+                      </tr>
                     ) : (
-                      <tr className="border-y border-gray-200 dark:border-gray-700/70" style={{ background: 'var(--t-accent-soft)' }}>
-                        <td colSpan={8} className="px-4 py-2.5">
+                      <tr style={{ background: 'var(--t-accent-soft)', borderTop: '3px solid var(--t-accent)', borderBottom: '1px solid var(--t-border)' }}>
+                        <td colSpan={8} className="px-4 py-3">
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5">
                               <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
@@ -1208,9 +1214,9 @@ export default function TimeTracking() {
                 return (
                   <Fragment key={entry.id}>
                   {g && (g.key === '' ? (
-                    <div aria-hidden="true" className="h-4 bg-gray-50 dark:bg-gray-900/20" />
+                    <div aria-hidden="true" className="h-6 border-y border-gray-200 dark:border-gray-700" style={{ background: 'var(--t-bg-elevated)' }} />
                   ) : (
-                    <div className="px-4 py-2.5 border-y border-gray-200 dark:border-gray-700/70" style={{ background: 'var(--t-accent-soft)' }}>
+                    <div className="px-4 py-3" style={{ background: 'var(--t-accent-soft)', borderTop: '3px solid var(--t-accent)', borderBottom: '1px solid var(--t-border)' }}>
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
@@ -1380,38 +1386,65 @@ export default function TimeTracking() {
       {showGroupModal && (
         <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGroupModal(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Assign to group</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {selectedIds.length} selected · type a group name (or leave empty to remove grouping).
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">Assign to group</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{selectedIds.length} entries selected</p>
+
+            {existingGroups.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Pick existing group</p>
+                <div className="flex flex-wrap gap-2">
+                  {existingGroups.map(gname => (
+                    <button
+                      key={gname}
+                      onClick={() => applyBulkGroup(gname)}
+                      className="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                      style={{ borderColor: 'var(--t-accent)', color: 'var(--t-accent)', background: 'var(--t-accent-soft)' }}
+                    >
+                      {gname}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+              {existingGroups.length > 0 ? 'Or create new' : 'Group name'}
             </p>
-            <input
-              type="text"
-              list="bulk-group-suggestions"
-              value={groupValue}
-              onChange={e => setGroupValue(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleBulkGroup() }}
-              placeholder="e.g. Marketing, IT…"
-              autoFocus
-              autoComplete="off"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-              style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-            />
-            <datalist id="bulk-group-suggestions">
-              {existingGroups.map(gname => <option key={gname} value={gname} />)}
-            </datalist>
-            <div className="flex justify-end gap-2 mt-5">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={groupValue}
+                onChange={e => setGroupValue(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && groupValue.trim()) handleBulkGroup() }}
+                placeholder="e.g. Marketing, IT…"
+                autoFocus
+                autoComplete="off"
+                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+              />
+              <button
+                onClick={handleBulkGroup}
+                disabled={!groupValue.trim()}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-40"
+                style={{ backgroundColor: 'var(--t-accent)' }}
+              >
+                Create
+              </button>
+            </div>
+
+            <div className="flex justify-between items-center mt-5">
+              <button
+                onClick={() => applyBulkGroup(null)}
+                className="text-sm font-medium text-gray-400 hover:text-red-500 transition-colors"
+                title="Remove group from the selected entries"
+              >
+                Remove from group
+              </button>
               <button
                 onClick={() => setShowGroupModal(false)}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
-              </button>
-              <button
-                onClick={handleBulkGroup}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-                style={{ backgroundColor: 'var(--t-accent)' }}
-              >
-                {groupValue.trim() ? 'Assign' : 'Remove group'}
               </button>
             </div>
           </div>
