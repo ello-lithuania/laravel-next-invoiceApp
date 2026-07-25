@@ -6,6 +6,7 @@ import { timeEntries, clients as clientsApi, invoices as invoicesApi, Client, Ti
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
+import SearchableSelect from '@/components/SearchableSelect'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -288,15 +289,34 @@ export default function TimeTracking() {
   }
 
   const handleBulkGroup = async () => {
+    const group = groupValue.trim() || null
+    const ids = selectedIds
     try {
-      await timeEntries.bulkUpdateGroup(selectedIds, groupValue.trim() || null)
-      toast.success(groupValue.trim() ? `Assigned to "${groupValue.trim()}"` : 'Group removed')
+      await timeEntries.bulkUpdateGroup(ids, group)
+      // Regroup immediately in local state so the sections re-render on click,
+      // without waiting for the refetch below (which just reconciles).
+      setEntries(prev => prev.map(e => (ids.includes(e.id) ? { ...e, group_name: group } : e)))
+      toast.success(group ? `Assigned to "${group}"` : 'Group removed')
       setShowGroupModal(false)
       setGroupValue('')
       setSelectedIds([])
       loadData()
     } catch (e: any) {
       toast.error(e.message || 'Failed to update group')
+    }
+  }
+
+  // Remove the group from every entry in a section (one click on the header).
+  const handleUngroup = async (groupKey: string) => {
+    const ids = entries.filter(e => (e.group_name || '') === groupKey).map(e => e.id)
+    if (ids.length === 0) return
+    try {
+      await timeEntries.bulkUpdateGroup(ids, null)
+      setEntries(prev => prev.map(e => (ids.includes(e.id) ? { ...e, group_name: null } : e)))
+      toast.success('Ungrouped')
+      loadData()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to ungroup')
     }
   }
 
@@ -822,16 +842,15 @@ export default function TimeTracking() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <select
-          value={filterClient}
-          onChange={e => setFilterClient(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-sm"
-        >
-          <option value="">All Clients</option>
-          {clients.map(c => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
+        <div className="w-full sm:w-64">
+          <SearchableSelect
+            value={filterClient}
+            onChange={setFilterClient}
+            options={clients.map(c => ({ value: String(c.id), label: c.name }))}
+            allLabel="All Clients"
+            placeholder="Search client…"
+          />
+        </div>
         <select
           value={filterInvoiced}
           onChange={e => setFilterInvoiced(e.target.value)}
@@ -926,7 +945,18 @@ export default function TimeTracking() {
                         <td colSpan={8} className="px-4 py-2">
                           <div className="flex items-center justify-between gap-3">
                             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
-                            <span className="text-xs t-text-muted tabular-nums">{g.entries.length} entr{g.entries.length === 1 ? 'y' : 'ies'} · {formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs t-text-muted tabular-nums">{g.entries.length} entr{g.entries.length === 1 ? 'y' : 'ies'} · {formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                              {g.key !== '' && (
+                                <button
+                                  onClick={() => handleUngroup(g.key)}
+                                  className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors"
+                                  title="Remove this group from its entries"
+                                >
+                                  Ungroup
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -1177,7 +1207,12 @@ export default function TimeTracking() {
                   {g && (
                     <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-700/40">
                       <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
-                      <span className="text-xs t-text-muted tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs t-text-muted tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                        {g.key !== '' && (
+                          <button onClick={() => handleUngroup(g.key)} className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">Ungroup</button>
+                        )}
+                      </div>
                     </div>
                   )}
                   <div className={`p-4 space-y-2 ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
