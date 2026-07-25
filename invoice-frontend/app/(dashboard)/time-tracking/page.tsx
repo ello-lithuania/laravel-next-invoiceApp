@@ -79,6 +79,8 @@ export default function TimeTracking() {
   // Selection for convert
   const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [showConvertModal, setShowConvertModal] = useState(false)
+  const [showGroupModal, setShowGroupModal] = useState(false)
+  const [groupValue, setGroupValue] = useState('')
   const [convertForm, setConvertForm] = useState({
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0] })(),
@@ -283,6 +285,19 @@ export default function TimeTracking() {
       toast.error(e.message || 'Failed to save')
     }
     setSaving(false)
+  }
+
+  const handleBulkGroup = async () => {
+    try {
+      await timeEntries.bulkUpdateGroup(selectedIds, groupValue.trim() || null)
+      toast.success(groupValue.trim() ? `Assigned to "${groupValue.trim()}"` : 'Group removed')
+      setShowGroupModal(false)
+      setGroupValue('')
+      setSelectedIds([])
+      loadData()
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update group')
+    }
   }
 
   const handleEdit = (entry: TimeEntry) => {
@@ -828,17 +843,29 @@ export default function TimeTracking() {
         </select>
 
         {selectedIds.length > 0 && (
-          <button
-            onClick={() => canConvert ? setShowConvertModal(true) : toast.error('Select entries from one client only')}
-            disabled={!canConvert}
-            className="ml-auto px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
-            style={{ backgroundColor: 'var(--t-accent)', color: '#fff' }}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            Convert to Invoice ({selectedIds.length})
-          </button>
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => { setGroupValue(''); setShowGroupModal(true) }}
+              className="px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 border"
+              style={{ borderColor: 'var(--t-border)', color: 'var(--t-accent)', background: 'var(--t-accent-soft)' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              Assign to group ({selectedIds.length})
+            </button>
+            <button
+              onClick={() => canConvert ? setShowConvertModal(true) : toast.error('Select entries from one client only')}
+              disabled={!canConvert}
+              className="px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--t-accent)', color: '#fff' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Convert to Invoice ({selectedIds.length})
+            </button>
+          </div>
         )}
       </div>
 
@@ -1305,6 +1332,48 @@ export default function TimeTracking() {
             {!canConvert && selectedClientIds.length > 1 && (
               <p className="text-sm text-red-500">Select entries from one client only</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Assign to Group Modal */}
+      {showGroupModal && (
+        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGroupModal(false)}>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">Assign to group</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {selectedIds.length} selected · type a group name (or leave empty to remove grouping).
+            </p>
+            <input
+              type="text"
+              list="bulk-group-suggestions"
+              value={groupValue}
+              onChange={e => setGroupValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleBulkGroup() }}
+              placeholder="e.g. Marketing, IT…"
+              autoFocus
+              autoComplete="off"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+              style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+            />
+            <datalist id="bulk-group-suggestions">
+              {existingGroups.map(gname => <option key={gname} value={gname} />)}
+            </datalist>
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowGroupModal(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkGroup}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+                style={{ backgroundColor: 'var(--t-accent)' }}
+              >
+                {groupValue.trim() ? 'Assign' : 'Remove group'}
+              </button>
+            </div>
           </div>
         </div>
       )}

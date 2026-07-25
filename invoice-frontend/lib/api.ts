@@ -522,4 +522,6 @@ export const timeEntries = {
     api<Invoice>('/time-entries/convert-to-invoice', { method: 'POST', body: JSON.stringify(data) }),
   bulkDelete: (ids: number[]) =>
     api<{ message: string }>('/time-entries/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  bulkUpdateGroup: (ids: number[], groupName: string | null) =>
+    api<{ message: string; group_name: string | null }>('/time-entries/bulk-group', { method: 'POST', body: JSON.stringify({ ids, group_name: groupName }) }),
 }

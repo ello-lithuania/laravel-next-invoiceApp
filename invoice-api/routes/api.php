@@ -103,6 +103,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/time-entries/{timeEntry}/add-time', [TimeEntryController::class, 'addTime']);
     Route::post('/time-entries/convert-to-invoice', [TimeEntryController::class, 'convertToInvoice']);
     Route::post('/time-entries/bulk-delete', [TimeEntryController::class, 'bulkDelete']);
+    Route::post('/time-entries/bulk-group', [TimeEntryController::class, 'bulkUpdateGroup']);
     Route::apiResource('time-entries', TimeEntryController::class)->except(['show']);
 
     // PDF endpoints are authenticated like everything else (Bearer header).

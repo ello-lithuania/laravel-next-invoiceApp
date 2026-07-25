@@ -337,6 +337,26 @@ class TimeEntryController extends Controller
         return response()->json(['message' => $deleted . ' time entry(ies) deleted']);
     }
 
+    public function bulkUpdateGroup(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer',
+            'group_name' => 'nullable|string|max:255',
+        ]);
+
+        $group = $this->normalizeGroup($validated['group_name'] ?? null);
+
+        $updated = $request->user()->timeEntries()
+            ->whereIn('id', $validated['ids'])
+            ->update(['group_name' => $group]);
+
+        return response()->json([
+            'message' => $updated . ' entr' . ($updated === 1 ? 'y' : 'ies') . ' updated',
+            'group_name' => $group,
+        ]);
+    }
+
     /**
      * Trim a group/department label; empty strings become null so entries
      * without a group collapse into a single "ungrouped" bucket.
