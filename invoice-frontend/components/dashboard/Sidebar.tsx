@@ -131,11 +131,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
         )}
         <Link
           href={item.href}
-          className={`block rounded-lg outline-none focus:outline-none focus-visible:ring-2 focus-visible:ring-inset transition duration-150 ${
+          className={`block rounded-lg outline-none focus:outline-none transition duration-150 ${
             // collapsed (lg): vertical icon+label rail; expanded: horizontal row
             sidebarExpanded ? 'pl-4 pr-3 py-2.5' : 'pl-4 pr-3 py-2.5 lg:px-1 lg:py-2'
           } ${isActive ? '' : 'text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white'}`}
-          style={isActive ? { color: 'var(--t-accent)', ['--tw-ring-color' as string]: 'var(--t-accent)' } : { ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+          style={isActive ? { color: 'var(--t-accent)' } : undefined}
         >
           <div className={`flex items-center ${sidebarExpanded ? '' : 'lg:flex-col lg:gap-1'}`}>
             <span style={isActive ? { color: 'var(--t-accent)' } : { color: 'var(--t-text-muted)' }}>
