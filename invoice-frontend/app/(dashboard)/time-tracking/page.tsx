@@ -940,27 +940,30 @@ export default function TimeTracking() {
 
                   return (
                     <Fragment key={entry.id}>
-                    {g && (
-                      <tr className="bg-gray-50 dark:bg-gray-700/40 border-t border-gray-200 dark:border-gray-700">
-                        <td colSpan={8} className="px-4 py-2">
+                    {g && (g.key === '' ? (
+                      // Ungrouped entries: just a gap, no confusing label.
+                      <tr aria-hidden="true"><td colSpan={8} className="p-0"><div className="h-5" /></td></tr>
+                    ) : (
+                      <tr className="border-y border-gray-200 dark:border-gray-700/70" style={{ background: 'var(--t-accent-soft)' }}>
+                        <td colSpan={8} className="px-4 py-2.5">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs t-text-muted tabular-nums">{g.entries.length} entr{g.entries.length === 1 ? 'y' : 'ies'} · {formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
-                              {g.key !== '' && (
-                                <button
-                                  onClick={() => handleUngroup(g.key)}
-                                  className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors"
-                                  title="Remove this group from its entries"
-                                >
-                                  Ungroup
-                                </button>
-                              )}
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                              <button
+                                onClick={() => handleUngroup(g.key)}
+                                className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 dark:hover:border-red-500 transition-colors"
+                                title="Remove this group from its entries"
+                              >
+                                Ungroup
+                              </button>
                             </div>
+                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-100 tabular-nums">
+                              {g.entries.length} entr{g.entries.length === 1 ? 'y' : 'ies'} · {formatHours(g.seconds)} · €{g.money.toFixed(2)}
+                            </span>
                           </div>
                         </td>
                       </tr>
-                    )}
+                    ))}
                     <tr className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
                       <td className="px-4 py-3">
                         {!entry.is_invoiced && !entry.is_running && (
@@ -1204,17 +1207,19 @@ export default function TimeTracking() {
 
                 return (
                   <Fragment key={entry.id}>
-                  {g && (
-                    <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-700/40">
-                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs t-text-muted tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
-                        {g.key !== '' && (
-                          <button onClick={() => handleUngroup(g.key)} className="text-xs font-medium text-gray-400 hover:text-red-500 transition-colors">Ungroup</button>
-                        )}
+                  {g && (g.key === '' ? (
+                    <div aria-hidden="true" className="h-4 bg-gray-50 dark:bg-gray-900/20" />
+                  ) : (
+                    <div className="px-4 py-2.5 border-y border-gray-200 dark:border-gray-700/70" style={{ background: 'var(--t-accent-soft)' }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                          <button onClick={() => handleUngroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 transition-colors">Ungroup</button>
+                        </div>
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-100 tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
                       </div>
                     </div>
-                  )}
+                  ))}
                   <div className={`p-4 space-y-2 ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">

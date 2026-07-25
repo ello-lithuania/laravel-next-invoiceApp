@@ -173,9 +173,9 @@ export default function YearSummary() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
           <p className="text-2xl font-bold" style={{ color: 'var(--t-accent)' }}>{fmt(data.total_revenue)} €</p>
-          <div className="flex gap-3 mt-2 text-xs">
-            <span className="text-green-500">✓ {fmt(data.paid_revenue)} €</span>
-            <span className="text-yellow-500">○ {fmt(data.unpaid_revenue)} €</span>
+          <div className="flex gap-3 mt-2 text-xs font-medium">
+            <span className="text-green-600 dark:text-green-400">✓ {fmt(data.paid_revenue)} €</span>
+            <span className="text-amber-600 dark:text-amber-400">○ {fmt(data.unpaid_revenue)} €</span>
           </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift">
@@ -208,7 +208,7 @@ export default function YearSummary() {
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Worst Month</p>
           {data.worst_month ? (
             <>
-              <p className="text-lg font-bold text-yellow-500">{monthNames[data.worst_month.month - 1]}</p>
+              <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{monthNames[data.worst_month.month - 1]}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{fmt(data.worst_month.total)} € · {data.worst_month.invoice_count} inv.</p>
             </>
           ) : <p className="text-lg text-gray-400">—</p>}
@@ -221,7 +221,7 @@ export default function YearSummary() {
         <div className="space-y-1">
           {visibleMonths.map(m => (
             <div key={m.month} className="flex items-center gap-3 rounded-lg px-2 -mx-2 py-1 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-              <span className={`w-20 text-sm font-medium shrink-0 ${m.is_best ? 'text-green-500' : m.is_worst ? 'text-yellow-500' : 'text-gray-600 dark:text-gray-400'}`}>
+              <span className={`w-20 text-sm font-medium shrink-0 ${m.is_best ? 'text-green-600 dark:text-green-400' : m.is_worst ? 'text-amber-600 dark:text-amber-400' : 'text-gray-600 dark:text-gray-400'}`}>
                 {monthNames[m.month - 1].slice(0, 3)}
                 {m.is_best && ' ★'}
                 {m.is_worst && ' ▽'}
