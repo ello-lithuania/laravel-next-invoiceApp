@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Models\TimeEntry;
 
 class StatsController extends Controller
 {
@@ -168,14 +167,21 @@ class StatsController extends Controller
 
         $invoices = $user->invoices()
             ->whereBetween('invoice_date', [$startOfYear, $endOfYear])
-            ->with('client')
+            ->with('client', 'items')
             ->get();
 
-        $timeEntries = TimeEntry::where('user_id', $user->id)
-            ->where('is_running', false)
-            ->where('duration_seconds', '>', 0)
-            ->whereBetween('created_at', [$startOfYear, $endOfYear])
-            ->get();
+        // "Hours" is derived from invoice line items billed in hour units
+        // (val./h/…), NOT from time-tracker entries. Only a fraction of work is
+        // ever timed, so time entries badly under-counted real hours; billed
+        // hour-items reconcile with the work invoiced (and with revenue).
+        $hourUnits = ['val.', 'val', 'h', 'hr', 'hrs', 'hour', 'hours'];
+        $isHourItem = fn ($it) => in_array(mb_strtolower(trim((string) $it->unit)), $hourUnits, true);
+        $hoursOf = fn ($invoiceList) => (float) $invoiceList->sum(
+            fn ($inv) => $inv->items->filter($isHourItem)->sum('quantity')
+        );
+        $hourRevenueOf = fn ($invoiceList) => (float) $invoiceList->sum(
+            fn ($inv) => $inv->items->filter($isHourItem)->sum('total')
+        );
 
         $totalRevenue = $invoices->sum('total');
         $paidRevenue = $invoices->where('status', 'paid')->sum('total');
@@ -186,25 +192,23 @@ class StatsController extends Controller
         $clientIds = $invoices->pluck('client_id')->unique();
         $totalClients = $clientIds->count();
 
-        $totalSeconds = $timeEntries->sum('duration_seconds');
-        $totalHours = $totalSeconds / 3600;
-        $avgHourlyRate = $totalHours > 0
-            ? $timeEntries->sum(fn ($e) => ($e->duration_seconds / 3600) * $e->hourly_rate) / $totalHours
-            : 0;
-        $timeTrackingRevenue = $timeEntries->sum(fn ($e) => ($e->duration_seconds / 3600) * $e->hourly_rate);
+        $totalHours = $hoursOf($invoices);
+        $hourRevenue = $hourRevenueOf($invoices);
+        // Effective average price per billed hour.
+        $avgHourlyRate = $totalHours > 0 ? $hourRevenue / $totalHours : 0;
+        $timeTrackingRevenue = $hourRevenue;
 
         $months = [];
         $monthsWithRevenue = [];
         for ($m = 1; $m <= 12; $m++) {
             $monthInvoices = $invoices->filter(fn ($i) => (int) $i->invoice_date->format('n') === $m);
-            $monthTime = $timeEntries->filter(fn ($e) => (int) $e->created_at->format('n') === $m);
             $monthTotal = $monthInvoices->sum('total');
 
             $months[] = [
                 'month' => $m,
                 'invoice_count' => $monthInvoices->count(),
                 'total' => $monthTotal,
-                'hours' => $monthTime->sum('duration_seconds') / 3600,
+                'hours' => $hoursOf($monthInvoices),
                 'is_best' => false,
                 'is_worst' => false,
             ];
@@ -255,13 +259,12 @@ class StatsController extends Controller
         $clients = [];
         foreach ($clientIds as $clientId) {
             $clientInvoices = $invoices->where('client_id', $clientId);
-            $clientTime = $timeEntries->where('client_id', $clientId);
             $client = $clientInvoices->first()->client;
             $clients[] = [
                 'name' => $client->name ?? 'Unknown',
                 'invoice_count' => $clientInvoices->count(),
                 'total' => $clientInvoices->sum('total'),
-                'hours' => $clientTime->sum('duration_seconds') / 3600,
+                'hours' => $hoursOf($clientInvoices),
             ];
         }
         usort($clients, fn ($a, $b) => $b['total'] <=> $a['total']);

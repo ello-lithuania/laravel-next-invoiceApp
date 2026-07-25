@@ -475,6 +475,7 @@ export interface TimeEntry {
   id: number
   user_id: number
   client_id: number
+  group_name: string | null
   description: string
   hourly_rate: number
   started_at: string | null
@@ -492,6 +493,7 @@ export interface TimeEntry {
 
 export interface TimeEntryPayload {
   client_id: number
+  group_name?: string | null
   description: string
   hourly_rate: number
   duration_seconds?: number

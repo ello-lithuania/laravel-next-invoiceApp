@@ -57,6 +57,7 @@ class TimeEntryController extends Controller
                     }
                 },
             ],
+            'group_name' => 'nullable|string|max:255',
             'description' => 'required|string|max:500',
             'hourly_rate' => 'required|numeric|min:0',
             'duration_seconds' => 'nullable|integer|min:0',
@@ -77,6 +78,7 @@ class TimeEntryController extends Controller
 
         $entry = $user->timeEntries()->create([
             'client_id' => $validated['client_id'],
+            'group_name' => $this->normalizeGroup($validated['group_name'] ?? null),
             'description' => $validated['description'],
             'hourly_rate' => $validated['hourly_rate'],
             'duration_seconds' => $validated['duration_seconds'] ?? 0,
@@ -111,6 +113,7 @@ class TimeEntryController extends Controller
                     }
                 },
             ],
+            'group_name' => 'nullable|string|max:255',
             'description' => 'required|string|max:500',
             'hourly_rate' => 'required|numeric|min:0',
             'duration_seconds' => 'nullable|integer|min:0',
@@ -131,6 +134,7 @@ class TimeEntryController extends Controller
 
         $timeEntry->update([
             'client_id' => $validated['client_id'],
+            'group_name' => $this->normalizeGroup($validated['group_name'] ?? null),
             'description' => $validated['description'],
             'hourly_rate' => $validated['hourly_rate'],
             'duration_seconds' => $validated['duration_seconds'] ?? $timeEntry->duration_seconds,
@@ -331,5 +335,16 @@ class TimeEntryController extends Controller
             ->delete();
 
         return response()->json(['message' => $deleted . ' time entry(ies) deleted']);
+    }
+
+    /**
+     * Trim a group/department label; empty strings become null so entries
+     * without a group collapse into a single "ungrouped" bucket.
+     */
+    private function normalizeGroup(?string $group): ?string
+    {
+        $group = $group !== null ? trim($group) : null;
+
+        return $group === '' ? null : $group;
     }
 }

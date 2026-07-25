@@ -9,6 +9,7 @@ class TimeEntry extends Model
     protected $fillable = [
         'user_id',
         'client_id',
+        'group_name',
         'description',
         'hourly_rate',
         'started_at',

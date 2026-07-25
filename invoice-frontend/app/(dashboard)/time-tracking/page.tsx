@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { timeEntries, clients as clientsApi, invoices as invoicesApi, Client, TimeEntry, TrackableInvoice } from '@/lib/api'
@@ -51,6 +51,7 @@ export default function TimeTracking() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [form, setForm] = useState({
     client_id: '',
+    group_name: '',
     description: '',
     hourly_rate: '',
     duration_hours: '',
@@ -220,7 +221,7 @@ export default function TimeTracking() {
   }
 
   const resetForm = () => {
-    setForm({ client_id: '', description: '', hourly_rate: '', duration_hours: '', duration_minutes: '', is_prepaid: false, invoice_id: '' })
+    setForm({ client_id: '', group_name: '', description: '', hourly_rate: '', duration_hours: '', duration_minutes: '', is_prepaid: false, invoice_id: '' })
     setEditingId(null)
     setShowForm(false)
   }
@@ -246,6 +247,7 @@ export default function TimeTracking() {
 
       const data = {
         client_id: Number(form.client_id),
+        group_name: form.group_name.trim() || null,
         description: form.description,
         hourly_rate: Number(form.hourly_rate),
         duration_seconds: durationSeconds,
@@ -288,6 +290,7 @@ export default function TimeTracking() {
     const minutes = Math.floor((entry.duration_seconds % 3600) / 60)
     setForm({
       client_id: String(entry.client_id),
+      group_name: entry.group_name || '',
       description: entry.description,
       hourly_rate: String(entry.hourly_rate),
       duration_hours: String(hours),
@@ -450,6 +453,46 @@ export default function TimeTracking() {
     return trackableInvoices.filter(inv => inv.client_id === Number(form.client_id))
   }, [trackableInvoices, form.client_id])
 
+  // Distinct existing group/department names — used for the form autocomplete.
+  const existingGroups = useMemo(
+    () => Array.from(new Set(entries.map(e => e.group_name).filter((g): g is string => !!g && g.trim() !== ''))).sort(),
+    [entries]
+  )
+
+  // Group entries by group_name for the grouped list view; named groups first
+  // (alphabetical), ungrouped entries in a trailing bucket. Each group carries
+  // its subtotal (seconds + money).
+  const groupedEntries = useMemo(() => {
+    const map = new Map<string, TimeEntry[]>()
+    for (const e of entries) {
+      const key = e.group_name || ''
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(e)
+    }
+    const groups = Array.from(map.entries()).map(([key, list]) => ({
+      key,
+      label: key || 'Ungrouped',
+      entries: list,
+      seconds: list.reduce((s, e) => s + e.duration_seconds, 0),
+      money: list.reduce((s, e) => s + (e.duration_seconds / 3600) * Number(e.hourly_rate), 0),
+    }))
+    groups.sort((a, b) => (a.key === '' ? 1 : b.key === '' ? -1 : a.label.localeCompare(b.label)))
+    return groups
+  }, [entries])
+
+  // Only insert group headers when it adds information: more than one group,
+  // or a single, explicitly-named group.
+  const showGroups = groupedEntries.length > 1 || (groupedEntries.length === 1 && groupedEntries[0].key !== '')
+
+  // Group metadata keyed by group_name, for subtotal lookup while rendering.
+  const groupMeta = useMemo(() => new Map(groupedEntries.map(g => [g.key, g])), [groupedEntries])
+
+  // Entries ordered so same-group rows are adjacent (matches groupedEntries order).
+  const orderedEntries = useMemo(
+    () => (showGroups ? groupedEntries.flatMap(g => g.entries) : entries),
+    [showGroups, groupedEntries, entries]
+  )
+
   // Quick lookup invoice by id
   const trackableMap = useMemo(() => {
     const map: Record<number, TrackableInvoice> = {}
@@ -611,6 +654,25 @@ export default function TimeTracking() {
                   style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Group / Department <span className="font-normal text-gray-400">(optional)</span>
+              </label>
+              <input
+                type="text"
+                list="group-suggestions"
+                value={form.group_name}
+                onChange={e => setForm({ ...form, group_name: e.target.value })}
+                placeholder="e.g. Marketing, IT…"
+                autoComplete="off"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+              />
+              <datalist id="group-suggestions">
+                {existingGroups.map(gname => <option key={gname} value={gname} />)}
+              </datalist>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Groups entries into sections (e.g. Marketing vs IT for the same client).</p>
             </div>
             <div ref={descRef} className="relative">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description / Task *</label>
@@ -824,12 +886,25 @@ export default function TimeTracking() {
                   </td>
                 </tr>
               ) : (
-                entries.map(entry => {
+                orderedEntries.map((entry, i, arr) => {
                   const hours = entry.duration_seconds / 3600
                   const total = hours * entry.hourly_rate
+                  const gChanged = showGroups && (i === 0 || (arr[i - 1].group_name || '') !== (entry.group_name || ''))
+                  const g = gChanged ? groupMeta.get(entry.group_name || '') : null
 
                   return (
-                    <tr key={entry.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
+                    <Fragment key={entry.id}>
+                    {g && (
+                      <tr className="bg-gray-50 dark:bg-gray-700/40 border-t border-gray-200 dark:border-gray-700">
+                        <td colSpan={8} className="px-4 py-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                            <span className="text-xs t-text-muted tabular-nums">{g.entries.length} entr{g.entries.length === 1 ? 'y' : 'ies'} · {formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    <tr className={`hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
                       <td className="px-4 py-3">
                         {!entry.is_invoiced && !entry.is_running && (
                           <input
@@ -1043,6 +1118,7 @@ export default function TimeTracking() {
                         </div>
                       </td>
                     </tr>
+                    </Fragment>
                   )
                 })
               )}
@@ -1063,12 +1139,21 @@ export default function TimeTracking() {
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
-              {entries.map(entry => {
+              {orderedEntries.map((entry, i, arr) => {
                 const hours = entry.duration_seconds / 3600
                 const total = hours * entry.hourly_rate
+                const gChanged = showGroups && (i === 0 || (arr[i - 1].group_name || '') !== (entry.group_name || ''))
+                const g = gChanged ? groupMeta.get(entry.group_name || '') : null
 
                 return (
-                  <div key={entry.id} className={`p-4 space-y-2 ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
+                  <Fragment key={entry.id}>
+                  {g && (
+                    <div className="flex items-center justify-between gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-700/40">
+                      <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                      <span className="text-xs t-text-muted tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className={`p-4 space-y-2 ${isActivePrepaid(entry) ? 'bg-blue-50/60 dark:bg-blue-500/5' : ''}`} style={isActivePrepaid(entry) ? { boxShadow: 'inset 3px 0 0 #3b82f6' } : {}}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
                         {!entry.is_invoiced && !entry.is_running && (
@@ -1194,6 +1279,7 @@ export default function TimeTracking() {
                       </div>
                     )}
                   </div>
+                  </Fragment>
                 )
               })}
             </div>
