@@ -17,5 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Always answer API requests with JSON — even when hit directly in a
+        // browser (no Accept: application/json). Prevents 500s from rendering
+        // the HTML debug page, which would leak stack traces / the tech stack.
+        $exceptions->shouldRenderJsonWhen(
+            fn ($request, $throwable) => $request->is('api/*') || $request->expectsJson()
+        );
     })->create();

@@ -239,7 +239,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
           <h3 className={`text-xs uppercase text-gray-400 dark:text-gray-500 font-semibold pl-3 ${sidebarExpanded ? 'block' : 'hidden'}`}>
             Menu
           </h3>
-          <ul className={sidebarExpanded ? 'mt-3' : 'mt-3 lg:mt-0'}>{navItems.map(renderItem)}</ul>
+          <nav aria-label="Main navigation">
+            <ul className={sidebarExpanded ? 'mt-3' : 'mt-3 lg:mt-0'}>{navItems.map(renderItem)}</ul>
+          </nav>
         </div>
       </div>
     </div>

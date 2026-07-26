@@ -2,6 +2,17 @@ import './globals.css'
 import 'react-toastify/dist/ReactToastify.css'
 import { ToastContainer } from 'react-toastify'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { Inter } from 'next/font/google'
+
+// Self-hosted at build time (served from /_next/static) instead of a render-
+// blocking @import from fonts.googleapis.com — faster, private, and it satisfies
+// the CSP (font-src 'self') that was otherwise blocking the external font.
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata = {
   title: 'InvoiceApp',
@@ -10,7 +21,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

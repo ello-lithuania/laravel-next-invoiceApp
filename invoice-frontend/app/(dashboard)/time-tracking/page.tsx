@@ -543,6 +543,12 @@ export default function TimeTracking() {
   const selectedClientIds = [...new Set(selectedEntries.map(e => e.client_id))]
   const canConvert = selectedIds.length > 0 && selectedClientIds.length === 1
 
+  // An empty list is different from an empty account: a client filter, or any
+  // invoiced-filter other than the default "Not invoiced", means results were
+  // filtered out — say so instead of "create your first entry".
+  const filtersActive = !!filterClient || filterInvoiced !== 'false'
+  const resetFilters = () => { setFilterClient(''); setFilterInvoiced('') }
+
   if (loading) return <TimeTrackingSkeleton />
 
   return (
@@ -928,8 +934,12 @@ export default function TimeTracking() {
                       <svg className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <p className="font-medium">No time entries yet</p>
-                      <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Create your first time entry to start tracking</p>
+                      <p className="font-medium">{filtersActive ? 'No entries match the current filters' : 'No time entries yet'}</p>
+                      {filtersActive ? (
+                        <button onClick={resetFilters} className="text-sm mt-1 font-medium" style={{ color: 'var(--t-accent)' }}>Clear filters</button>
+                      ) : (
+                        <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Create your first time entry to start tracking</p>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -1200,7 +1210,8 @@ export default function TimeTracking() {
                 <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <p>No time entries yet</p>
+                <p>{filtersActive ? 'No entries match the current filters' : 'No time entries yet'}</p>
+                {filtersActive && <button onClick={resetFilters} className="text-sm mt-1 font-medium" style={{ color: 'var(--t-accent)' }}>Clear filters</button>}
               </div>
             </div>
           ) : (

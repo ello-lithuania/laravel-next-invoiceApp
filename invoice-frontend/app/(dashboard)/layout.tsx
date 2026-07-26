@@ -35,6 +35,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <UserProvider>
     <CommandPalette />
+    {/* Keyboard/screen-reader users can jump straight to content, skipping the nav. */}
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-gray-900 focus:shadow-lg focus:ring-2"
+      style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+    >
+      Skip to content
+    </a>
     <div className="flex h-screen overflow-hidden t-page-bg">
       <Sidebar
         sidebarOpen={sidebarOpen}
@@ -54,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Suspense>
 
         {/* main scrolls; the StatsBar below stays pinned to the bottom */}
-        <main className="grow overflow-y-auto overflow-x-hidden">
+        <main id="main-content" className="grow overflow-y-auto overflow-x-hidden">
           <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
             <Suspense fallback={null}>
               <Breadcrumbs />
