@@ -22,8 +22,7 @@ const statusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'sent', label: 'Sent' },
   { value: 'paid', label: 'Paid' },
-  { value: 'overdue', label: 'Overdue' },
-  { value: 'uncollectible', label: 'Uncollectible' },
+  { value: 'overdue', label: "Won't pay" },
 ]
 
 function InvoicesSkeleton() {
@@ -412,8 +411,7 @@ function InvoicesContent() {
               <option value="draft">Draft</option>
               <option value="sent">Sent</option>
               <option value="paid">Paid</option>
-              <option value="overdue">Overdue</option>
-                      <option value="uncollectible">Uncollectible</option>
+              <option value="overdue">Won&apos;t pay</option>
             </select>
             <button
               onClick={handleBulkDelete}
@@ -537,8 +535,7 @@ function InvoicesContent() {
                       <option value="draft">Draft</option>
                       <option value="sent">Sent</option>
                       <option value="paid">Paid</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="uncollectible">Uncollectible</option>
+                      <option value="overdue">Won&apos;t pay</option>
                     </select>
                   </td>
                   <td className="px-6 py-4">
@@ -658,8 +655,7 @@ function InvoicesContent() {
                       <option value="draft">Draft</option>
                       <option value="sent">Sent</option>
                       <option value="paid">Paid</option>
-                      <option value="overdue">Overdue</option>
-                      <option value="uncollectible">Uncollectible</option>
+                      <option value="overdue">Won&apos;t pay</option>
                     </select>
                     <div className="flex items-center gap-4">
                       <button onClick={() => previewPdf(inv)} className="text-green-400 hover:text-green-300 text-sm transition-colors">PDF</button>

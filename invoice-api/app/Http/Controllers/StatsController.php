@@ -101,8 +101,8 @@ class StatsController extends Controller
                 COUNT(*) as total_invoices,
                 COALESCE(SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END), 0) as total_revenue,
                 COALESCE(SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END), 0) as paid_count,
-                COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'uncollectible') THEN 1 ELSE 0 END), 0) as unpaid_count,
-                COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'uncollectible') THEN total ELSE 0 END), 0) as unpaid_total,
+                COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'overdue') THEN 1 ELSE 0 END), 0) as unpaid_count,
+                COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'overdue') THEN total ELSE 0 END), 0) as unpaid_total,
                 COALESCE(SUM(CASE WHEN status = 'paid' AND YEAR(invoice_date) = {$year} THEN total ELSE 0 END), 0) as year_revenue
             ")
             ->first();

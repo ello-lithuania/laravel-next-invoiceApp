@@ -191,7 +191,7 @@ export default function Clients() {
                         {client.name}
                       </Link>
                       {client.has_uncollectible && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="Has a written-off (uncollectible) invoice — this client doesn't pay">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="Has an invoice marked Won't pay — this client doesn't pay">
                           Won&apos;t pay
                         </span>
                       )}

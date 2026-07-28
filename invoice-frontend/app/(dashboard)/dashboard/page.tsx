@@ -418,7 +418,7 @@ export default function Dashboard() {
                           <option value="draft">Draft</option>
                           <option value="sent">Sent</option>
                           <option value="paid">Paid</option>
-                          <option value="overdue">Overdue</option>
+                          <option value="overdue">Won&apos;t pay</option>
                         </select>
                       </td>
                     </tr>
@@ -459,7 +459,7 @@ export default function Dashboard() {
                       <option value="draft">Draft</option>
                       <option value="sent">Sent</option>
                       <option value="paid">Paid</option>
-                      <option value="overdue">Overdue</option>
+                      <option value="overdue">Won&apos;t pay</option>
                     </select>
                   </div>
                 )
@@ -764,10 +764,11 @@ export default function Dashboard() {
                 return acc
               }, {} as Record<string, number>)
               const total = unpaidInvoices.length || 1
+              // "Won't pay" (overdue) invoices are excluded from unpaidInvoices,
+              // so this overview only covers the actionable unpaid statuses.
               const statuses = [
                 { key: 'draft', label: 'Draft', color: '#9ca3af', count: statusCounts['draft'] || 0 },
                 { key: 'sent', label: 'Sent', color: accent, count: statusCounts['sent'] || 0 },
-                { key: 'overdue', label: 'Overdue', color: '#ef4444', count: statusCounts['overdue'] || 0 },
               ]
               return (
                 <div className="space-y-4">

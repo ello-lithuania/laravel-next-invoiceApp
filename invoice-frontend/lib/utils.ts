@@ -2,18 +2,15 @@ export const statusColors: Record<string, string> = {
   draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
   sent: 'bg-blue-500/15 text-blue-500',
   paid: 'bg-green-500/20 text-green-400',
-  // Late but still expected to pay → amber warning.
-  overdue: 'bg-amber-500/20 text-amber-600 dark:text-amber-400',
-  // Written off — client won't pay → strong red danger.
-  uncollectible: 'bg-red-500/25 text-red-600 dark:text-red-400 font-semibold',
+  // Used as the "won't pay" marker → strong red danger.
+  overdue: 'bg-red-500/25 text-red-600 dark:text-red-400 font-semibold',
 }
 
 export const statusLabels: Record<string, string> = {
   draft: 'Draft',
   sent: 'Sent',
   paid: 'Paid',
-  overdue: 'Overdue',
-  uncollectible: 'Uncollectible',
+  overdue: "Won't pay",
 }
 
 export function formatCurrency(value: number): string {

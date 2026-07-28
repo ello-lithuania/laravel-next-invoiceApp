@@ -251,7 +251,7 @@ class InvoiceController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:draft,sent,paid,overdue,uncollectible'
+            'status' => 'required|in:draft,sent,paid,overdue'
         ]);
 
         $oldStatus = $invoice->status;
@@ -359,9 +359,9 @@ class InvoiceController extends Controller
     {
         $invoices = $request->user()->invoices()
             ->with('client')
-            // Exclude paid AND uncollectible (written-off) — the latter is a
-            // client who won't pay, so it shouldn't clutter "unpaid" chasing.
-            ->whereNotIn('status', ['paid', 'uncollectible'])
+            // Exclude paid AND overdue — "overdue" is used to mark a client who
+            // won't pay, so it shouldn't clutter the "unpaid" chasing list.
+            ->whereNotIn('status', ['paid', 'overdue'])
             ->orderBy('due_date', 'asc')
             ->get();
 
@@ -514,7 +514,7 @@ class InvoiceController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer',
-            'status' => 'required|in:draft,sent,paid,overdue,uncollectible',
+            'status' => 'required|in:draft,sent,paid,overdue',
         ]);
 
         $updated = $request->user()->invoices()
