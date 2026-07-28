@@ -2,7 +2,10 @@ export const statusColors: Record<string, string> = {
   draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
   sent: 'bg-blue-500/15 text-blue-500',
   paid: 'bg-green-500/20 text-green-400',
-  overdue: 'bg-red-500/20 text-red-400',
+  // Late but still expected to pay → amber warning.
+  overdue: 'bg-amber-500/20 text-amber-600 dark:text-amber-400',
+  // Written off — client won't pay → strong red danger.
+  uncollectible: 'bg-red-500/25 text-red-600 dark:text-red-400 font-semibold',
 }
 
 export const statusLabels: Record<string, string> = {
@@ -10,6 +13,7 @@ export const statusLabels: Record<string, string> = {
   sent: 'Sent',
   paid: 'Paid',
   overdue: 'Overdue',
+  uncollectible: 'Uncollectible',
 }
 
 export function formatCurrency(value: number): string {
@@ -18,6 +22,18 @@ export function formatCurrency(value: number): string {
 
 export function formatStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+// Force a file download from a (blob) URL with an explicit filename. Opening a
+// blob in a new tab loses the name (the browser saves it as a random blob id),
+// so downloads go through an <a download> click instead.
+export function triggerDownload(url: string, filename: string): void {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }
 
 // Fired after any mutation that changes revenue/paid/unpaid totals so the

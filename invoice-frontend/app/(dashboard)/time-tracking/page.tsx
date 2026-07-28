@@ -673,9 +673,12 @@ export default function TimeTracking() {
                               setClientSearch(c.name)
                               setShowClientSuggestions(false)
                             }}
-                            className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100"
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 flex items-center gap-2"
                           >
-                            {c.name}
+                            <span className={c.has_uncollectible ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100'}>{c.name}</span>
+                            {c.has_uncollectible && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="This client doesn't pay (written-off invoice)">Won&apos;t pay</span>
+                            )}
                           </div>
                         ))
                       })()}

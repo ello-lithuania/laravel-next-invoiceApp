@@ -136,6 +136,7 @@ export interface Client {
   id: number
   user_id: number
   name: string
+  has_uncollectible?: boolean
   company_code?: string
   vat_code?: string
   address?: string

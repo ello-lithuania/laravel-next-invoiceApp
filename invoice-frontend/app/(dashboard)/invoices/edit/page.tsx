@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { triggerDownload } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -23,6 +24,7 @@ function EditInvoiceForm() {
   const [clientSearch, setClientSearch] = useState('')
   const [showClientDropdown, setShowClientDropdown] = useState(false)
   const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
+  const [invoiceMeta, setInvoiceMeta] = useState<{ series: string; number: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
@@ -47,6 +49,7 @@ function EditInvoiceForm() {
       ])
       setClients(cli)
       if (inv) {
+        setInvoiceMeta({ series: inv.series, number: inv.number })
         setForm({
           client_id: String(inv.client_id),
           invoice_date: inv.invoice_date.split('T')[0],
@@ -97,17 +100,15 @@ function EditInvoiceForm() {
 
   const downloadPdf = async () => {
     if (!id) return
-    // Reserve the tab synchronously (inside the click gesture) so the popup
-    // blocker allows it, then point it at the blob once the fetch resolves.
-    const win = window.open('', '_blank')
     try {
-      const url = await invoices.pdfBlobUrl(Number(id))
-      if (win) win.location.href = url
-      else window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      const url = await invoices.pdfBlobUrl(Number(id), { download: true })
+      const name = invoiceMeta
+        ? `invoice-${invoiceMeta.series}-${invoiceMeta.number}.pdf`
+        : `invoice-${id}.pdf`
+      triggerDownload(url, name)
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
     } catch (e: any) {
-      if (win) win.close()
-      toast.error(e.message || 'Failed to load PDF')
+      toast.error(e.message || 'Failed to download PDF')
     }
   }
 
@@ -206,9 +207,12 @@ function EditInvoiceForm() {
                             setClientSearch('')
                             setShowClientDropdown(false)
                           }}
-                          className="p-3 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-gray-800 dark:text-gray-100 transition-colors"
+                          className="p-3 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-2"
                         >
-                          {c.name}
+                          <span className={c.has_uncollectible ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100'}>{c.name}</span>
+                          {c.has_uncollectible && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="This client doesn't pay (written-off invoice)">Won&apos;t pay</span>
+                          )}
                         </div>
                       ))
                     )}

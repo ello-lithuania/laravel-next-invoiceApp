@@ -10,7 +10,11 @@ class ClientController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->clients()->orderBy('name');
+        // has_uncollectible flags clients with a written-off invoice so the UI
+        // can mark them red ("won't pay — don't bother chasing").
+        $query = $request->user()->clients()
+            ->withExists(['invoices as has_uncollectible' => fn ($q) => $q->where('status', 'uncollectible')])
+            ->orderBy('name');
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;

@@ -3,6 +3,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import { stats, YearSummaryData } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
+import { triggerDownload } from '@/lib/utils'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -137,12 +138,19 @@ export default function YearSummary() {
   // Open a blob in a new tab (token travels in the Authorization header, not
   // the URL). The tab is reserved synchronously so the popup blocker allows it.
   const openPdf = async (download: boolean) => {
-    const win = window.open('', '_blank')
+    // Download → forced <a download> with a real name; View → open in a tab.
+    const win = download ? null : window.open('', '_blank')
     try {
       const url = await stats.yearSummaryPdfBlobUrl(year!, download)
-      if (win) win.location.href = url
-      else window.open(url, '_blank')
-      setTimeout(() => URL.revokeObjectURL(url), 60000)
+      if (download) {
+        triggerDownload(url, `metine-suvestine-${year}.pdf`)
+        setTimeout(() => URL.revokeObjectURL(url), 10000)
+      } else if (win) {
+        win.location.href = url
+        setTimeout(() => URL.revokeObjectURL(url), 60000)
+      } else {
+        window.open(url, '_blank')
+      }
     } catch (e: any) {
       if (win) win.close()
       toast.error(e.message || 'Failed to generate PDF')

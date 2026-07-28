@@ -186,9 +186,16 @@ export default function Clients() {
               list.map((client) => (
                 <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
                   <td className="px-6 py-4">
-                    <Link href={`/clients/view?id=${client.id}`} className="text-gray-800 dark:text-gray-100 font-medium group-hover:text-blue-500 transition-colors">
-                      {client.name}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/clients/view?id=${client.id}`} className={`font-medium group-hover:text-blue-500 transition-colors ${client.has_uncollectible ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                        {client.name}
+                      </Link>
+                      {client.has_uncollectible && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="Has a written-off (uncollectible) invoice — this client doesn't pay">
+                          Won&apos;t pay
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{client.company_code || '—'}</td>
                   <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{client.email || '—'}</td>
@@ -249,9 +256,16 @@ export default function Clients() {
               {list.map((client) => (
                 <div key={client.id} className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <Link href={`/clients/view?id=${client.id}`} className="text-gray-800 dark:text-gray-100 font-medium hover:text-blue-500">
-                      {client.name}
-                    </Link>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Link href={`/clients/view?id=${client.id}`} className={`font-medium hover:text-blue-500 truncate ${client.has_uncollectible ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
+                        {client.name}
+                      </Link>
+                      {client.has_uncollectible && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap shrink-0" title="This client has a written-off invoice">
+                          Won&apos;t pay
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-4">
                       <Link href={`/clients/view?id=${client.id}`} className="text-emerald-500 hover:text-emerald-400 text-sm transition-colors">View</Link>
                       <Link href={`/clients/edit?id=${client.id}`} className="text-blue-500 hover:text-blue-400 text-sm transition-colors">Edit</Link>
