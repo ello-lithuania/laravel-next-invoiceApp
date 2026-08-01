@@ -17,6 +17,15 @@ export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(value)
 }
 
+// Friendly, compact date (e.g. "1 Aug 2026") from an ISO/date string. Falls back
+// to the raw value if it can't be parsed. Used instead of printing raw ISO.
+export function formatDate(value?: string | null): string {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return value.split('T')[0]
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 export function formatStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }

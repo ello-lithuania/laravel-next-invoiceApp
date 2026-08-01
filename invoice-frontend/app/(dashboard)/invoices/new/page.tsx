@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, ClientHistory, ClientHistoryItem } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, refreshStats } from '@/lib/utils'
+import { statusColors, formatCurrency, refreshStats, formatDate } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -342,7 +342,7 @@ export default function NewInvoice() {
                               style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border-light)' }}
                             >
                               <span className="font-medium t-text">{inv.series} {inv.number}</span>
-                              <span className="t-text-muted">{inv.invoice_date?.split('T')[0]}</span>
+                              <span className="t-text-muted">{formatDate(inv.invoice_date)}</span>
                               <span className="font-semibold tabular-nums t-text">{formatCurrency(Number(inv.total))}</span>
                               <span className={`px-2 py-0.5 rounded-full font-medium ${statusColors[inv.status || 'draft']}`}>{inv.status}</span>
                             </button>
@@ -394,6 +394,7 @@ export default function NewInvoice() {
                     <input
                       type="number"
                       placeholder="Qty"
+                      onFocus={(e) => e.currentTarget.select()}
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                       className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
@@ -403,6 +404,7 @@ export default function NewInvoice() {
                     <input
                       type="number"
                       placeholder="Price"
+                      onFocus={(e) => e.currentTarget.select()}
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
                       className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
@@ -464,6 +466,7 @@ export default function NewInvoice() {
                       <input
                         type="number"
                         placeholder="Qty"
+                      onFocus={(e) => e.currentTarget.select()}
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
                         className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
@@ -473,6 +476,7 @@ export default function NewInvoice() {
                       <input
                         type="number"
                         placeholder="Price"
+                      onFocus={(e) => e.currentTarget.select()}
                         value={item.price}
                         onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
                         className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"

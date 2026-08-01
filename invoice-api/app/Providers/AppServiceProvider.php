@@ -46,5 +46,11 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
+
+        // PDF rendering (DomPDF) is CPU/RAM-heavy — cap it much tighter than the
+        // general API limiter so it can't be used to starve the server.
+        RateLimiter::for('pdf', function (Request $request) {
+            return Limit::perMinute(10)->by($request->user()?->id ?: $request->ip());
+        });
     }
 }

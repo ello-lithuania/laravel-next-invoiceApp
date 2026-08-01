@@ -378,7 +378,16 @@ class InvoiceController extends Controller
         $user = $request->user();
         $clientId = $request->get('client_id');
 
-        $query = $user->invoices()->with(['client', 'items'])->orderBy('invoice_date', 'desc');
+        // Match common hourly unit variants (Lithuanian and English forms).
+        $hourUnits = ['val.', 'val', 'h', 'hr', 'hrs', 'hour', 'hours'];
+
+        // Only fetch invoices that actually have an hour-based line item — filter
+        // in the DB instead of loading every invoice + all its items and dropping
+        // most of them in PHP.
+        $query = $user->invoices()
+            ->with(['client', 'items'])
+            ->whereHas('items', fn ($q) => $q->whereIn(DB::raw('LOWER(unit)'), $hourUnits))
+            ->orderBy('invoice_date', 'desc');
         if ($clientId) {
             $query->where('client_id', $clientId);
         }
@@ -390,9 +399,6 @@ class InvoiceController extends Controller
             ->selectRaw('invoice_id, SUM(duration_seconds) as total_seconds')
             ->groupBy('invoice_id')
             ->pluck('total_seconds', 'invoice_id');
-
-        // Match common hourly unit variants (Lithuanian and English forms)
-        $hourUnits = ['val.', 'val', 'h', 'hr', 'hrs', 'hour', 'hours'];
 
         $result = $invoices->map(function ($invoice) use ($workedByInvoice, $hourUnits) {
             $totalHours = (float) $invoice->items
@@ -490,23 +496,24 @@ class InvoiceController extends Controller
             'ids.*' => 'integer',
         ]);
 
-        $deleted = $request->user()->invoices()
+        // Scope to the user's own invoices, then delete items + invoices in two
+        // bulk queries instead of a per-row loop.
+        $ids = $request->user()->invoices()
             ->whereIn('id', $validated['ids'])
-            ->get();
+            ->pluck('id')
+            ->all();
 
-        DB::transaction(function () use ($deleted) {
-            foreach ($deleted as $invoice) {
-                $invoice->items()->delete();
-                $invoice->delete();
-            }
+        DB::transaction(function () use ($ids) {
+            InvoiceItem::whereIn('invoice_id', $ids)->delete();
+            Invoice::whereIn('id', $ids)->delete();
         });
 
         Audit::log('invoice.bulk_deleted', [
-            'description' => $deleted->count() . ' invoice(s) deleted',
-            'meta' => ['ids' => $deleted->pluck('id')->all()],
+            'description' => count($ids) . ' invoice(s) deleted',
+            'meta' => ['ids' => $ids],
         ]);
 
-        return response()->json(['message' => $deleted->count() . ' invoice(s) deleted']);
+        return response()->json(['message' => count($ids) . ' invoice(s) deleted']);
     }
 
     public function bulkUpdateStatus(Request $request)
@@ -550,7 +557,8 @@ class InvoiceController extends Controller
                 'due_date' => now()->addDays(14)->toDateString(),
                 'notes' => $invoice->notes,
                 'total' => $invoice->total,
-                'status' => 'draft',
+                // Always "sent" — new invoices are created to be issued.
+                'status' => 'sent',
             ]);
 
             foreach ($invoice->items as $item) {

@@ -20,6 +20,15 @@ function formatHours(seconds: number): string {
   return `${h} val.`
 }
 
+// Add one calendar month to a YYYY-MM-DD string (local, no timezone drift).
+function addOneMonth(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  const dt = new Date(y, m - 1, d)
+  dt.setMonth(dt.getMonth() + 1)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 function TimeTrackingSkeleton() {
   return (
     <div className="space-y-6">
@@ -84,7 +93,7 @@ export default function TimeTracking() {
   const [groupValue, setGroupValue] = useState('')
   const [convertForm, setConvertForm] = useState({
     invoice_date: new Date().toISOString().split('T')[0],
-    due_date: (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().split('T')[0] })(),
+    due_date: addOneMonth(new Date().toISOString().split('T')[0]),
     notes: '',
   })
 
@@ -307,6 +316,17 @@ export default function TimeTracking() {
   }
 
   const handleBulkGroup = () => applyBulkGroup(groupValue.trim() || null)
+
+  // Select all billable entries in a group and open the convert-to-invoice
+  // modal — one click to invoice a whole group, no manual checkbox picking.
+  const invoiceGroup = (groupKey: string) => {
+    const billable = entries.filter(e => (e.group_name || '') === groupKey && !e.is_invoiced && !e.is_running)
+    if (billable.length === 0) { toast.info('No billable entries in this group'); return }
+    const clientIds = new Set(billable.map(e => e.client_id))
+    if (clientIds.size > 1) { toast.error('This group has entries from several clients — invoice each client separately'); return }
+    setSelectedIds(billable.map(e => e.id))
+    setShowConvertModal(true)
+  }
 
   // Remove the group from every entry in a section (one click on the header).
   const handleUngroup = async (groupKey: string) => {
@@ -712,8 +732,7 @@ export default function TimeTracking() {
                 onChange={e => setForm({ ...form, group_name: e.target.value })}
                 placeholder="e.g. Marketing, IT…"
                 autoComplete="off"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-blue-500 transition-colors"
               />
               <datalist id="group-suggestions">
                 {existingGroups.map(gname => <option key={gname} value={gname} />)}
@@ -968,6 +987,16 @@ export default function TimeTracking() {
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5">
                               <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                              {g.entries.some(e => !e.is_invoiced && !e.is_running) && (
+                                <button
+                                  onClick={() => invoiceGroup(g.key)}
+                                  className="text-[11px] font-semibold px-2.5 py-1 rounded text-white transition-colors"
+                                  style={{ background: 'var(--t-accent)' }}
+                                  title="Create an invoice from this group's entries"
+                                >
+                                  Invoice
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleUngroup(g.key)}
                                 className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 dark:hover:border-red-500 transition-colors"
@@ -1234,6 +1263,9 @@ export default function TimeTracking() {
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--t-accent)' }}>{g.label}</span>
+                          {g.entries.some(e => !e.is_invoiced && !e.is_running) && (
+                            <button onClick={() => invoiceGroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded text-white transition-colors" style={{ background: 'var(--t-accent)' }}>Invoice</button>
+                          )}
                           <button onClick={() => handleUngroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 transition-colors">Ungroup</button>
                         </div>
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-100 tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
@@ -1479,7 +1511,7 @@ export default function TimeTracking() {
                 <input
                   type="date"
                   value={convertForm.invoice_date}
-                  onChange={e => setConvertForm({ ...convertForm, invoice_date: e.target.value })}
+                  onChange={e => setConvertForm({ ...convertForm, invoice_date: e.target.value, due_date: addOneMonth(e.target.value) })}
                   required
                   className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
                 />

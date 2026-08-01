@@ -111,7 +111,9 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // string, which (a) leaked the long-lived token into logs/history/referrer
     // and (b) bypassed token-expiry/logout revocation. The frontend now fetches
     // these as blobs with the Authorization header.
-    Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
-    Route::get('/sample-invoice-pdf', [InvoiceController::class, 'samplePdf']);
-    Route::get('/stats/year-summary/pdf', [StatsController::class, 'yearSummaryPdf']);
+    Route::middleware('throttle:pdf')->group(function () {
+        Route::get('/invoices/{invoice}/pdf', [InvoiceController::class, 'pdf']);
+        Route::get('/sample-invoice-pdf', [InvoiceController::class, 'samplePdf']);
+        Route::get('/stats/year-summary/pdf', [StatsController::class, 'yearSummaryPdf']);
+    });
 });

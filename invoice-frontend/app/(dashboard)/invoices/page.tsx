@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, refreshStats, formatCurrency } from '@/lib/utils'
+import { statusColors, refreshStats, formatCurrency, formatDate } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
@@ -518,9 +518,9 @@ function InvoicesContent() {
                   </td>
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{inv.client?.name}</td>
                   <td className="px-6 py-4 text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">{inv.invoice_date?.split('T')[0]}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{formatDate(inv.invoice_date)}</span>
                     {late > 0 && (
-                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-500" title={`Due ${inv.due_date?.split('T')[0]}`}>
+                      <span className="ml-2 inline-block px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-500" title={`Due ${formatDate(inv.due_date)}`}>
                         {late}d late
                       </span>
                     )}
@@ -640,7 +640,7 @@ function InvoicesContent() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-500 dark:text-gray-400 text-sm">{inv.client?.name}</span>
                     <span className="text-gray-400 dark:text-gray-500 text-sm">
-                      {inv.invoice_date?.split('T')[0]}
+                      {formatDate(inv.invoice_date)}
                       {overdueDays(inv) > 0 && (
                         <span className="ml-2 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-red-500/15 text-red-500">{overdueDays(inv)}d late</span>
                       )}
@@ -670,11 +670,12 @@ function InvoicesContent() {
           )}
         </div>
 
-        {lastPage > 1 && (
+        {total > 0 && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700/60">
             <div className="text-gray-500 dark:text-gray-400 text-sm">
-              Showing {list.length} of {total} invoices
+              Showing {list.length} of {total} invoice{total === 1 ? '' : 's'}
             </div>
+            {lastPage > 1 && (
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
@@ -724,6 +725,7 @@ function InvoicesContent() {
                 </svg>
               </button>
             </div>
+            )}
           </div>
         )}
       </div>

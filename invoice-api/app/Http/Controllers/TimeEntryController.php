@@ -287,7 +287,8 @@ class TimeEntryController extends Controller
                 'due_date' => $validated['due_date'],
                 'notes' => $validated['notes'] ?? null,
                 'total' => 0,
-                'status' => 'draft',
+                // New invoices are always "sent" — they're created to be issued.
+                'status' => 'sent',
             ]);
 
             $total = 0;
