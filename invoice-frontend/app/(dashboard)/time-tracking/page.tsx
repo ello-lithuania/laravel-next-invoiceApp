@@ -79,6 +79,7 @@ export default function TimeTracking() {
   // Client searchable dropdown
   const [clientSearch, setClientSearch] = useState('')
   const [showClientSuggestions, setShowClientSuggestions] = useState(false)
+  const [showGroupSuggestions, setShowGroupSuggestions] = useState(false)
   const clientRef = useRef<HTMLDivElement>(null)
 
   // Timer
@@ -658,8 +659,8 @@ export default function TimeTracking() {
             {editingId ? 'Edit Time Entry' : 'New Time Entry'}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client *</label>
                 <div ref={clientRef} className="relative">
                   <input
@@ -720,24 +721,37 @@ export default function TimeTracking() {
                   style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
                 />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Group / Department <span className="font-normal text-gray-400">(optional)</span>
-              </label>
-              <input
-                type="text"
-                list="group-suggestions"
-                value={form.group_name}
-                onChange={e => setForm({ ...form, group_name: e.target.value })}
-                placeholder="e.g. Marketing, IT…"
-                autoComplete="off"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-              <datalist id="group-suggestions">
-                {existingGroups.map(gname => <option key={gname} value={gname} />)}
-              </datalist>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Groups entries into sections (e.g. Marketing vs IT for the same client).</p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Group <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={form.group_name}
+                    onChange={e => { setForm({ ...form, group_name: e.target.value }); setShowGroupSuggestions(true) }}
+                    onFocus={() => setShowGroupSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowGroupSuggestions(false), 150)}
+                    placeholder="e.g. Marketing…"
+                    autoComplete="off"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                    style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+                  />
+                  {showGroupSuggestions && existingGroups.filter(g => g.toLowerCase().includes(form.group_name.toLowerCase())).length > 0 && (
+                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                      {existingGroups.filter(g => g.toLowerCase().includes(form.group_name.toLowerCase())).map(g => (
+                        <div
+                          key={g}
+                          onMouseDown={() => { setForm(prev => ({ ...prev, group_name: g })); setShowGroupSuggestions(false) }}
+                          className="px-4 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-100 text-sm"
+                        >
+                          {g}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
             <div ref={descRef} className="relative">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description / Task *</label>
