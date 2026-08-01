@@ -721,6 +721,8 @@ export default function TimeTracking() {
                   style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Group <span className="font-normal text-gray-400">(optional)</span>
@@ -752,62 +754,33 @@ export default function TimeTracking() {
                   )}
                 </div>
               </div>
-            </div>
-            <div ref={descRef} className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description / Task *</label>
-              <input
-                type="text"
-                value={form.description}
-                onChange={e => { setForm({ ...form, description: e.target.value }); setShowDescSuggestions(true) }}
-                onFocus={() => setShowDescSuggestions(true)}
-                required
-                placeholder="e.g. Website development, Bug fixing..."
-                autoComplete="off"
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-              />
-              {showDescSuggestions && savedDescriptions.filter(d => d.toLowerCase().includes(form.description.toLowerCase())).length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-                  {savedDescriptions
-                    .filter(d => d.toLowerCase().includes(form.description.toLowerCase()))
-                    .slice(0, 8)
-                    .map((desc, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => { setForm({ ...form, description: desc }); setShowDescSuggestions(false) }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        {desc}
-                      </button>
-                    ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manual Duration <span className="font-normal text-gray-400">(optional)</span></label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.duration_hours}
+                    onFocus={e => e.currentTarget.select()}
+                    onChange={e => setForm({ ...form, duration_hours: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                    style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+                  />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">val.</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={form.duration_minutes}
+                    onFocus={e => e.currentTarget.select()}
+                    onChange={e => setForm({ ...form, duration_minutes: e.target.value })}
+                    placeholder="0"
+                    className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                    style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+                  />
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">min.</span>
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Manual Duration (optional — if not using timer)</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.duration_hours}
-                  onChange={e => setForm({ ...form, duration_hours: e.target.value })}
-                  placeholder="0"
-                  className="w-24 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                  style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-                />
-                <span className="text-gray-500 dark:text-gray-400 text-sm">val.</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={form.duration_minutes}
-                  onChange={e => setForm({ ...form, duration_minutes: e.target.value })}
-                  placeholder="0"
-                  className="w-24 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                  style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-                />
-                <span className="text-gray-500 dark:text-gray-400 text-sm">min.</span>
               </div>
             </div>
 
@@ -860,6 +833,38 @@ export default function TimeTracking() {
                       ))}
                     </select>
                   )}
+                </div>
+              )}
+            </div>
+
+            <div ref={descRef} className="relative">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description / Task *</label>
+              <input
+                type="text"
+                value={form.description}
+                onChange={e => { setForm({ ...form, description: e.target.value }); setShowDescSuggestions(true) }}
+                onFocus={() => setShowDescSuggestions(true)}
+                required
+                placeholder="e.g. Website development, Bug fixing..."
+                autoComplete="off"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+              />
+              {showDescSuggestions && savedDescriptions.filter(d => d.toLowerCase().includes(form.description.toLowerCase())).length > 0 && (
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                  {savedDescriptions
+                    .filter(d => d.toLowerCase().includes(form.description.toLowerCase()))
+                    .slice(0, 8)
+                    .map((desc, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => { setForm({ ...form, description: desc }); setShowDescSuggestions(false) }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        {desc}
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
