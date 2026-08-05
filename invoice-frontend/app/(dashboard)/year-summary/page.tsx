@@ -4,6 +4,7 @@ import { stats, YearSummaryData } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import { triggerDownload } from '@/lib/utils'
+import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -128,6 +129,8 @@ export default function YearSummary() {
     }
     setLoading(false)
   }
+
+  useRefetchOnReturn(() => { if (year) loadData(year) })
 
   const changeYear = (y: number) => {
     setYear(y)

@@ -145,21 +145,37 @@ export default function Dashboard() {
   const accent = useThemeVar('--t-accent', '#38bdf8')
 
   useEffect(() => {
-    let active = true
     // Fire independently (not Promise.all) so the fastest section paints first.
-    stats.quickStats()
-      .then(d => { if (active) setQuickStatsData(d) })
-      .catch(e => toast.error(e.message || 'Failed to load stats'))
-      .finally(() => { if (active) setQuickLoading(false) })
-    invoices.unpaid()
-      .then(d => { if (active) setUnpaidInvoices(d) })
-      .catch(e => toast.error(e.message || 'Failed to load invoices'))
-      .finally(() => { if (active) setUnpaidLoading(false) })
-    stats.clientBreakdown()
-      .then(d => { if (active) setClientBreakdown(d) })
-      .catch(e => toast.error(e.message || 'Failed to load clients'))
-      .finally(() => { if (active) setBreakdownLoading(false) })
-    return () => { active = false }
+    // showSkeleton=true only on the first load; background refetches keep the
+    // current data on screen and only swap it when fresh data arrives.
+    const load = (showSkeleton: boolean) => {
+      if (showSkeleton) { setQuickLoading(true); setUnpaidLoading(true); setBreakdownLoading(true) }
+      stats.quickStats()
+        .then(d => setQuickStatsData(d))
+        .catch(e => { if (showSkeleton) toast.error(e.message || 'Failed to load stats') })
+        .finally(() => setQuickLoading(false))
+      invoices.unpaid()
+        .then(d => setUnpaidInvoices(d))
+        .catch(e => { if (showSkeleton) toast.error(e.message || 'Failed to load invoices') })
+        .finally(() => setUnpaidLoading(false))
+      stats.clientBreakdown()
+        .then(d => setClientBreakdown(d))
+        .catch(e => { if (showSkeleton) toast.error(e.message || 'Failed to load clients') })
+        .finally(() => setBreakdownLoading(false))
+    }
+
+    load(true)
+
+    // If the tab was hidden for a while (e.g. overnight) and comes back, refetch
+    // so stale/stuck sections recover instead of showing old or spinning data.
+    let hiddenAt = 0
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return }
+      if (hiddenAt && Date.now() - hiddenAt > 30000) { load(false); loadStats() }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => { loadStats() }, [activePeriod])

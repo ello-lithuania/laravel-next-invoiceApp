@@ -5,6 +5,7 @@ import { clients, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
+import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 
 function ClientsSkeleton() {
   return (
@@ -87,6 +88,8 @@ export default function Clients() {
     }
     setLoading(false)
   }
+
+  useRefetchOnReturn(() => loadClients())
 
   const handleDelete = (id: number) => {
     setConfirmModal({

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { statusColors, refreshStats, formatCurrency, formatDate } from '@/lib/utils'
+import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
@@ -157,6 +158,8 @@ function InvoicesContent() {
     }
     setLoading(false)
   }
+
+  useRefetchOnReturn(() => loadInvoices())
 
   const handleDelete = (id: number) => {
     setConfirmModal({

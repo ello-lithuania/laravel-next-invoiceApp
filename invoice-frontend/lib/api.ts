@@ -51,40 +51,74 @@ export class ApiError extends Error {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 20000
+const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
+
 export async function api<T = unknown>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = getToken()
-  
-  const config: RequestInit = {
-    // Never serve API responses from the HTTP cache. Stats/totals must reflect
-    // the latest mutation immediately (e.g. the StatsBar re-fetch after an
-    // invoice is marked paid) — a cached GET would show stale numbers.
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-      ...options.headers,
-    },
-    ...options,
-  }
+  const method = (options.method || 'GET').toUpperCase()
+  // Only retry safe/idempotent requests — never replay a POST/PUT/DELETE (could
+  // double-submit). GETs are retried so a transient stall (e.g. after the tab
+  // was suspended for a day) recovers on its own instead of hanging forever.
+  const maxAttempts = method === 'GET' || method === 'HEAD' ? 3 : 1
 
-  const response = await fetch(`${API_URL}${endpoint}`, config)
-  
-  if (response.status === 401) {
-    removeToken()
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login'
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // Abort a request that stalls, so it rejects (and the UI's finally/catch
+    // runs) instead of leaving a skeleton spinning indefinitely — fetch has no
+    // built-in timeout.
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+    try {
+      const config: RequestInit = {
+        ...options,
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...options.headers,
+        },
+      }
+
+      const response = await fetch(`${API_URL}${endpoint}`, config)
+      clearTimeout(timer)
+
+      if (response.status === 401) {
+        removeToken()
+        if (typeof window !== 'undefined') window.location.href = '/login'
+        throw new ApiError('Unauthorized', 401)
+      }
+
+      // Retry once or twice on a transient server error for idempotent requests.
+      if (!response.ok && response.status >= 500 && attempt < maxAttempts) {
+        lastError = new ApiError('Server error', response.status)
+        await delay(attempt * 800)
+        continue
+      }
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new ApiError(data.message || 'Something went wrong', response.status, data.errors)
+      }
+      return data
+    } catch (err) {
+      clearTimeout(timer)
+      // 401 (auth) is terminal — don't retry, let the redirect happen.
+      if (err instanceof ApiError && err.status === 401) throw err
+      lastError = err
+      // Network error / timeout (abort) → retry idempotent requests with backoff.
+      if (attempt < maxAttempts) {
+        await delay(attempt * 800)
+        continue
+      }
+      throw err
     }
-    throw new ApiError('Unauthorized', 401)
   }
 
-  const data = await response.json()
-  
-  if (!response.ok) {
-    throw new ApiError(data.message || 'Something went wrong', response.status, data.errors)
-  }
-
-  return data
+  throw lastError
 }
 
 // Fetch a binary endpoint (e.g. a PDF) with the Authorization header and return
@@ -94,13 +128,16 @@ export async function api<T = unknown>(endpoint: string, options: RequestOptions
 // URL.revokeObjectURL(url) when done (e.g. when a preview modal closes).
 export async function apiBlobUrl(endpoint: string): Promise<string> {
   const token = getToken()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
   const response = await fetch(`${API_URL}${endpoint}`, {
     cache: 'no-store',
+    signal: controller.signal,
     headers: {
       'Accept': 'application/pdf',
       ...(token && { 'Authorization': `Bearer ${token}` }),
     },
-  })
+  }).finally(() => clearTimeout(timer))
 
   if (response.status === 401) {
     removeToken()

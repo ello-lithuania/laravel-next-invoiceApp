@@ -7,6 +7,7 @@ import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
+import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -225,6 +226,8 @@ export default function TimeTracking() {
     }
     setLoading(false)
   }
+
+  useRefetchOnReturn(() => loadData())
 
   const buildParams = () => {
     const params = new URLSearchParams()
