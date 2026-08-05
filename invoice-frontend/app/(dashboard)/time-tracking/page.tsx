@@ -8,6 +8,8 @@ import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
+import { addOneMonth } from '@/lib/utils'
+import { AssignGroupModal, ConvertToInvoiceModal } from '@/components/dashboard/TimeTrackingModals'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -19,15 +21,6 @@ function formatDuration(seconds: number): string {
 function formatHours(seconds: number): string {
   const h = (seconds / 3600).toFixed(2)
   return `${h} val.`
-}
-
-// Add one calendar month to a YYYY-MM-DD string (local, no timezone drift).
-function addOneMonth(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  if (!y || !m || !d) return dateStr
-  const dt = new Date(y, m - 1, d)
-  dt.setMonth(dt.getMonth() + 1)
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 
 function TimeTrackingSkeleton() {
@@ -1450,134 +1443,26 @@ export default function TimeTracking() {
         </div>
       )}
 
-      {/* Assign to Group Modal */}
-      {showGroupModal && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={() => setShowGroupModal(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">Assign to group</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{selectedIds.length} entries selected</p>
+      <AssignGroupModal
+        open={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        selectedCount={selectedIds.length}
+        existingGroups={existingGroups}
+        value={groupValue}
+        onChange={setGroupValue}
+        onApply={applyBulkGroup}
+      />
 
-            {existingGroups.length > 0 && (
-              <div className="mb-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Pick existing group</p>
-                <div className="flex flex-wrap gap-2">
-                  {existingGroups.map(gname => (
-                    <button
-                      key={gname}
-                      onClick={() => applyBulkGroup(gname)}
-                      className="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
-                      style={{ borderColor: 'var(--t-accent)', color: 'var(--t-accent)', background: 'var(--t-accent-soft)' }}
-                    >
-                      {gname}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
-              {existingGroups.length > 0 ? 'Or create new' : 'Group name'}
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={groupValue}
-                onChange={e => setGroupValue(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && groupValue.trim()) handleBulkGroup() }}
-                placeholder="e.g. Marketing, IT…"
-                autoFocus
-                autoComplete="off"
-                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-                style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
-              />
-              <button
-                onClick={handleBulkGroup}
-                disabled={!groupValue.trim()}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-40"
-                style={{ backgroundColor: 'var(--t-accent)' }}
-              >
-                Create
-              </button>
-            </div>
-
-            <div className="flex justify-between items-center mt-5">
-              <button
-                onClick={() => applyBulkGroup(null)}
-                className="text-sm font-medium text-gray-400 hover:text-red-500 transition-colors"
-                title="Remove group from the selected entries"
-              >
-                Remove from group
-              </button>
-              <button
-                onClick={() => setShowGroupModal(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Convert to Invoice Modal */}
-      {showConvertModal && (
-        <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={() => setShowConvertModal(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Convert to Invoice</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {selectedIds.length} time entries · €{selectedEntries.reduce((sum, e) => sum + (e.duration_seconds / 3600 * e.hourly_rate), 0).toFixed(2)} total
-            </p>
-            <form onSubmit={handleConvertToInvoice} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Invoice Date *</label>
-                <input
-                  type="date"
-                  value={convertForm.invoice_date}
-                  onChange={e => setConvertForm({ ...convertForm, invoice_date: e.target.value, due_date: addOneMonth(e.target.value) })}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date *</label>
-                <input
-                  type="date"
-                  value={convertForm.due_date}
-                  onChange={e => setConvertForm({ ...convertForm, due_date: e.target.value })}
-                  required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                <textarea
-                  value={convertForm.notes}
-                  onChange={e => setConvertForm({ ...convertForm, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100"
-                  placeholder="Optional notes for the invoice..."
-                />
-              </div>
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="btn-gradient px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 bd-clip-sm"
-                >
-                  {saving ? 'Creating...' : 'Create Invoice'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowConvertModal(false)}
-                  className="px-6 py-2.5 rounded-lg font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ConvertToInvoiceModal
+        open={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        selectedCount={selectedIds.length}
+        total={selectedEntries.reduce((sum, e) => sum + (e.duration_seconds / 3600 * e.hourly_rate), 0)}
+        form={convertForm}
+        setForm={setConvertForm}
+        onSubmit={handleConvertToInvoice}
+        saving={saving}
+      />
 
       <ConfirmModal
         open={confirmModal.open}

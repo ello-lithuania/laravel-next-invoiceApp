@@ -17,6 +17,16 @@ export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(value)
 }
 
+// Add one calendar month to a YYYY-MM-DD string (parsed as a local date to
+// avoid timezone off-by-one). Used to auto-set an invoice due date a month out.
+export function addOneMonth(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  if (!y || !m || !d) return dateStr
+  const dt = new Date(y, m - 1, d)
+  dt.setMonth(dt.getMonth() + 1)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
 // Friendly, compact date (e.g. "1 Aug 2026") from an ISO/date string. Falls back
 // to the raw value if it can't be parsed. Used instead of printing raw ISO.
 export function formatDate(value?: string | null): string {
