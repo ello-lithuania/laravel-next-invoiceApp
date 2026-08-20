@@ -167,6 +167,10 @@ class StatsController extends Controller
 
         $invoices = $user->invoices()
             ->whereBetween('invoice_date', [$startOfYear, $endOfYear])
+            // Exclude "overdue" (= written-off / won't-pay) — it isn't revenue
+            // nor outstanding, so it shouldn't count anywhere in the year summary
+            // (total, outstanding, monthly, clients or hours).
+            ->where('status', '!=', 'overdue')
             ->with('client', 'items')
             ->get();
 
