@@ -1,11 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { clients, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
+import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
+import { formatCurrency, formatDate } from '@/lib/utils'
 
 function ClientsSkeleton() {
   return (
@@ -17,59 +20,37 @@ function ClientsSkeleton() {
         </div>
         <Skeleton className="h-12 w-36 rounded-xl" />
       </div>
-      <Skeleton className="h-12 w-full rounded-xl" />
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
-        <table className="w-full">
-          <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
-            <tr className="border-b border-gray-200 dark:border-gray-700/60">
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-24" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-16" /></th>
-              <th className="px-6 py-4 text-left"><Skeleton className="h-4 w-20" /></th>
-            </tr>
-          </thead>
-          <tbody>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <tr key={i} className="border-b border-gray-200 dark:border-gray-700/60">
-                <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
-                <td className="px-6 py-4"><Skeleton className="h-5 w-28" /></td>
-                <td className="px-6 py-4"><Skeleton className="h-5 w-40" /></td>
-                <td className="px-6 py-4"><Skeleton className="h-5 w-28" /></td>
-                <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Skeleton className="h-11 w-full max-w-md rounded-lg" />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-44 w-full rounded-xl" />
+        ))}
       </div>
     </div>
   )
 }
 
 export default function Clients() {
+  const router = useRouter()
   const [list, setList] = useState<Client[]>([])
+  const [allClients, setAllClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [searchInput, setSearchInput] = useState('')
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
 
-  const PER_PAGE = 10
-
-  // Debounce search input
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setSearchTerm(searchInput)
-      setPage(1)
-    }, 350)
-    return () => clearTimeout(t)
-  }, [searchInput])
+  const PER_PAGE = 12
 
   useEffect(() => {
     loadClients()
-  }, [page, searchTerm])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
+
+  // Full client list (name-ordered) for the "jump to a client" picker.
+  useEffect(() => {
+    clients.list().then(setAllClients).catch(() => {})
+  }, [])
 
   const loadClients = async () => {
     setLoading(true)
@@ -77,7 +58,6 @@ export default function Clients() {
       const params = new URLSearchParams()
       params.set('page', String(page))
       params.set('per_page', String(PER_PAGE))
-      if (searchTerm) params.set('search', searchTerm)
 
       const data = await clients.paginated(params.toString())
       setList(data.data)
@@ -133,159 +113,103 @@ export default function Clients() {
         </Link>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          type="text"
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-          placeholder="Search by name, company code, VAT, email or phone..."
-          className="w-full pl-12 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
-          style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
+      {/* Jump to a client — pick from the full list even if you don't recall the exact name. */}
+      <div className="max-w-md">
+        <SearchableSelect
+          value=""
+          onChange={(id) => { if (id) router.push(`/clients/view?id=${id}`) }}
+          options={allClients.map(c => ({ value: String(c.id), label: c.name }))}
+          allLabel="Jump to a client…"
+          placeholder="Search client by name…"
         />
-        {searchInput && (
-          <button
-            onClick={() => setSearchInput('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            title="Clear"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
-        {/* Desktop table */}
-        <div className="hidden md:block">
-        <table className="w-full">
-          <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
-            <tr className="border-b border-gray-100 dark:border-gray-700/60">
-              <th className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Company Code</th>
-              <th className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Email</th>
-              <th className="px-6 py-3.5 text-left text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Phone</th>
-              <th className="px-6 py-3.5 text-right text-gray-400 dark:text-gray-500 text-xs font-medium uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60">
-            {list.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-16 text-center">
-                  <div className="text-gray-400 dark:text-gray-500">
-                    <svg className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <p className="font-medium">{searchTerm ? 'No clients match your search' : 'No clients yet'}</p>
-                    <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">{searchTerm ? 'Try a different keyword' : 'Add your first client to get started'}</p>
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              list.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/clients/view?id=${client.id}`} className={`font-medium group-hover:text-blue-500 transition-colors ${client.has_uncollectible ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
-                        {client.name}
-                      </Link>
-                      {client.has_uncollectible && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="Has an invoice marked Won't pay — this client doesn't pay">
-                          Won&apos;t pay
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{client.company_code || '—'}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{client.email || '—'}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400 text-sm">{client.phone || '—'}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <Link 
-                        href={`/clients/view?id=${client.id}`}
-                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        title="View"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </Link>
-                      <Link 
-                        href={`/clients/edit?id=${client.id}`}
-                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors"
-                        title="Edit"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                      </Link>
-                      <button 
-                        onClick={() => handleDelete(client.id)} 
-                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {list.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-12 text-center">
+          <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <p className="font-medium text-gray-600 dark:text-gray-300">No clients yet</p>
+          <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Add your first client to get started</p>
         </div>
-
-        {/* Mobile cards */}
-        <div className="md:hidden">
-          {list.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <div className="text-gray-400 dark:text-gray-500">
-                <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <p>{searchTerm ? 'No clients match your search' : 'No clients yet'}</p>
-                <p className="text-sm mt-1">{searchTerm ? 'Try a different keyword' : 'Add your first client to get started'}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
-              {list.map((client) => (
-                <div key={client.id} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Link href={`/clients/view?id=${client.id}`} className={`font-medium hover:text-blue-500 truncate ${client.has_uncollectible ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>
-                        {client.name}
-                      </Link>
-                      {client.has_uncollectible && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap shrink-0" title="This client has a written-off invoice">
-                          Won&apos;t pay
-                        </span>
-                      )}
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {list.map((client, i) => {
+            const rank = (page - 1) * PER_PAGE + i + 1
+            const count = client.invoices_count ?? 0
+            const totalBilled = Number(client.invoices_total ?? 0)
+            const paid = Number(client.invoices_paid ?? 0)
+            const paidPct = totalBilled > 0 ? Math.min(100, (paid / totalBilled) * 100) : 0
+            return (
+              <div key={client.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-5 hover-lift flex flex-col">
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold tabular-nums w-6 h-6 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-muted)' }}>{rank}</span>
+                      <Link href={`/clients/view?id=${client.id}`} className={`font-semibold truncate hover:underline ${client.has_uncollectible ? 'text-red-600 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>{client.name}</Link>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Link href={`/clients/view?id=${client.id}`} className="text-emerald-500 hover:text-emerald-400 text-sm transition-colors">View</Link>
-                      <Link href={`/clients/edit?id=${client.id}`} className="text-blue-500 hover:text-blue-400 text-sm transition-colors">Edit</Link>
-                      <button onClick={() => handleDelete(client.id)} className="text-red-400 hover:text-red-300 text-sm transition-colors">Delete</button>
-                    </div>
+                    {(client.company_code || client.email) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-8 truncate">{client.company_code || client.email}</p>
+                    )}
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                    {client.company_code && <span>{client.company_code}</span>}
-                    {client.email && <span>{client.email}</span>}
-                    {client.phone && <span>{client.phone}</span>}
+                  {client.has_uncollectible && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap shrink-0" title="Has an invoice marked Won't pay — this client doesn't pay">Won&apos;t pay</span>
+                  )}
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Invoices</p>
+                    <p className="text-xl font-bold text-gray-800 dark:text-gray-100 tabular-nums">{count}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">Total billed</p>
+                    <p className="text-xl font-bold tabular-nums" style={{ color: 'var(--t-accent)' }}>{formatCurrency(totalBilled)}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+
+                {/* Paid ratio */}
+                {totalBilled > 0 && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="text-gray-500 dark:text-gray-400">{formatCurrency(paid)} paid</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400 tabular-nums">{paidPct.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--t-bg-elevated)' }}>
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${paidPct}%`, background: '#16a34a' }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{client.last_invoice_date ? `Last: ${formatDate(client.last_invoice_date)}` : 'No invoices'}</span>
+                  <div className="flex items-center gap-1">
+                    <Link href={`/clients/view?id=${client.id}`} aria-label={`View ${client.name}`} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors" title="View">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </Link>
+                    <Link href={`/clients/edit?id=${client.id}`} aria-label={`Edit ${client.name}`} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors" title="Edit">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </Link>
+                    <button onClick={() => handleDelete(client.id)} aria-label={`Delete ${client.name}`} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Delete">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-      </div>
+      )}
 
       {/* Pagination */}
       {total > 0 && (

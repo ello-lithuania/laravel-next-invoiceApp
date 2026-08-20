@@ -180,6 +180,11 @@ export interface Client {
   phone?: string
   email?: string
   notes?: string
+  // Per-client stats (only present on the paginated clients-page listing).
+  invoices_count?: number
+  invoices_total?: number | null
+  invoices_paid?: number | null
+  last_invoice_date?: string | null
 }
 
 export interface InvoiceItem {

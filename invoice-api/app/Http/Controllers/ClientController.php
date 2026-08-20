@@ -27,10 +27,19 @@ class ClientController extends Controller
             });
         }
 
-        // Paginated mode (when per_page is provided) — used by clients page.
-        // Clamp so ?per_page=huge can't dump the whole table and ?per_page=0
-        // can't trigger a divide-by-zero 500.
+        // Paginated mode (when per_page is provided) — used by the clients page.
+        // Attach per-client invoice stats and rank by total billed (top clients
+        // first) so the page is a useful overview, not just an A–Z list. Clamp
+        // per_page so ?per_page=huge can't dump the table and ?per_page=0 can't 500.
         if ($request->has('per_page')) {
+            $query->withCount('invoices')
+                ->withSum('invoices as invoices_total', 'total')
+                ->withSum(['invoices as invoices_paid' => fn ($q) => $q->where('status', 'paid')], 'total')
+                ->withMax('invoices as last_invoice_date', 'invoice_date')
+                ->reorder()
+                ->orderByDesc('invoices_total')
+                ->orderBy('name');
+
             $perPage = min(max((int) $request->get('per_page', 10), 1), 100);
             return $query->paginate($perPage);
         }
