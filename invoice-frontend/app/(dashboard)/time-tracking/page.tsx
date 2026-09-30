@@ -8,8 +8,8 @@ import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
-import { addOneMonth } from '@/lib/utils'
-import { AssignGroupModal, ConvertToInvoiceModal } from '@/components/dashboard/TimeTrackingModals'
+import { addOneMonth, formatDate } from '@/lib/utils'
+import { AssignGroupModal, ConvertToInvoiceModal, GroupTimelineModal } from '@/components/dashboard/TimeTrackingModals'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -49,10 +49,12 @@ export default function TimeTracking() {
   // Filters
   const [filterClient, setFilterClient] = useState('')
   const [filterInvoiced, setFilterInvoiced] = useState('false')
+  const [showDates, setShowDates] = useState(false)
 
   // New entry form
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const formRef = useRef<HTMLDivElement>(null)
   const [form, setForm] = useState({
     client_id: '',
     group_name: '',
@@ -86,6 +88,10 @@ export default function TimeTracking() {
   const [showConvertModal, setShowConvertModal] = useState(false)
   const [showGroupModal, setShowGroupModal] = useState(false)
   const [groupValue, setGroupValue] = useState('')
+
+  // Group timeline (pace over time) — loaded unfiltered, so invoiced entries count too
+  const [timelineGroup, setTimelineGroup] = useState<string | null>(null)
+  const [timelineEntries, setTimelineEntries] = useState<TimeEntry[] | null>(null)
   const [convertForm, setConvertForm] = useState({
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: addOneMonth(new Date().toISOString().split('T')[0]),
@@ -222,6 +228,12 @@ export default function TimeTracking() {
 
   useRefetchOnReturn(() => loadData())
 
+  // The form lives at the top of the page — without this, hitting Edit far down
+  // the list looks like nothing happened.
+  useEffect(() => {
+    if (showForm) formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [showForm, editingId])
+
   const buildParams = () => {
     const params = new URLSearchParams()
     if (filterClient) params.set('client_id', filterClient)
@@ -323,6 +335,20 @@ export default function TimeTracking() {
     if (clientIds.size > 1) { toast.error('This group has entries from several clients — invoice each client separately'); return }
     setSelectedIds(billable.map(e => e.id))
     setShowConvertModal(true)
+  }
+
+  // Timeline for a group: fetch every entry (no invoiced filter) so the pace
+  // reflects the whole project, not just what the current filter shows.
+  const openTimeline = async (groupKey: string) => {
+    setTimelineGroup(groupKey)
+    setTimelineEntries(null)
+    try {
+      const all = await timeEntries.list()
+      setTimelineEntries(all.filter(e => (e.group_name || '') === groupKey))
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to load timeline')
+      setTimelineGroup(null)
+    }
   }
 
   // Remove the group from every entry in a section (one click on the header).
@@ -650,7 +676,7 @@ export default function TimeTracking() {
 
       {/* New / Edit Entry Form */}
       {showForm && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+        <div ref={formRef} className="scroll-mt-24 bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
             {editingId ? 'Edit Time Entry' : 'New Time Entry'}
           </h2>
@@ -906,6 +932,20 @@ export default function TimeTracking() {
           <option value="">All</option>
         </select>
 
+        <button
+          onClick={() => setShowDates(v => !v)}
+          className="px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2"
+          style={showDates
+            ? { borderColor: 'var(--t-accent)', color: 'var(--t-accent)', background: 'var(--t-accent-soft)' }
+            : { borderColor: 'var(--t-border)', color: 'var(--t-text-muted)' }}
+          title="Show when each entry was added"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Dates
+        </button>
+
         {selectedIds.length > 0 && (
           <div className="ml-auto flex items-center gap-2">
             <button
@@ -1013,6 +1053,13 @@ export default function TimeTracking() {
                                 </button>
                               )}
                               <button
+                                onClick={() => openTimeline(g.key)}
+                                className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
+                                title="When these entries were logged and at what pace"
+                              >
+                                Timeline
+                              </button>
+                              <button
                                 onClick={() => handleUngroup(g.key)}
                                 className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 dark:hover:border-red-500 transition-colors"
                                 title="Remove this group from its entries"
@@ -1044,6 +1091,12 @@ export default function TimeTracking() {
                       </td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm">
                         <div>{entry.description}</div>
+                        {showDates && (
+                          <div className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+                            Added {formatDate(entry.created_at)}
+                            {entry.updated_at.slice(0, 10) !== entry.created_at.slice(0, 10) && ` · updated ${formatDate(entry.updated_at)}`}
+                          </div>
+                        )}
                         {entry.is_prepaid && entry.invoice_id && trackableMap[entry.invoice_id] && (
                           <div className="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium" style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1281,6 +1334,7 @@ export default function TimeTracking() {
                           {g.entries.some(e => !e.is_invoiced && !e.is_running) && (
                             <button onClick={() => invoiceGroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded text-white transition-colors" style={{ background: 'var(--t-accent)' }}>Invoice</button>
                           )}
+                          <button onClick={() => openTimeline(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">Timeline</button>
                           <button onClick={() => handleUngroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 transition-colors">Ungroup</button>
                         </div>
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-100 tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
@@ -1302,6 +1356,7 @@ export default function TimeTracking() {
                         <div>
                           <p className="font-medium text-gray-800 dark:text-gray-100">{entry.description}</p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">{entry.client?.name}</p>
+                          {showDates && <p className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">Added {formatDate(entry.created_at)}</p>}
                           {entry.is_prepaid && entry.invoice_id && trackableMap[entry.invoice_id] && (
                             <p className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium" style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}>
                               {trackableMap[entry.invoice_id].series} {trackableMap[entry.invoice_id].number} · {trackableMap[entry.invoice_id].remaining_hours > 0
@@ -1442,6 +1497,13 @@ export default function TimeTracking() {
           </div>
         </div>
       )}
+
+      <GroupTimelineModal
+        open={timelineGroup !== null}
+        onClose={() => { setTimelineGroup(null); setTimelineEntries(null) }}
+        label={timelineGroup || 'Ungrouped'}
+        entries={timelineEntries}
+      />
 
       <AssignGroupModal
         open={showGroupModal}

@@ -1,6 +1,7 @@
 'use client'
 import type { FormEvent } from 'react'
-import { addOneMonth } from '@/lib/utils'
+import type { TimeEntry } from '@/lib/api'
+import { addOneMonth, formatDate } from '@/lib/utils'
 
 // Bulk-assign the selected time entries to a group. `onApply` handles all three
 // paths: a string (existing/new group), or null (remove from group).
@@ -153,6 +154,158 @@ export function ConvertToInvoiceModal({ open, onClose, selectedCount, total, for
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+const DAY_MS = 86400000
+
+function monthKeyOf(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabelOf(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+}
+
+// Every month between two keys, gaps included — a silent month is the signal.
+function monthsBetween(from: string, to: string): string[] {
+  const [fy, fm] = from.split('-').map(Number)
+  const [ty, tm] = to.split('-').map(Number)
+  const out: string[] = []
+  let y = fy, m = fm
+  while (y < ty || (y === ty && m <= tm)) {
+    out.push(`${y}-${String(m).padStart(2, '0')}`)
+    m++
+    if (m > 12) { m = 1; y++ }
+  }
+  return out
+}
+
+function daysAgo(iso: string): number {
+  return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / DAY_MS))
+}
+
+// When a project's entries were logged and at what pace: month-by-month hours
+// (including empty months) plus the raw log, newest first.
+export function GroupTimelineModal({ open, onClose, label, entries }: {
+  open: boolean
+  onClose: () => void
+  label: string
+  entries: TimeEntry[] | null
+}) {
+  if (!open) return null
+
+  const body = (() => {
+    if (!entries) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">Loading…</p>
+    if (entries.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">No entries in this group.</p>
+
+    const sorted = [...entries].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    const first = sorted[0].created_at
+    const last = sorted.reduce((acc, e) => (e.updated_at > acc ? e.updated_at : acc), sorted[0].updated_at)
+    const totalHours = sorted.reduce((s, e) => s + e.duration_seconds, 0) / 3600
+    const money = sorted.reduce((s, e) => s + (e.duration_seconds / 3600) * Number(e.hourly_rate), 0)
+    const spanDays = Math.max(1, Math.round((new Date(last).getTime() - new Date(first).getTime()) / DAY_MS))
+
+    const buckets = new Map<string, { hours: number; count: number }>()
+    for (const e of sorted) {
+      const k = monthKeyOf(e.created_at)
+      const b = buckets.get(k) || { hours: 0, count: 0 }
+      b.hours += e.duration_seconds / 3600
+      b.count++
+      buckets.set(k, b)
+    }
+    const months = monthsBetween(monthKeyOf(first), monthKeyOf(last))
+    const maxHours = Math.max(...Array.from(buckets.values()).map(b => b.hours))
+
+    return (
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3" style={{ background: 'var(--t-bg-elevated)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Started</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDate(first)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{daysAgo(first)} days ago</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3" style={{ background: 'var(--t-bg-elevated)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Last activity</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{formatDate(last)}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{daysAgo(last)} days ago</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3" style={{ background: 'var(--t-bg-elevated)' }}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Pace</p>
+            <p className="text-sm font-semibold tabular-nums" style={{ color: 'var(--t-accent)' }}>
+              {spanDays >= 30
+                ? `${(totalHours / (spanDays / 30.44)).toFixed(1)} h / month`
+                : `${totalHours.toFixed(1)} h in ${spanDays} d.`}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">over {spanDays} days</p>
+          </div>
+        </div>
+
+        <div className="space-y-1.5 mb-5">
+          {months.map(k => {
+            const b = buckets.get(k)
+            return (
+              <div key={k} className="flex items-center gap-3 text-xs">
+                <span className="w-16 shrink-0 text-gray-500 dark:text-gray-400 tabular-nums">{monthLabelOf(k)}</span>
+                <div className="flex-1 h-4 rounded-sm overflow-hidden" style={{ background: 'var(--t-bg-elevated)' }}>
+                  {b && (
+                    <div className="h-full rounded-sm" style={{ width: `${Math.max(2, (b.hours / maxHours) * 100)}%`, background: 'var(--t-accent)' }} />
+                  )}
+                </div>
+                <span className={`w-24 shrink-0 text-right tabular-nums ${b ? 'text-gray-700 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600'}`}>
+                  {b ? `${b.hours.toFixed(2)} h · ${b.count}` : '—'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Entries by date added</p>
+        <div className="max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/60 border border-gray-200 dark:border-gray-700 rounded-lg">
+          {[...sorted].reverse().map(e => (
+            <div key={e.id} className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
+              <div className="min-w-0">
+                <p className="text-gray-800 dark:text-gray-100 truncate">{e.description}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {formatDate(e.created_at)}
+                  {e.updated_at.slice(0, 10) !== e.created_at.slice(0, 10) && ` · topped up ${formatDate(e.updated_at)}`}
+                </p>
+              </div>
+              <span className="shrink-0 tabular-nums text-gray-600 dark:text-gray-300">{(e.duration_seconds / 3600).toFixed(2)} h</span>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 tabular-nums">
+          {sorted.length} entries · {totalHours.toFixed(2)} h · €{money.toFixed(2)} — including already invoiced entries.
+        </p>
+      </>
+    )
+  })()
+
+  return (
+    <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Timeline — {label}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">When the entries were logged and at what pace</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            title="Close"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {body}
       </div>
     </div>
   )
