@@ -98,6 +98,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::post('/invoices/{invoice}/duplicate', [InvoiceController::class, 'duplicate']);
 
     Route::get('/time-entries/running', [TimeEntryController::class, 'running']);
+    Route::get('/time-entries/{timeEntry}/events', [TimeEntryController::class, 'events']);
     Route::post('/time-entries/{timeEntry}/start', [TimeEntryController::class, 'start']);
     Route::post('/time-entries/{timeEntry}/stop', [TimeEntryController::class, 'stop']);
     Route::post('/time-entries/{timeEntry}/add-time', [TimeEntryController::class, 'addTime']);

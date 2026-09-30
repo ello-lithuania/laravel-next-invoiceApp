@@ -2,14 +2,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { timeEntries, clients as clientsApi, invoices as invoicesApi, Client, TimeEntry, TrackableInvoice } from '@/lib/api'
+import { timeEntries, clients as clientsApi, invoices as invoicesApi, Client, TimeEntry, TimeEntryEvent, TrackableInvoice } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 import { addOneMonth, formatDate } from '@/lib/utils'
-import { AssignGroupModal, ConvertToInvoiceModal, GroupTimelineModal } from '@/components/dashboard/TimeTrackingModals'
+import { AssignGroupModal, ConvertToInvoiceModal, EntryTimelineModal } from '@/components/dashboard/TimeTrackingModals'
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
@@ -89,9 +89,9 @@ export default function TimeTracking() {
   const [showGroupModal, setShowGroupModal] = useState(false)
   const [groupValue, setGroupValue] = useState('')
 
-  // Group timeline (pace over time) — loaded unfiltered, so invoiced entries count too
-  const [timelineGroup, setTimelineGroup] = useState<string | null>(null)
-  const [timelineEntries, setTimelineEntries] = useState<TimeEntry[] | null>(null)
+  // Per-entry timeline: how this entry's hours accumulated over time
+  const [timelineEntry, setTimelineEntry] = useState<TimeEntry | null>(null)
+  const [timelineEvents, setTimelineEvents] = useState<TimeEntryEvent[] | null>(null)
   const [convertForm, setConvertForm] = useState({
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: addOneMonth(new Date().toISOString().split('T')[0]),
@@ -337,17 +337,14 @@ export default function TimeTracking() {
     setShowConvertModal(true)
   }
 
-  // Timeline for a group: fetch every entry (no invoiced filter) so the pace
-  // reflects the whole project, not just what the current filter shows.
-  const openTimeline = async (groupKey: string) => {
-    setTimelineGroup(groupKey)
-    setTimelineEntries(null)
+  const openTimeline = async (entry: TimeEntry) => {
+    setTimelineEntry(entry)
+    setTimelineEvents(null)
     try {
-      const all = await timeEntries.list()
-      setTimelineEntries(all.filter(e => (e.group_name || '') === groupKey))
+      setTimelineEvents(await timeEntries.events(entry.id))
     } catch (e: any) {
       toast.error(e.message || 'Failed to load timeline')
-      setTimelineGroup(null)
+      setTimelineEntry(null)
     }
   }
 
@@ -1053,13 +1050,6 @@ export default function TimeTracking() {
                                 </button>
                               )}
                               <button
-                                onClick={() => openTimeline(g.key)}
-                                className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-100 transition-colors"
-                                title="When these entries were logged and at what pace"
-                              >
-                                Timeline
-                              </button>
-                              <button
                                 onClick={() => handleUngroup(g.key)}
                                 className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 dark:hover:border-red-500 transition-colors"
                                 title="Remove this group from its entries"
@@ -1243,6 +1233,15 @@ export default function TimeTracking() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openTimeline(entry)}
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-500/10 rounded-lg transition-colors"
+                            title="Timeline — when these hours were logged"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
                           {isEditable(entry) && (
                             <>
                               {entry.is_running ? (
@@ -1334,7 +1333,6 @@ export default function TimeTracking() {
                           {g.entries.some(e => !e.is_invoiced && !e.is_running) && (
                             <button onClick={() => invoiceGroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded text-white transition-colors" style={{ background: 'var(--t-accent)' }}>Invoice</button>
                           )}
-                          <button onClick={() => openTimeline(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100 transition-colors">Timeline</button>
                           <button onClick={() => handleUngroup(g.key)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:text-red-500 hover:border-red-400 transition-colors">Ungroup</button>
                         </div>
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-100 tabular-nums">{formatHours(g.seconds)} · €{g.money.toFixed(2)}</span>
@@ -1420,9 +1418,10 @@ export default function TimeTracking() {
                         )
                       })()}
                     </div>
-                    {isEditable(entry) && (
-                      <div className="flex items-center gap-3 pt-1 flex-wrap">
-                        {entry.is_running ? (
+                    <div className="flex items-center gap-3 pt-1 flex-wrap">
+                      <button onClick={() => openTimeline(entry)} className="text-sm font-medium text-gray-500 dark:text-gray-400">Timeline</button>
+                      {isEditable(entry) && (
+                        entry.is_running ? (
                           <button onClick={() => handleStop(entry)} className="text-red-500 text-sm font-medium">Stop</button>
                         ) : (
                           <>
@@ -1464,9 +1463,9 @@ export default function TimeTracking() {
                               </span>
                             )}
                           </>
-                        )}
-                      </div>
-                    )}
+                        )
+                      )}
+                    </div>
                   </div>
                   </Fragment>
                 )
@@ -1498,11 +1497,11 @@ export default function TimeTracking() {
         </div>
       )}
 
-      <GroupTimelineModal
-        open={timelineGroup !== null}
-        onClose={() => { setTimelineGroup(null); setTimelineEntries(null) }}
-        label={timelineGroup || 'Ungrouped'}
-        entries={timelineEntries}
+      <EntryTimelineModal
+        open={timelineEntry !== null}
+        onClose={() => { setTimelineEntry(null); setTimelineEvents(null) }}
+        entry={timelineEntry}
+        events={timelineEvents}
       />
 
       <AssignGroupModal

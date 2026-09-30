@@ -534,6 +534,15 @@ export interface TimeEntry {
   updated_at: string
 }
 
+export interface TimeEntryEvent {
+  id: number
+  time_entry_id: number
+  seconds_delta: number
+  total_seconds: number
+  source: 'created' | 'add_time' | 'timer' | 'edit' | 'backfill'
+  created_at: string
+}
+
 export interface TimeEntryPayload {
   client_id: number
   group_name?: string | null
@@ -553,6 +562,8 @@ export const timeEntries = {
     api<TimeEntry>(`/time-entries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: number) =>
     api<{ message: string }>(`/time-entries/${id}`, { method: 'DELETE' }),
+  events: (id: number) =>
+    api<TimeEntryEvent[]>(`/time-entries/${id}/events`),
   start: (id: number) =>
     api<TimeEntry>(`/time-entries/${id}/start`, { method: 'POST' }),
   stop: (id: number, durationMinutes?: number) =>

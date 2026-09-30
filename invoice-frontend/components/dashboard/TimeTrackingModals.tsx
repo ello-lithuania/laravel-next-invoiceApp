@@ -1,6 +1,6 @@
 'use client'
 import type { FormEvent } from 'react'
-import type { TimeEntry } from '@/lib/api'
+import type { TimeEntry, TimeEntryEvent } from '@/lib/api'
 import { addOneMonth, formatDate } from '@/lib/utils'
 
 // Bulk-assign the selected time entries to a group. `onApply` handles all three
@@ -189,37 +189,49 @@ function daysAgo(iso: string): number {
   return Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / DAY_MS))
 }
 
-// When a project's entries were logged and at what pace: month-by-month hours
-// (including empty months) plus the raw log, newest first.
-export function GroupTimelineModal({ open, onClose, label, entries }: {
+const SOURCE_LABELS: Record<TimeEntryEvent['source'], string> = {
+  created: 'created',
+  add_time: 'added',
+  timer: 'timer',
+  edit: 'edited',
+  backfill: 'existing total',
+}
+
+function formatDateTime(iso: string): string {
+  const d = new Date(iso)
+  return `${formatDate(iso)}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+}
+
+// How one entry's hours accumulated: month-by-month (empty months included, a
+// silent month is the signal) plus every recorded change, newest first.
+export function EntryTimelineModal({ open, onClose, entry, events }: {
   open: boolean
   onClose: () => void
-  label: string
-  entries: TimeEntry[] | null
+  entry: TimeEntry | null
+  events: TimeEntryEvent[] | null
 }) {
-  if (!open) return null
+  if (!open || !entry) return null
 
   const body = (() => {
-    if (!entries) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">Loading…</p>
-    if (entries.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">No entries in this group.</p>
+    if (!events) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">Loading…</p>
+    if (events.length === 0) return <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">No history recorded for this entry.</p>
 
-    const sorted = [...entries].sort((a, b) => a.created_at.localeCompare(b.created_at))
-    const first = sorted[0].created_at
-    const last = sorted.reduce((acc, e) => (e.updated_at > acc ? e.updated_at : acc), sorted[0].updated_at)
-    const totalHours = sorted.reduce((s, e) => s + e.duration_seconds, 0) / 3600
-    const money = sorted.reduce((s, e) => s + (e.duration_seconds / 3600) * Number(e.hourly_rate), 0)
+    const first = events[0].created_at
+    const last = events[events.length - 1].created_at
+    const totalHours = entry.duration_seconds / 3600
     const spanDays = Math.max(1, Math.round((new Date(last).getTime() - new Date(first).getTime()) / DAY_MS))
+    const onlyBackfill = events.every(e => e.source === 'backfill')
 
     const buckets = new Map<string, { hours: number; count: number }>()
-    for (const e of sorted) {
+    for (const e of events) {
       const k = monthKeyOf(e.created_at)
       const b = buckets.get(k) || { hours: 0, count: 0 }
-      b.hours += e.duration_seconds / 3600
+      b.hours += e.seconds_delta / 3600
       b.count++
       buckets.set(k, b)
     }
-    const months = monthsBetween(monthKeyOf(first), monthKeyOf(last))
-    const maxHours = Math.max(...Array.from(buckets.values()).map(b => b.hours))
+    const months = monthsBetween(monthKeyOf(first), monthKeyOf(new Date().toISOString()))
+    const maxHours = Math.max(...Array.from(buckets.values()).map(b => Math.abs(b.hours)), 0.01)
 
     return (
       <>
@@ -241,7 +253,7 @@ export function GroupTimelineModal({ open, onClose, label, entries }: {
                 ? `${(totalHours / (spanDays / 30.44)).toFixed(1)} h / month`
                 : `${totalHours.toFixed(1)} h in ${spanDays} d.`}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">over {spanDays} days</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{totalHours.toFixed(2)} h total</p>
           </div>
         </div>
 
@@ -253,36 +265,40 @@ export function GroupTimelineModal({ open, onClose, label, entries }: {
                 <span className="w-16 shrink-0 text-gray-500 dark:text-gray-400 tabular-nums">{monthLabelOf(k)}</span>
                 <div className="flex-1 h-4 rounded-sm overflow-hidden" style={{ background: 'var(--t-bg-elevated)' }}>
                   {b && (
-                    <div className="h-full rounded-sm" style={{ width: `${Math.max(2, (b.hours / maxHours) * 100)}%`, background: 'var(--t-accent)' }} />
+                    <div className="h-full rounded-sm" style={{ width: `${Math.max(2, (Math.abs(b.hours) / maxHours) * 100)}%`, background: 'var(--t-accent)' }} />
                   )}
                 </div>
                 <span className={`w-24 shrink-0 text-right tabular-nums ${b ? 'text-gray-700 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600'}`}>
-                  {b ? `${b.hours.toFixed(2)} h · ${b.count}` : '—'}
+                  {b ? `${b.hours.toFixed(2)} h · ${b.count}×` : '—'}
                 </span>
               </div>
             )
           })}
         </div>
 
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Entries by date added</p>
+        {onlyBackfill && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            This entry predates history tracking — its whole total sits on the day it was created. Every change from now on lands on its own date.
+          </p>
+        )}
+
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">Changes</p>
         <div className="max-h-56 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700/60 border border-gray-200 dark:border-gray-700 rounded-lg">
-          {[...sorted].reverse().map(e => (
-            <div key={e.id} className="flex items-start justify-between gap-3 px-3 py-2 text-sm">
+          {[...events].reverse().map(ev => (
+            <div key={ev.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
               <div className="min-w-0">
-                <p className="text-gray-800 dark:text-gray-100 truncate">{e.description}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {formatDate(e.created_at)}
-                  {e.updated_at.slice(0, 10) !== e.created_at.slice(0, 10) && ` · topped up ${formatDate(e.updated_at)}`}
-                </p>
+                <p className="text-gray-800 dark:text-gray-100 tabular-nums">{formatDateTime(ev.created_at)}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{SOURCE_LABELS[ev.source] || ev.source}</p>
               </div>
-              <span className="shrink-0 tabular-nums text-gray-600 dark:text-gray-300">{(e.duration_seconds / 3600).toFixed(2)} h</span>
+              <div className="shrink-0 text-right tabular-nums">
+                <p className={`font-medium ${ev.seconds_delta < 0 ? 'text-red-500' : 'text-gray-700 dark:text-gray-200'}`}>
+                  {ev.seconds_delta >= 0 ? '+' : '−'}{(Math.abs(ev.seconds_delta) / 3600).toFixed(2)} h
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">→ {(ev.total_seconds / 3600).toFixed(2)} h</p>
+              </div>
             </div>
           ))}
         </div>
-
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 tabular-nums">
-          {sorted.length} entries · {totalHours.toFixed(2)} h · €{money.toFixed(2)} — including already invoiced entries.
-        </p>
       </>
     )
   })()
@@ -291,9 +307,12 @@ export function GroupTimelineModal({ open, onClose, label, entries }: {
     <div className="fixed inset-0 bg-gray-900/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Timeline — {label}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">When the entries were logged and at what pace</p>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 truncate">{entry.description}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {entry.client?.name}
+              {entry.group_name && ` · ${entry.group_name}`}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -310,3 +329,4 @@ export function GroupTimelineModal({ open, onClose, label, entries }: {
     </div>
   )
 }
+

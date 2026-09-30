@@ -87,6 +87,8 @@ class TimeEntryController extends Controller
             'invoice_id' => $invoiceId,
         ]);
 
+        $entry->recordEvent(0, 'created');
+
         return response()->json($entry->load('client', 'invoice'), 201);
     }
 
@@ -131,6 +133,7 @@ class TimeEntryController extends Controller
 
         $isPrepaid = !empty($validated['is_prepaid']) && !empty($validated['invoice_id']);
         $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
+        $previousSeconds = $timeEntry->duration_seconds;
 
         $timeEntry->update([
             'client_id' => $validated['client_id'],
@@ -143,7 +146,20 @@ class TimeEntryController extends Controller
             'invoice_id' => $invoiceId,
         ]);
 
+        $timeEntry->recordEvent($previousSeconds, 'edit');
+
         return response()->json($timeEntry->load('client', 'invoice'));
+    }
+
+    public function events(Request $request, TimeEntry $timeEntry)
+    {
+        if ($timeEntry->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+
+        return response()->json(
+            $timeEntry->events()->orderBy('created_at')->get()
+        );
     }
 
     public function destroy(Request $request, TimeEntry $timeEntry)
@@ -171,9 +187,13 @@ class TimeEntryController extends Controller
             'minutes' => 'required|integer|min:1',
         ]);
 
+        $previousSeconds = $timeEntry->duration_seconds;
+
         $timeEntry->update([
-            'duration_seconds' => $timeEntry->duration_seconds + ($validated['minutes'] * 60),
+            'duration_seconds' => $previousSeconds + ($validated['minutes'] * 60),
         ]);
+
+        $timeEntry->recordEvent($previousSeconds, 'add_time');
 
         return response()->json($timeEntry->load('client', 'invoice'));
     }
@@ -190,11 +210,13 @@ class TimeEntryController extends Controller
             ->where('id', '!=', $timeEntry->id)
             ->each(function ($entry) {
                 $elapsed = (int) abs(now()->diffInSeconds($entry->started_at));
+                $previousSeconds = $entry->duration_seconds;
                 $entry->update([
                     'is_running' => false,
                     'ended_at' => now(),
-                    'duration_seconds' => $entry->duration_seconds + $elapsed,
+                    'duration_seconds' => $previousSeconds + $elapsed,
                 ]);
+                $entry->recordEvent($previousSeconds, 'timer');
             });
 
         $timeEntry->update([
@@ -226,11 +248,15 @@ class TimeEntryController extends Controller
             $newDuration = $timeEntry->duration_seconds + $elapsed;
         }
 
+        $previousSeconds = $timeEntry->duration_seconds;
+
         $timeEntry->update([
             'is_running' => false,
             'ended_at' => now(),
             'duration_seconds' => $newDuration,
         ]);
+
+        $timeEntry->recordEvent($previousSeconds, 'timer');
 
         return response()->json($timeEntry->load('client', 'invoice'));
     }

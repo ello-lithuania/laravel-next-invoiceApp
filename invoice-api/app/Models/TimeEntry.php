@@ -43,4 +43,26 @@ class TimeEntry extends Model
     {
         return $this->belongsTo(Invoice::class);
     }
+
+    public function events()
+    {
+        return $this->hasMany(TimeEntryEvent::class);
+    }
+
+    // Record a duration change so the entry's timeline shows when the hours
+    // actually accumulated — duration_seconds alone only carries the total.
+    public function recordEvent(int $previousSeconds, string $source): void
+    {
+        $delta = $this->duration_seconds - $previousSeconds;
+        if ($delta === 0 && $source !== 'created') {
+            return;
+        }
+
+        $this->events()->create([
+            'user_id' => $this->user_id,
+            'seconds_delta' => $delta,
+            'total_seconds' => $this->duration_seconds,
+            'source' => $source,
+        ]);
+    }
 }
