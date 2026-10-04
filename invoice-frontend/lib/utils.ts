@@ -36,6 +36,11 @@ export function formatDate(value?: string | null): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
+// Invoice line-item units, as they print on the PDF. Older invoices may carry a
+// unit that's no longer offered (e.g. "pcs" before it became "vnt.") — the
+// selects keep such a value as an extra option instead of silently dropping it.
+export const INVOICE_UNITS = ['h', 'vnt.', 'mėn.', 'm²', 'm', 'kg']
+
 export function formatStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }

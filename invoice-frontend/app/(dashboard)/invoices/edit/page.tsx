@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { triggerDownload } from '@/lib/utils'
+import { triggerDownload, INVOICE_UNITS } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -276,11 +276,8 @@ function EditInvoiceForm() {
                       onChange={(e) => updateItem(index, 'unit', e.target.value)}
                       className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                     >
-                      <option value="h">h</option>
-                      <option value="pcs">pcs</option>
-                      <option value="m²">m²</option>
-                      <option value="m">m</option>
-                      <option value="kg">kg</option>
+                      {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                      {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
                     </select>
                     <input
                       type="number"
@@ -339,11 +336,8 @@ function EditInvoiceForm() {
                         onChange={(e) => updateItem(index, 'unit', e.target.value)}
                         className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
                       >
-                        <option value="h">h</option>
-                        <option value="pcs">pcs</option>
-                        <option value="m²">m²</option>
-                        <option value="m">m</option>
-                        <option value="kg">kg</option>
+                        {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                        {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
                       </select>
                       <input
                         type="number"
