@@ -1,12 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { clients, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
-import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
@@ -31,10 +29,9 @@ function ClientsSkeleton() {
 }
 
 export default function Clients() {
-  const router = useRouter()
   const [list, setList] = useState<Client[]>([])
-  const [allClients, setAllClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [lastPage, setLastPage] = useState(1)
   const [total, setTotal] = useState(0)
@@ -42,15 +39,12 @@ export default function Clients() {
 
   const PER_PAGE = 12
 
+  // Debounced so typing doesn't fire a request per keystroke.
   useEffect(() => {
-    loadClients()
+    const t = setTimeout(loadClients, search ? 300 : 0)
+    return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
-
-  // Full client list (name-ordered) for the "jump to a client" picker.
-  useEffect(() => {
-    clients.list().then(setAllClients).catch(() => {})
-  }, [])
+  }, [page, search])
 
   const loadClients = async () => {
     setLoading(true)
@@ -58,6 +52,7 @@ export default function Clients() {
       const params = new URLSearchParams()
       params.set('page', String(page))
       params.set('per_page', String(PER_PAGE))
+      if (search.trim()) params.set('search', search.trim())
 
       const data = await clients.paginated(params.toString())
       setList(data.data)
@@ -93,7 +88,9 @@ export default function Clients() {
     })
   }
 
-  if (loading && list.length === 0) return <ClientsSkeleton />
+  // Only on first load — re-rendering the skeleton mid-search would unmount the
+  // input and drop the caret.
+  if (loading && list.length === 0 && !search) return <ClientsSkeleton />
 
   return (
     <div className="space-y-6">
@@ -113,15 +110,30 @@ export default function Clients() {
         </Link>
       </div>
 
-      {/* Jump to a client — pick from the full list even if you don't recall the exact name. */}
-      <div className="max-w-md">
-        <SearchableSelect
-          value=""
-          onChange={(id) => { if (id) router.push(`/clients/view?id=${id}`) }}
-          options={allClients.map(c => ({ value: String(c.id), label: c.name }))}
-          allLabel="Jump to a client…"
-          placeholder="Search client by name…"
+      {/* Server-side search across name, company/VAT code, email and phone. */}
+      <div className="max-w-md relative">
+        <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+        </svg>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          placeholder="Search by name, company code, VAT, email or phone…"
+          className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 focus:ring-2 focus:border-transparent transition-colors"
+          style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
         />
+        {search && (
+          <button
+            onClick={() => { setSearch(''); setPage(1) }}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {list.length === 0 ? (
@@ -129,8 +141,17 @@ export default function Clients() {
           <svg className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
-          <p className="font-medium text-gray-600 dark:text-gray-300">No clients yet</p>
-          <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Add your first client to get started</p>
+          {search ? (
+            <>
+              <p className="font-medium text-gray-600 dark:text-gray-300">No clients match “{search}”</p>
+              <button onClick={() => { setSearch(''); setPage(1) }} className="text-sm mt-1 font-medium" style={{ color: 'var(--t-accent)' }}>Clear search</button>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-gray-600 dark:text-gray-300">No clients yet</p>
+              <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">Add your first client to get started</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

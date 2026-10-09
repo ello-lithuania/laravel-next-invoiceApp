@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { clients, getToken } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { statusColors, formatCurrency } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
+import ConfirmModal from '@/components/ConfirmModal'
 
 interface ClientInvoice {
   id: number
@@ -34,9 +35,12 @@ interface ClientDetail {
 
 function ClientViewContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const id = searchParams.get('id')
   const [client, setClient] = useState<ClientDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (id) loadClient()
@@ -50,6 +54,19 @@ function ClientViewContent() {
       toast.error(e.message || 'Failed to load client')
     }
     setLoading(false)
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await clients.delete(Number(id))
+      toast.success('Client deleted')
+      router.push('/clients')
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to delete client')
+      setDeleting(false)
+      setConfirmDelete(false)
+    }
   }
 
   if (loading) return (
@@ -100,6 +117,14 @@ function ClientViewContent() {
           >
             Edit Client
           </Link>
+          <button
+            onClick={() => setConfirmDelete(true)}
+            disabled={client.invoices_count > 0}
+            title={client.invoices_count > 0 ? 'This client has invoices — delete those first' : 'Delete this client'}
+            className="px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-medium text-sm text-gray-500 dark:text-gray-400 hover:text-red-500 hover:border-red-400 dark:hover:border-red-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-500 disabled:hover:border-gray-200 dark:disabled:hover:border-gray-700"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -246,6 +271,16 @@ function ClientViewContent() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmDelete}
+        title="Delete Client"
+        message={`Delete “${client.name}”? This cannot be undone.`}
+        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        variant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   )
 }
