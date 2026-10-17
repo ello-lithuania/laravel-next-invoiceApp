@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -nA15 \"function unpaid\" app/Http/Controllers/InvoiceController.php)",
+      "Bash(grep -nA20 \"function\" app/Http/Controllers/ActivityController.php)",
+      "Bash(npm run *)",
+      "Bash(php -l app/Http/Controllers/CatalogItemController.php)",
+      "Bash(php -l app/Models/CatalogItem.php)",
+      "Bash(php -l database/migrations/2026_06_29_000000_create_catalog_items_table.php)",
+      "Bash(php -l routes/api.php)",
+      "Bash(php -l database/migrations/2026_06_29_000001_add_due_date_index_to_invoices.php)"
+    ]
+  }
+}
