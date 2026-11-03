@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Support\Audit;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Carbon\Carbon;
 
 class AuthController extends Controller
 {
@@ -48,7 +48,7 @@ class AuthController extends Controller
 
         $user = User::where('email', $validated['email'])->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             Audit::log('auth.login_failed', [
                 'user_id' => $user?->id,
                 'category' => 'security',
@@ -141,7 +141,7 @@ class AuthController extends Controller
     {
         $token = $request->user()->tokens()->find($id);
 
-        if (!$token) {
+        if (! $token) {
             return response()->json(['message' => 'Session not found'], 404);
         }
 

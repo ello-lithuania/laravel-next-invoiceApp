@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Support\Audit;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
-use Carbon\Carbon;
 
 class PasswordController extends Controller
 {

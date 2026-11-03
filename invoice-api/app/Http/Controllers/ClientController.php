@@ -20,10 +20,10 @@ class ClientController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('company_code', 'like', "%{$search}%")
-                  ->orWhere('vat_code', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('company_code', 'like', "%{$search}%")
+                    ->orWhere('vat_code', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
@@ -41,6 +41,7 @@ class ClientController extends Controller
                 ->orderBy('name');
 
             $perPage = min(max((int) $request->get('per_page', 10), 1), 100);
+
             return $query->paginate($perPage);
         }
 

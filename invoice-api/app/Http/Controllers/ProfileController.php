@@ -10,11 +10,12 @@ class ProfileController extends Controller
     {
         $data = $user->toArray();
         if ($user->signature) {
-            $path = storage_path('app/public/signatures/' . $user->signature);
+            $path = storage_path('app/public/signatures/'.$user->signature);
             if (file_exists($path)) {
-                $data['signature_url'] = 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+                $data['signature_url'] = 'data:image/png;base64,'.base64_encode(file_get_contents($path));
             }
         }
+
         return $data;
     }
 
@@ -65,28 +66,28 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $signaturesPath = storage_path('app/public/signatures');
-        if (!file_exists($signaturesPath)) {
+        if (! file_exists($signaturesPath)) {
             mkdir($signaturesPath, 0755, true);
         }
 
-        if ($user->signature && file_exists($signaturesPath . '/' . $user->signature)) {
-            unlink($signaturesPath . '/' . $user->signature);
+        if ($user->signature && file_exists($signaturesPath.'/'.$user->signature)) {
+            unlink($signaturesPath.'/'.$user->signature);
         }
 
         // Random, unguessable filename. These files live under the public
         // storage symlink, so a predictable name (id + timestamp) would let
         // anyone enumerate and download other users' signature images.
-        $filename = 'signature_' . $user->id . '_' . \Illuminate\Support\Str::random(32) . '.png';
+        $filename = 'signature_'.$user->id.'_'.\Illuminate\Support\Str::random(32).'.png';
         $request->file('signature')->move($signaturesPath, $filename);
 
         $user->update(['signature' => $filename]);
 
-        $base64 = 'data:image/png;base64,' . base64_encode(file_get_contents($signaturesPath . '/' . $filename));
+        $base64 = 'data:image/png;base64,'.base64_encode(file_get_contents($signaturesPath.'/'.$filename));
 
         return response()->json([
             'message' => 'Signature uploaded',
             'signature' => $filename,
-            'signature_url' => $base64
+            'signature_url' => $base64,
         ]);
     }
 
@@ -95,8 +96,8 @@ class ProfileController extends Controller
         $user = $request->user();
         $signaturesPath = storage_path('app/public/signatures');
 
-        if ($user->signature && file_exists($signaturesPath . '/' . $user->signature)) {
-            unlink($signaturesPath . '/' . $user->signature);
+        if ($user->signature && file_exists($signaturesPath.'/'.$user->signature)) {
+            unlink($signaturesPath.'/'.$user->signature);
         }
 
         $user->update(['signature' => null]);
