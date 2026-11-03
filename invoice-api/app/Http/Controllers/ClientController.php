@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreClientRequest;
+use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
 use App\Support\Audit;
 use Illuminate\Http\Request;
@@ -49,19 +51,9 @@ class ClientController extends Controller
         return response()->json($query->get());
     }
 
-    public function store(Request $request)
+    public function store(StoreClientRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'company_code' => 'nullable|string|max:255',
-            'vat_code' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'notes' => 'nullable|string',
-        ]);
-
-        $client = $request->user()->clients()->create($validated);
+        $client = $request->user()->clients()->create($request->validated());
 
         Audit::log('client.created', [
             'subject' => $client,
@@ -88,23 +80,13 @@ class ClientController extends Controller
         return response()->json($client);
     }
 
-    public function update(Request $request, Client $client)
+    public function update(UpdateClientRequest $request, Client $client)
     {
         if ($client->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'company_code' => 'nullable|string|max:255',
-            'vat_code' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'notes' => 'nullable|string',
-        ]);
-
-        $client->update($validated);
+        $client->update($request->validated());
 
         Audit::log('client.updated', [
             'subject' => $client,
