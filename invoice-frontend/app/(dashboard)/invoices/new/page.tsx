@@ -2,61 +2,32 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { invoices, clients as clientsApi, ClientHistory, ClientHistoryItem } from '@/lib/api'
+import { invoices, clients as clientsApi, Client, ClientHistory, ClientHistoryItem } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { formatCurrency, refreshStats, formatDate, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
-import StatusBadge from '@/components/StatusBadge'
+import { refreshStats, addOneMonth, getErrorMessage } from '@/lib/utils'
+import InvoiceForm from '@/components/invoices/InvoiceForm'
+import ClientHistoryPanel from '@/components/invoices/ClientHistoryPanel'
+import { emptyItem, type InvoiceFormValues } from '@/components/invoices/types'
 
-interface InvoiceItem {
-  description: string
-  unit: string
-  quantity: number
-  price: number
-}
-
-interface Client {
-  id: number
-  name: string
-  has_uncollectible?: boolean
-}
-
-const emptyItem: InvoiceItem = { description: '', unit: 'h', quantity: 1, price: 0 }
-
-// Add one calendar month to a YYYY-MM-DD string (parsed as a local date to
-// avoid timezone off-by-one). Used to auto-set the due date a month out.
-const addOneMonth = (dateStr: string): string => {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  if (!y || !m || !d) return dateStr
-  const dt = new Date(y, m - 1, d)
-  dt.setMonth(dt.getMonth() + 1)
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
-}
-
-const getDefaultDueDate = () => addOneMonth(new Date().toISOString().split('T')[0])
+const getToday = () => new Date().toISOString().split('T')[0]
 
 export default function NewInvoice() {
   const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
-  const [clientSearch, setClientSearch] = useState('')
-  const [showClientDropdown, setShowClientDropdown] = useState(false)
-  const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
   const [clientHistory, setClientHistory] = useState<ClientHistory | null>(null)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [repeating, setRepeating] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<InvoiceFormValues>({
     client_id: '',
-    invoice_date: new Date().toISOString().split('T')[0],
-    due_date: getDefaultDueDate(),
+    invoice_date: getToday(),
+    due_date: addOneMonth(getToday()),
     notes: '',
     items: [{ ...emptyItem }]
   })
 
   useEffect(() => {
     loadClients()
-    const saved = localStorage.getItem('savedDescriptions')
-    if (saved) setSavedDescriptions(JSON.parse(saved))
   }, [])
 
   // Pull this client's billing history whenever the selected client changes,
@@ -72,9 +43,6 @@ export default function NewInvoice() {
     return () => { active = false }
   }, [form.client_id])
 
-  // One-click "repeat last invoice": pull the client's most recent invoice in
-  // full and copy its line items (and notes) into the form — ideal for the
-  // same monthly retainer billing.
   // Copy an existing invoice's line items + notes into THIS new invoice form
   // (dates stay as the new invoice's — today / due in a month). It never opens
   // or edits the old invoice; it just seeds a fresh one from its data.
@@ -100,6 +68,7 @@ export default function NewInvoice() {
     setRepeating(false)
   }
 
+  // One-click "repeat last invoice" — ideal for the same monthly retainer billing.
   const repeatLastInvoice = () => {
     const last = clientHistory?.invoices?.[0]
     if (last) copyInvoiceItems(last.id, `${last.series} ${last.number}`)
@@ -128,48 +97,16 @@ export default function NewInvoice() {
     setLoading(false)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleSubmit = async (value: InvoiceFormValues) => {
     try {
-      const newDescriptions = form.items.map(i => i.description).filter(d => d && !savedDescriptions.includes(d))
-      if (newDescriptions.length > 0) {
-        const updated = [...new Set([...savedDescriptions, ...newDescriptions])]
-        localStorage.setItem('savedDescriptions', JSON.stringify(updated))
-      }
-      await invoices.create({ ...form, client_id: Number(form.client_id) })
+      await invoices.create({ ...value, client_id: Number(value.client_id) })
       refreshStats()
       toast.success('Invoice created successfully')
       router.push('/invoices')
     } catch (e: unknown) {
       toast.error(getErrorMessage(e, 'Failed to create invoice'))
     }
-    setSaving(false)
   }
-
-  const addItem = () => {
-    setForm({ ...form, items: [...form.items, { ...emptyItem }] })
-  }
-
-  const removeItem = (index: number) => {
-    setForm({ ...form, items: form.items.filter((_, i) => i !== index) })
-  }
-
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    const items = [...form.items]
-    items[index] = { ...items[index], [field]: value }
-    setForm({ ...form, items })
-  }
-
-  const getTotal = () => {
-    return form.items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
-  }
-
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(clientSearch.toLowerCase())
-  ).slice(0, 10)
-
-  const selectedClient = clients.find(c => c.id === Number(form.client_id))
 
   if (loading) return <div className="text-gray-800 dark:text-gray-100 p-8">Loading...</div>
 
@@ -187,367 +124,19 @@ export default function NewInvoice() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Client *</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search client..."
-                  value={showClientDropdown ? clientSearch : (selectedClient?.name || '')}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value)
-                    setShowClientDropdown(true)
-                    if (!e.target.value) setForm({ ...form, client_id: '' })
-                  }}
-                  onFocus={() => setShowClientDropdown(true)}
-                  className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                  required={!form.client_id}
-                />
-                {showClientDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
-                      <div className="p-3 text-gray-400 dark:text-gray-500">No clients found</div>
-                    ) : (
-                      filteredClients.map(c => (
-                        <div
-                          key={c.id}
-                          onClick={() => {
-                            setForm({ ...form, client_id: String(c.id) })
-                            setClientSearch('')
-                            setShowClientDropdown(false)
-                          }}
-                          className="p-3 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-2"
-                        >
-                          <span className={c.has_uncollectible ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100'}>{c.name}</span>
-                          {c.has_uncollectible && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="This client has a written-off invoice — they don't pay">
-                              Won&apos;t pay
-                            </span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-                {showClientDropdown && (
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowClientDropdown(false)}
-                  />
-                )}
-              </div>
-              {selectedClient?.has_uncollectible && (
-                <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">⚠ This client has a written-off invoice — they don&apos;t pay.</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Invoice Date *</label>
-              <input
-                type="date"
-                value={form.invoice_date}
-                onChange={(e) => setForm({ ...form, invoice_date: e.target.value, due_date: addOneMonth(e.target.value) })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Due Date *</label>
-              <input
-                type="date"
-                value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Per-client history — remembers the services & prices used for this
-              specific client so they don't have to be re-typed each time. */}
-          {form.client_id && (
-            <div className="mb-6 rounded-xl overflow-hidden" style={{ background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border-light)' }}>
-              <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap" style={{ borderBottom: '1px solid var(--t-border-light)' }}>
-                <svg className="w-4 h-4 shrink-0" style={{ color: 'var(--t-accent)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm font-semibold t-text">History for {selectedClient?.name}</span>
-                {clientHistory && clientHistory.invoices.length > 0 && (
-                  <span className="text-xs t-text-muted">· {clientHistory.invoices.length} recent invoice{clientHistory.invoices.length === 1 ? '' : 's'}</span>
-                )}
-                {clientHistory && clientHistory.invoices.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={repeatLastInvoice}
-                    disabled={repeating}
-                    className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-60"
-                    style={{ background: 'var(--t-accent-soft)', color: 'var(--t-accent)' }}
-                    title={`Copy all items from ${clientHistory.invoices[0].series} ${clientHistory.invoices[0].number}`}
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    {repeating ? 'Copying…' : 'Repeat last invoice'}
-                  </button>
-                )}
-              </div>
-
-              <div className="p-4 space-y-4">
-                {historyLoading ? (
-                  <p className="text-sm t-text-muted">Loading history…</p>
-                ) : !clientHistory || clientHistory.items.length === 0 ? (
-                  <p className="text-sm t-text-muted">No previous invoices for this client yet. Items you bill now will be suggested next time.</p>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-xs uppercase tracking-wider font-medium t-text-muted mb-2">Previously billed — tap to add</p>
-                      <div className="flex flex-wrap gap-2">
-                        {clientHistory.items.map((hi, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => insertHistoryItem(hi)}
-                            title={`Used ${hi.count}× · last ${hi.last_used?.split('T')[0]}`}
-                            className="group inline-flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-full text-sm transition-all"
-                            style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border)', color: 'var(--t-text-secondary)' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--t-accent)'; e.currentTarget.style.color = 'var(--t-text)' }}
-                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--t-border)'; e.currentTarget.style.color = 'var(--t-text-secondary)' }}
-                          >
-                            <span className="truncate max-w-[220px]">{hi.description}</span>
-                            <span className="text-xs font-semibold tabular-nums shrink-0" style={{ color: 'var(--t-accent)' }}>
-                              {Number(hi.price).toFixed(2)} €{hi.unit ? `/${hi.unit}` : ''}
-                            </span>
-                            <svg className="w-3.5 h-3.5 shrink-0 opacity-50 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                            </svg>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {clientHistory.invoices.length > 0 && (
-                      <div>
-                        <p className="text-xs uppercase tracking-wider font-medium t-text-muted mb-2">Recent invoices</p>
-                        <p className="text-[11px] t-text-muted mb-2">Tap one to copy its items into this new invoice.</p>
-                        <div className="flex flex-wrap gap-2">
-                          {clientHistory.invoices.map(inv => (
-                            <button
-                              key={inv.id}
-                              type="button"
-                              onClick={() => copyInvoiceItems(inv.id, `${inv.series} ${inv.number}`)}
-                              disabled={repeating}
-                              title={`Copy items from ${inv.series} ${inv.number} into this new invoice`}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors hover:border-(--t-accent) disabled:opacity-50"
-                              style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border-light)' }}
-                            >
-                              <span className="font-medium t-text">{inv.series} {inv.number}</span>
-                              <span className="t-text-muted">{formatDate(inv.invoice_date)}</span>
-                              <span className="font-semibold tabular-nums t-text">{formatCurrency(Number(inv.total))}</span>
-                              <StatusBadge status={inv.status} className="px-2 py-0.5" />
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="mb-6">
-            <label className="block text-gray-500 dark:text-gray-400 text-sm mb-3">Items</label>
-            <div className="hidden md:grid grid-cols-12 gap-3 mb-2 text-gray-400 dark:text-gray-500 text-sm">
-              <div className="col-span-5">Description</div>
-              <div className="col-span-2">Unit</div>
-              <div className="col-span-2">Qty</div>
-              <div className="col-span-2">Price</div>
-              <div className="col-span-1"></div>
-            </div>
-            <div className="space-y-3">
-              {form.items.map((item, index) => (
-                <div key={index}>
-                  {/* Desktop row */}
-                  <div className="hidden md:grid grid-cols-12 gap-3">
-                    <input
-                      type="text"
-                      list="descriptions"
-                      data-desc-index={index}
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="col-span-5 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      required
-                    />
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                    >
-                      {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                      {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
-                    </select>
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      onFocus={(e) => e.currentTarget.select()}
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      min="0"
-                      step="0.01"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      onFocus={(e) => e.currentTarget.select()}
-                      value={item.price}
-                      onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      min="0"
-                      step="0.01"
-                    />
-                    <div className="col-span-1 flex items-center justify-center">
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          title="Remove"
-                          className="flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {/* Mobile stacked */}
-                  <div className="md:hidden bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 text-sm">Item {index + 1}</span>
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                    <input
-                      type="text"
-                      list="descriptions"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      required
-                    />
-                    <div className="grid grid-cols-3 gap-3">
-                      <select
-                        value={item.unit}
-                        onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      >
-                        {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                        {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                      onFocus={(e) => e.currentTarget.select()}
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                        min="0"
-                        step="0.01"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price"
-                      onFocus={(e) => e.currentTarget.select()}
-                        value={item.price}
-                        onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="text-right text-gray-600 dark:text-gray-300 text-sm">
-                      Subtotal: {formatCurrency(item.quantity * item.price)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center gap-5 flex-wrap">
-              <button
-                type="button"
-                onClick={addItem}
-                className="text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add item
-              </button>
-            </div>
-            <datalist id="descriptions">
-              {savedDescriptions.map((desc, i) => <option key={i} value={desc} />)}
-            </datalist>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-              rows={2}
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700/60">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">Total: {formatCurrency(Number(getTotal()))}</div>
-            <div className="flex gap-4 w-full sm:w-auto">
-              <Link 
-                href="/invoices"
-                className="flex-1 sm:flex-initial text-center px-8 py-3 rounded-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </Link>
-              <button 
-                type="submit"
-                disabled={saving}
-                className="flex-1 sm:flex-initial btn-gradient bd-clip-sm px-8 py-3 font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Create Invoice
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <InvoiceForm mode="create" value={form} onChange={setForm} clients={clients} onSubmit={handleSubmit}>
+        {form.client_id && (
+          <ClientHistoryPanel
+            clientName={clients.find(c => c.id === Number(form.client_id))?.name}
+            history={clientHistory}
+            loading={historyLoading}
+            copying={repeating}
+            onRepeatLast={repeatLastInvoice}
+            onCopyInvoice={copyInvoiceItems}
+            onInsertItem={insertHistoryItem}
+          />
+        )}
+      </InvoiceForm>
     </div>
   )
 }

@@ -4,16 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { triggerDownload, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
-
-interface InvoiceItem {
-  description: string
-  unit: string
-  quantity: number
-  price: number
-}
-
-const emptyItem: InvoiceItem = { description: '', unit: 'h', quantity: 1, price: 0 }
+import { triggerDownload, getErrorMessage } from '@/lib/utils'
+import InvoiceForm from '@/components/invoices/InvoiceForm'
+import { emptyItem, type InvoiceFormValues } from '@/components/invoices/types'
 
 function EditInvoiceForm() {
   const router = useRouter()
@@ -21,13 +14,9 @@ function EditInvoiceForm() {
   const id = searchParams.get('id')
   const [clients, setClients] = useState<Client[]>([])
   const [duplicating, setDuplicating] = useState(false)
-  const [clientSearch, setClientSearch] = useState('')
-  const [showClientDropdown, setShowClientDropdown] = useState(false)
-  const [savedDescriptions, setSavedDescriptions] = useState<string[]>([])
   const [invoiceMeta, setInvoiceMeta] = useState<{ series: string; number: number } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<InvoiceFormValues>({
     client_id: '',
     invoice_date: '',
     due_date: '',
@@ -37,8 +26,6 @@ function EditInvoiceForm() {
 
   useEffect(() => {
     loadData()
-    const saved = localStorage.getItem('savedDescriptions')
-    if (saved) setSavedDescriptions(JSON.parse(saved))
   }, [id])
 
   const loadData = async () => {
@@ -69,21 +56,13 @@ function EditInvoiceForm() {
     setLoading(false)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
+  const handleSubmit = async (value: InvoiceFormValues) => {
     try {
-      const newDescriptions = form.items.map(i => i.description).filter(d => d && !savedDescriptions.includes(d))
-      if (newDescriptions.length > 0) {
-        const updated = [...new Set([...savedDescriptions, ...newDescriptions])]
-        localStorage.setItem('savedDescriptions', JSON.stringify(updated))
-      }
-      await invoices.update(Number(id), { ...form, client_id: Number(form.client_id) })
+      await invoices.update(Number(id), { ...value, client_id: Number(value.client_id) })
       router.push('/invoices')
     } catch (e: unknown) {
       toast.error(getErrorMessage(e, 'Failed to save invoice'))
     }
-    setSaving(false)
   }
 
   const handleDuplicate = async () => {
@@ -111,30 +90,6 @@ function EditInvoiceForm() {
       toast.error(getErrorMessage(e, 'Failed to download PDF'))
     }
   }
-
-  const addItem = () => {
-    setForm({ ...form, items: [...form.items, { ...emptyItem }] })
-  }
-
-  const removeItem = (index: number) => {
-    setForm({ ...form, items: form.items.filter((_, i) => i !== index) })
-  }
-
-  const updateItem = (index: number, field: keyof InvoiceItem, value: string | number) => {
-    const items = [...form.items]
-    items[index] = { ...items[index], [field]: value }
-    setForm({ ...form, items })
-  }
-
-  const getTotal = () => {
-    return form.items.reduce((sum, item) => sum + (item.quantity * item.price), 0).toFixed(2)
-  }
-
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(clientSearch.toLowerCase())
-  ).slice(0, 10)
-
-  const selectedClient = clients.find(c => c.id === Number(form.client_id))
 
   if (loading) return <div className="text-gray-800 dark:text-gray-100 p-8">Loading...</div>
 
@@ -175,256 +130,7 @@ function EditInvoiceForm() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Client *</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search client..."
-                  value={showClientDropdown ? clientSearch : (selectedClient?.name || '')}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value)
-                    setShowClientDropdown(true)
-                    if (!e.target.value) setForm({ ...form, client_id: '' })
-                  }}
-                  onFocus={() => setShowClientDropdown(true)}
-                  className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                  required={!form.client_id}
-                />
-                {showClientDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
-                      <div className="p-3 text-gray-400 dark:text-gray-500">No clients found</div>
-                    ) : (
-                      filteredClients.map(c => (
-                        <div
-                          key={c.id}
-                          onClick={() => {
-                            setForm({ ...form, client_id: String(c.id) })
-                            setClientSearch('')
-                            setShowClientDropdown(false)
-                          }}
-                          className="p-3 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer transition-colors flex items-center gap-2"
-                        >
-                          <span className={c.has_uncollectible ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-800 dark:text-gray-100'}>{c.name}</span>
-                          {c.has_uncollectible && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/15 text-red-600 dark:text-red-400 whitespace-nowrap" title="This client doesn't pay (written-off invoice)">Won&apos;t pay</span>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-                {showClientDropdown && (
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowClientDropdown(false)}
-                  />
-                )}
-              </div>
-            </div>
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Invoice Date *</label>
-              <input
-                type="date"
-                value={form.invoice_date}
-                onChange={(e) => setForm({ ...form, invoice_date: e.target.value })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Due Date *</label>
-              <input
-                type="date"
-                value={form.due_date}
-                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-500 dark:text-gray-400 text-sm mb-3">Items</label>
-            <div className="hidden md:grid grid-cols-12 gap-3 mb-2 text-gray-400 dark:text-gray-500 text-sm">
-              <div className="col-span-5">Description</div>
-              <div className="col-span-2">Unit</div>
-              <div className="col-span-2">Qty</div>
-              <div className="col-span-2">Price</div>
-              <div className="col-span-1"></div>
-            </div>
-            <div className="space-y-3">
-              {form.items.map((item, index) => (
-                <div key={index}>
-                  {/* Desktop row */}
-                  <div className="hidden md:grid grid-cols-12 gap-3">
-                    <input
-                      type="text"
-                      list="descriptions"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="col-span-5 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      required
-                    />
-                    <select
-                      value={item.unit}
-                      onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                    >
-                      {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                      {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
-                    </select>
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      min="0"
-                      step="0.01"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Price"
-                      value={item.price}
-                      onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      min="0"
-                      step="0.01"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className="col-span-1 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  {/* Mobile stacked */}
-                  <div className="md:hidden bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 dark:text-gray-400 text-sm">Item {index + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      list="descriptions"
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      required
-                    />
-                    <div className="grid grid-cols-3 gap-3">
-                      <select
-                        value={item.unit}
-                        onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                      >
-                        {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
-                        {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                        min="0"
-                        step="0.01"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Price"
-                        value={item.price}
-                        onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div className="text-right text-gray-600 dark:text-gray-300 text-sm">
-                      Subtotal: {(item.quantity * item.price).toFixed(2)} EUR
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button 
-              type="button" 
-              onClick={addItem} 
-              className="mt-3 text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Add item
-            </button>
-            <datalist id="descriptions">
-              {savedDescriptions.map((desc, i) => <option key={i} value={desc} />)}
-            </datalist>
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Notes</label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
-              rows={2}
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700/60">
-            <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">Total: {getTotal()} EUR</div>
-            <div className="flex gap-4 w-full sm:w-auto">
-              <Link 
-                href="/invoices"
-                className="flex-1 sm:flex-initial text-center px-8 py-3 rounded-xl font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                Cancel
-              </Link>
-              <button 
-                type="submit"
-                disabled={saving}
-                className="flex-1 sm:flex-initial btn-gradient px-8 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 bd-clip-sm"
-              >
-                {saving ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Update Invoice
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <InvoiceForm mode="edit" value={form} onChange={setForm} clients={clients} onSubmit={handleSubmit} />
     </div>
   )
 }
