@@ -2,6 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AddTimeRequest;
+use App\Http\Requests\BulkTimeEntryIdsRequest;
+use App\Http\Requests\BulkUpdateTimeEntryGroupRequest;
+use App\Http\Requests\ConvertToInvoiceRequest;
+use App\Http\Requests\StopTimeEntryRequest;
+use App\Http\Requests\StoreTimeEntryRequest;
+use App\Http\Requests\UpdateTimeEntryRequest;
 use App\Models\TimeEntry;
 use App\Support\Audit;
 use Carbon\Carbon;
@@ -42,35 +49,11 @@ class TimeEntryController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(StoreTimeEntryRequest $request)
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'client_id' => [
-                'required',
-                'exists:clients,id',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (! $user->clients()->where('id', $value)->exists()) {
-                        $fail('Invalid client.');
-                    }
-                },
-            ],
-            'group_name' => 'nullable|string|max:255',
-            'description' => 'required|string|max:500',
-            'hourly_rate' => 'required|numeric|min:0',
-            'duration_seconds' => 'nullable|integer|min:0',
-            'is_prepaid' => 'nullable|boolean',
-            'invoice_id' => [
-                'nullable',
-                'integer',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && ! $user->invoices()->where('id', $value)->exists()) {
-                        $fail('Invalid invoice.');
-                    }
-                },
-            ],
-        ]);
+        $validated = $request->validated();
 
         $isPrepaid = ! empty($validated['is_prepaid']) && ! empty($validated['invoice_id']);
         $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
@@ -91,7 +74,7 @@ class TimeEntryController extends Controller
         return response()->json($entry->load('client', 'invoice'), 201);
     }
 
-    public function update(Request $request, TimeEntry $timeEntry)
+    public function update(UpdateTimeEntryRequest $request, TimeEntry $timeEntry)
     {
         if ($timeEntry->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
@@ -102,33 +85,7 @@ class TimeEntryController extends Controller
             return response()->json(['message' => 'Cannot edit converted entry'], 400);
         }
 
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'client_id' => [
-                'required',
-                'exists:clients,id',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (! $user->clients()->where('id', $value)->exists()) {
-                        $fail('Invalid client.');
-                    }
-                },
-            ],
-            'group_name' => 'nullable|string|max:255',
-            'description' => 'required|string|max:500',
-            'hourly_rate' => 'required|numeric|min:0',
-            'duration_seconds' => 'nullable|integer|min:0',
-            'is_prepaid' => 'nullable|boolean',
-            'invoice_id' => [
-                'nullable',
-                'integer',
-                function ($attribute, $value, $fail) use ($user) {
-                    if ($value && ! $user->invoices()->where('id', $value)->exists()) {
-                        $fail('Invalid invoice.');
-                    }
-                },
-            ],
-        ]);
+        $validated = $request->validated();
 
         $isPrepaid = ! empty($validated['is_prepaid']) && ! empty($validated['invoice_id']);
         $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
@@ -172,7 +129,7 @@ class TimeEntryController extends Controller
         return response()->json(['message' => 'Time entry deleted']);
     }
 
-    public function addTime(Request $request, TimeEntry $timeEntry)
+    public function addTime(AddTimeRequest $request, TimeEntry $timeEntry)
     {
         if ($timeEntry->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
@@ -182,9 +139,7 @@ class TimeEntryController extends Controller
             return response()->json(['message' => 'Cannot add time to a running entry'], 400);
         }
 
-        $validated = $request->validate([
-            'minutes' => 'required|integer|min:1',
-        ]);
+        $validated = $request->validated();
 
         $previousSeconds = $timeEntry->duration_seconds;
 
@@ -226,7 +181,7 @@ class TimeEntryController extends Controller
         return response()->json($timeEntry->load('client', 'invoice'));
     }
 
-    public function stop(Request $request, TimeEntry $timeEntry)
+    public function stop(StopTimeEntryRequest $request, TimeEntry $timeEntry)
     {
         if ($timeEntry->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
@@ -236,9 +191,7 @@ class TimeEntryController extends Controller
             return response()->json(['message' => 'Timer is not running'], 400);
         }
 
-        $validated = $request->validate([
-            'duration_minutes' => 'nullable|numeric|min:0',
-        ]);
+        $validated = $request->validated();
 
         if (isset($validated['duration_minutes'])) {
             $newDuration = $timeEntry->duration_seconds + (int) ceil($validated['duration_minutes'] * 60);
@@ -270,17 +223,11 @@ class TimeEntryController extends Controller
         return response()->json($entry);
     }
 
-    public function convertToInvoice(Request $request)
+    public function convertToInvoice(ConvertToInvoiceRequest $request)
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'time_entry_ids' => 'required|array|min:1',
-            'time_entry_ids.*' => 'integer',
-            'invoice_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:invoice_date',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $entries = $user->timeEntries()
             ->whereIn('id', $validated['time_entry_ids'])
@@ -348,12 +295,9 @@ class TimeEntryController extends Controller
         });
     }
 
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkTimeEntryIdsRequest $request)
     {
-        $validated = $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer',
-        ]);
+        $validated = $request->validated();
 
         $deleted = $request->user()->timeEntries()
             ->whereIn('id', $validated['ids'])
@@ -363,13 +307,9 @@ class TimeEntryController extends Controller
         return response()->json(['message' => $deleted.' time entry(ies) deleted']);
     }
 
-    public function bulkUpdateGroup(Request $request)
+    public function bulkUpdateGroup(BulkUpdateTimeEntryGroupRequest $request)
     {
-        $validated = $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer',
-            'group_name' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
 
         $group = $this->normalizeGroup($validated['group_name'] ?? null);
 

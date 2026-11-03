@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\BulkInvoiceIdsRequest;
+use App\Http\Requests\BulkUpdateInvoiceStatusRequest;
+use App\Http\Requests\StoreInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceRequest;
+use App\Http\Requests\UpdateInvoiceStatusRequest;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\TimeEntry;
@@ -70,29 +75,11 @@ class InvoiceController extends Controller
         return $query->paginate($perPage);
     }
 
-    public function store(Request $request)
+    public function store(StoreInvoiceRequest $request)
     {
         $user = $request->user();
 
-        $validated = $request->validate([
-            'client_id' => [
-                'required',
-                'exists:clients,id',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (! $user->clients()->where('id', $value)->exists()) {
-                        $fail('Invalid client.');
-                    }
-                },
-            ],
-            'invoice_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:invoice_date',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.description' => 'required|string|max:500',
-            'items.*.unit' => 'required|string|max:20',
-            'items.*.quantity' => 'required|numeric|min:0.01|max:999999',
-            'items.*.price' => 'required|numeric|min:0|max:999999',
-        ]);
+        $validated = $request->validated();
 
         return DB::transaction(function () use ($user, $validated) {
             $series = $user->invoice_series ?? 'INV';
@@ -146,33 +133,13 @@ class InvoiceController extends Controller
         return $invoice->load('client', 'items');
     }
 
-    public function update(Request $request, Invoice $invoice)
+    public function update(UpdateInvoiceRequest $request, Invoice $invoice)
     {
         if ($invoice->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'client_id' => [
-                'required',
-                'exists:clients,id',
-                function ($attribute, $value, $fail) use ($user) {
-                    if (! $user->clients()->where('id', $value)->exists()) {
-                        $fail('Invalid client.');
-                    }
-                },
-            ],
-            'invoice_date' => 'required|date',
-            'due_date' => 'required|date|after_or_equal:invoice_date',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.description' => 'required|string|max:500',
-            'items.*.unit' => 'required|string|max:20',
-            'items.*.quantity' => 'required|numeric|min:0.01|max:999999',
-            'items.*.price' => 'required|numeric|min:0|max:999999',
-        ]);
+        $validated = $request->validated();
 
         return DB::transaction(function () use ($invoice, $validated) {
             $invoice->update([
@@ -243,7 +210,7 @@ class InvoiceController extends Controller
         return response()->json($months);
     }
 
-    public function updateStatus(Request $request, $id)
+    public function updateStatus(UpdateInvoiceStatusRequest $request, $id)
     {
         $invoice = Invoice::find($id);
 
@@ -251,9 +218,7 @@ class InvoiceController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        $validated = $request->validate([
-            'status' => 'required|in:draft,sent,paid,overdue',
-        ]);
+        $validated = $request->validated();
 
         $oldStatus = $invoice->status;
         $invoice->update(['status' => $validated['status']]);
@@ -490,12 +455,9 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function bulkDelete(Request $request)
+    public function bulkDelete(BulkInvoiceIdsRequest $request)
     {
-        $validated = $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer',
-        ]);
+        $validated = $request->validated();
 
         // Scope to the user's own invoices, then delete items + invoices in two
         // bulk queries instead of a per-row loop.
@@ -517,13 +479,9 @@ class InvoiceController extends Controller
         return response()->json(['message' => count($ids).' invoice(s) deleted']);
     }
 
-    public function bulkUpdateStatus(Request $request)
+    public function bulkUpdateStatus(BulkUpdateInvoiceStatusRequest $request)
     {
-        $validated = $request->validate([
-            'ids' => 'required|array|min:1',
-            'ids.*' => 'integer',
-            'status' => 'required|in:draft,sent,paid,overdue',
-        ]);
+        $validated = $request->validated();
 
         $updated = $request->user()->invoices()
             ->whereIn('id', $validated['ids'])
