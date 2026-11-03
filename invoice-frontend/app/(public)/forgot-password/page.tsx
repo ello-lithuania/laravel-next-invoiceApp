@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { auth } from '@/lib/api'
+import { getErrorMessage } from '@/lib/utils'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -17,8 +18,8 @@ export default function ForgotPassword() {
     try {
       const data = await auth.forgotPassword({ email })
       setSuccess(data.message || 'Password reset link has been sent to your email.')
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Could not send the reset link. Please try again.'))
     }
     setLoading(false)
   }

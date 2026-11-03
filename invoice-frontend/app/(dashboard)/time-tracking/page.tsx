@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
-import { addOneMonth, formatDate } from '@/lib/utils'
+import { addOneMonth, formatDate, getErrorMessage } from '@/lib/utils'
 import { AssignGroupModal, ConvertToInvoiceModal, EntryTimelineModal } from '@/components/dashboard/TimeTrackingModals'
 
 function formatDuration(seconds: number): string {
@@ -220,8 +220,8 @@ export default function TimeTracking() {
         setTimerDisplay(0)
         if (timerRef.current) clearInterval(timerRef.current)
       }
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load data')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load data'))
     }
     setLoading(false)
   }
@@ -300,8 +300,8 @@ export default function TimeTracking() {
 
       resetForm()
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to save')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to save'))
     }
     setSaving(false)
   }
@@ -319,8 +319,8 @@ export default function TimeTracking() {
       setGroupValue('')
       setSelectedIds([])
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update group')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to update group'))
     }
   }
 
@@ -342,8 +342,8 @@ export default function TimeTracking() {
     setTimelineEvents(null)
     try {
       setTimelineEvents(await timeEntries.events(entry.id))
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load timeline')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load timeline'))
       setTimelineEntry(null)
     }
   }
@@ -357,8 +357,8 @@ export default function TimeTracking() {
       setEntries(prev => prev.map(e => (ids.includes(e.id) ? { ...e, group_name: null } : e)))
       toast.success('Ungrouped')
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to ungroup')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to ungroup'))
     }
   }
 
@@ -390,8 +390,8 @@ export default function TimeTracking() {
           await timeEntries.delete(id)
           toast.success('Time entry deleted')
           loadData()
-        } catch (e: any) {
-          toast.error(e.message || 'Failed to delete')
+        } catch (e: unknown) {
+          toast.error(getErrorMessage(e, 'Failed to delete'))
         }
       }
     })
@@ -403,8 +403,8 @@ export default function TimeTracking() {
       setRunningEntry(updated)
       startTimerInterval(updated)
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to start timer')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to start timer'))
     }
   }
 
@@ -430,8 +430,8 @@ export default function TimeTracking() {
       if (timerRef.current) clearInterval(timerRef.current)
       toast.success(`Stopped — ${minutes} min. saved`)
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to stop timer')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to stop timer'))
     }
   }
 
@@ -449,8 +449,8 @@ export default function TimeTracking() {
       setAddMinutesId(null)
       setAddMinutesValue('')
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to add time')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to add time'))
     }
   }
 
@@ -459,8 +459,8 @@ export default function TimeTracking() {
       await timeEntries.addTime(entryId, minutes)
       toast.success(`+${minutes} min. added`)
       loadData()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to add time')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to add time'))
     }
   }
 
@@ -482,8 +482,8 @@ export default function TimeTracking() {
       setSelectedIds([])
       setShowConvertModal(false)
       router.push(`/invoices/edit?id=${invoice.id}`)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to convert')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to convert'))
     }
     setSaving(false)
   }

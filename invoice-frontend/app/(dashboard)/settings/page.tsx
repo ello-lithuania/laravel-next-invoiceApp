@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { api } from '@/lib/api'
 import { useTheme, themes } from '@/contexts/ThemeContext'
+import { getErrorMessage } from '@/lib/utils'
 
 export default function Settings() {
   const { colorTheme, isDark, setColorTheme, toggleMode } = useTheme()
@@ -25,8 +26,8 @@ export default function Settings() {
       await api('/password', { method: 'PUT', body: JSON.stringify(passwords) })
       setMessage('Password changed successfully!')
       setPasswords({ current_password: '', password: '', password_confirmation: '' })
-    } catch (e: any) {
-      setMessage(e.message || 'Error changing password')
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, 'Error changing password'))
     }
     setSaving(false)
   }

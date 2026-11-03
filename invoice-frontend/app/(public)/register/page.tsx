@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth, setToken } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '@/lib/utils'
 
 export default function Register() {
   const router = useRouter()
@@ -23,8 +24,8 @@ export default function Register() {
       setToken(res.token)
       toast.success('Account created successfully!')
       router.push('/dashboard')
-    } catch (e: any) {
-      toast.error(e.message || 'Registration failed')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Registration failed'))
     }
     setLoading(false)
   }

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { triggerDownload, INVOICE_UNITS } from '@/lib/utils'
+import { triggerDownload, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -63,8 +63,8 @@ function EditInvoiceForm() {
           })) || [{ ...emptyItem }]
         })
       }
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load invoice'))
     }
     setLoading(false)
   }
@@ -80,8 +80,8 @@ function EditInvoiceForm() {
       }
       await invoices.update(Number(id), { ...form, client_id: Number(form.client_id) })
       router.push('/invoices')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to save invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to save invoice'))
     }
     setSaving(false)
   }
@@ -92,8 +92,8 @@ function EditInvoiceForm() {
       const newInvoice = await invoices.duplicate(Number(id))
       toast.success(`Invoice duplicated as ${newInvoice.series}-${String(newInvoice.number).padStart(4, '0')}`)
       router.push(`/invoices/edit?id=${newInvoice.id}`)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to duplicate invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to duplicate invoice'))
     }
     setDuplicating(false)
   }
@@ -107,8 +107,8 @@ function EditInvoiceForm() {
         : `invoice-${id}.pdf`
       triggerDownload(url, name)
       setTimeout(() => URL.revokeObjectURL(url), 10000)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to download PDF')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to download PDF'))
     }
   }
 

@@ -3,7 +3,7 @@ import { useState, useEffect, type ReactNode } from 'react'
 import { stats, YearSummaryData } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
-import { triggerDownload } from '@/lib/utils'
+import { triggerDownload, getErrorMessage } from '@/lib/utils'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -124,7 +124,7 @@ export default function YearSummary() {
     try {
       const res = await stats.yearSummary(y)
       setData(res.data)
-    } catch (e: any) {
+    } catch {
       toast.error('Failed to load year summary')
     }
     setLoading(false)
@@ -154,9 +154,9 @@ export default function YearSummary() {
       } else {
         window.open(url, '_blank')
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (win) win.close()
-      toast.error(e.message || 'Failed to generate PDF')
+      toast.error(getErrorMessage(e, 'Failed to generate PDF'))
     }
   }
 

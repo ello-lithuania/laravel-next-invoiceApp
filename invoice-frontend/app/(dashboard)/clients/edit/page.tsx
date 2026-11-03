@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { clients } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '@/lib/utils'
 
 interface ClientForm {
   name: string
@@ -39,8 +40,8 @@ function EditClientForm() {
         email: data.email || '',
         notes: data.notes || ''
       })
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load client')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load client'))
     }
     setLoading(false)
   }
@@ -51,8 +52,8 @@ function EditClientForm() {
     try {
       await clients.update(Number(id), form)
       router.push('/clients')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to save client')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to save client'))
     }
     setSaving(false)
   }

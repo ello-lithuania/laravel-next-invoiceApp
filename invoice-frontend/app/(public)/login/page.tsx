@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { auth, setToken } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '@/lib/utils'
 
 export default function Login() {
   const router = useRouter()
@@ -21,8 +22,8 @@ export default function Login() {
       setToken(res.token)
       toast.success('Welcome back!')
       router.push('/dashboard')
-    } catch (e: any) {
-      toast.error(e.message || 'Invalid credentials')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Invalid credentials'))
     }
     setLoading(false)
   }
