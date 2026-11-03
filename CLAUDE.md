@@ -15,7 +15,7 @@ Monorepo: **`invoice-api`** (Laravel 11 + Sanctum) and **`invoice-frontend`** (N
 - **Deploy FE + BE together** — PDF auth uses the `Authorization` header (no `?token=` in URLs); deploying one side alone breaks PDFs.
 
 ## Frontend architecture (`invoice-frontend`)
-- **Static export** (`next.config.js`: `output:'export'`, `trailingSlash:true`, `images.unoptimized`). `middleware.ts` is DEAD CODE under export — real auth is API-side. Dashboard HTML is public; data is gated by the token.
+- **Static export** (`next.config.js`: `output:'export'`, `trailingSlash:true`, `images.unoptimized`). No middleware/proxy (it can't run under export, so the old dead `middleware.ts` was removed) — real auth is API-side. Dashboard HTML is public; data is gated by the token.
 - **Auth**: Sanctum bearer token in a JS-readable cookie `token` (see `lib/api.ts` get/set/removeToken). 7-day expiry.
 - **`lib/api.ts`** = the single API layer. `api()` sends `Authorization` header, `cache:'no-store'`, a **20s timeout (AbortController)** and **retries GETs 3× with backoff** (never retries POST/PUT/DELETE). 401 → clears token + redirects `/login`. `apiBlobUrl()` fetches PDFs as blobs (token in header, not URL); downloads use `triggerDownload()` from `lib/utils.ts`.
 - **`lib/utils.ts`**: `formatCurrency` (lt-LT/EUR), `formatDate` ("1 Aug 2026"), `statusColors`/`statusLabels`, `triggerDownload`, and `STATS_REFRESH_EVENT` + `refreshStats()` (fire after any mutation touching totals so the global `StatsBar` refetches).
