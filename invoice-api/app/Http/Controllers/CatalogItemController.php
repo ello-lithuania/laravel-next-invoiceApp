@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCatalogItemRequest;
+use App\Http\Requests\UpdateCatalogItemRequest;
 use Illuminate\Http\Request;
 
 class CatalogItemController extends Controller
@@ -13,13 +15,9 @@ class CatalogItemController extends Controller
         );
     }
 
-    public function store(Request $request)
+    public function store(StoreCatalogItemRequest $request)
     {
-        $data = $request->validate([
-            'description' => 'required|string|max:255',
-            'unit' => 'nullable|string|max:32',
-            'price' => 'nullable|numeric|min:0',
-        ]);
+        $data = $request->validated();
 
         // Avoid duplicates by description for this user
         $existing = $request->user()->catalogItems()
@@ -43,15 +41,10 @@ class CatalogItemController extends Controller
         return response()->json($item, 201);
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateCatalogItemRequest $request, $id)
     {
         $item = $request->user()->catalogItems()->findOrFail($id);
-        $data = $request->validate([
-            'description' => 'required|string|max:255',
-            'unit' => 'nullable|string|max:32',
-            'price' => 'nullable|numeric|min:0',
-        ]);
-        $item->update($data);
+        $item->update($request->validated());
 
         return response()->json($item);
     }

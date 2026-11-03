@@ -2,10 +2,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Invoice extends Model
 {
+    use HasFactory;
+
+    /** Mirrors the invoices.status DB enum. */
+    public const STATUSES = ['draft', 'sent', 'paid', 'overdue'];
+
     protected $fillable = [
         'user_id',
         'client_id',

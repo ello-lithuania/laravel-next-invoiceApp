@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Requests\UploadSignatureRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -25,22 +27,8 @@ class ProfileController extends Controller
         return response()->json($this->userWithSignatureUrl($request->user()));
     }
 
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'company_code' => 'nullable|string|max:255',
-            'vat_code' => 'nullable|string|max:255',
-            'address' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:255',
-            'website' => 'nullable|string|max:255',
-            'bank_name' => 'nullable|string|max:255',
-            'bank_account' => 'nullable|string|max:255',
-            'invoice_series' => 'nullable|string|max:50',
-            'next_invoice_number' => 'nullable|integer|min:1',
-            'invoice_template' => 'nullable|string|in:classic,minimal,modern',
-        ]);
-
         $request->user()->update($request->only([
             'name',
             'company_code',
@@ -58,12 +46,8 @@ class ProfileController extends Controller
         return response()->json($this->userWithSignatureUrl($request->user()));
     }
 
-    public function uploadSignature(Request $request)
+    public function uploadSignature(UploadSignatureRequest $request)
     {
-        $request->validate([
-            'signature' => 'required|image|mimes:png|max:2048',
-        ]);
-
         $user = $request->user();
 
         $signaturesPath = storage_path('app/public/signatures');
