@@ -275,8 +275,8 @@ class InvoiceController extends Controller
         $invoice = new \stdClass;
         $invoice->series = 'INV';
         $invoice->number = 1;
-        $invoice->invoice_date = \Carbon\Carbon::now();
-        $invoice->due_date = \Carbon\Carbon::now()->addDays(30);
+        $invoice->invoice_date = Carbon::now();
+        $invoice->due_date = Carbon::now()->addDays(30);
         $invoice->total = 1850.00;
         $invoice->notes = 'Thank you for your business!';
 
