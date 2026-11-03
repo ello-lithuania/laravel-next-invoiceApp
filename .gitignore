@@ -15,6 +15,7 @@ auth.json
 node_modules
 vendor
 .next
+invoice-frontend/out/
 *.tsbuildinfo
 public/build
 public/hot
