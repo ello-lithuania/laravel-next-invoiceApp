@@ -27,7 +27,7 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 p-8">
+        <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 p-8">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2 text-center">Forgot Password</h1>
           <p className="text-gray-500 dark:text-gray-400 text-center mb-6">Enter your email to receive a reset link</p>
           {error && (
@@ -44,7 +44,7 @@ export default function ForgotPassword() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:outline-hidden focus:border-blue-500 transition-colors"
                 placeholder="you@example.com"
                 required
               />

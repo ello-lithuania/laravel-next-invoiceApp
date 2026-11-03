@@ -91,7 +91,7 @@ style={{
                   } as React.CSSProperties}
                 >
                   <div className={`theme-swatch-${t.id} h-24 sm:h-28 flex items-center justify-center`}>
-                    <span className="font-semibold text-sm sm:text-base px-4 py-1.5 rounded-lg backdrop-blur-sm text-white/90 bg-black/25">
+                    <span className="font-semibold text-sm sm:text-base px-4 py-1.5 rounded-lg backdrop-blur-xs text-white/90 bg-black/25">
                       {t.name}
                     </span>
                   </div>

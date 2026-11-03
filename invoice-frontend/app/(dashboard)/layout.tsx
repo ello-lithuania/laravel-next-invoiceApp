@@ -38,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     {/* Keyboard/screen-reader users can jump straight to content, skipping the nav. */}
     <a
       href="#main-content"
-      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-gray-900 focus:shadow-lg focus:ring-2"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-100 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-white focus:text-gray-900 focus:shadow-lg focus:ring-2"
       style={{ ['--tw-ring-color' as string]: 'var(--t-accent)' }}
     >
       Skip to content

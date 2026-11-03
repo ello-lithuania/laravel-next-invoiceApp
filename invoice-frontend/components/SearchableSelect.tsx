@@ -40,7 +40,7 @@ export default function SearchableSelect({ value, onChange, options, allLabel = 
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between gap-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-left text-gray-800 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 focus:outline-none transition-colors"
+        className="w-full flex items-center justify-between gap-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-left text-gray-800 dark:text-gray-100 hover:border-gray-300 dark:hover:border-gray-600 focus:border-blue-500 focus:outline-hidden transition-colors"
       >
         <span className={`truncate ${selected ? '' : 'text-gray-500 dark:text-gray-400'}`}>{selected ? selected.label : allLabel}</span>
         <svg className={`w-3 h-3 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 12 12"><path d="M5.9 8.4L.5 3l1.4-1.4 4 4 4-4L11.3 3z" /></svg>
@@ -54,7 +54,7 @@ export default function SearchableSelect({ value, onChange, options, allLabel = 
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder={placeholder}
-              className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700/60 rounded-md text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700/60 rounded-md text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden"
             />
           </div>
           <div className="max-h-60 overflow-y-auto py-1">

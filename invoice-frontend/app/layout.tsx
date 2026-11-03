@@ -54,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="font-inter antialiased">
+      <body className="font-sans antialiased">
         <ThemeProvider>
           {children}
         </ThemeProvider>

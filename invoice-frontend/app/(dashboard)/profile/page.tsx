@@ -35,7 +35,7 @@ function ProfileSkeleton() {
       </div>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <Skeleton className="h-7 w-36 mb-6" />
             <div className="grid md:grid-cols-2 gap-6">
               {[1, 2, 3, 4].map((i) => (
@@ -64,7 +64,7 @@ function ProfileSkeleton() {
           </div>
         </div>
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <Skeleton className="h-6 w-32 mb-4" />
             <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4">
               <div className="flex items-center gap-4 mb-4">
@@ -213,11 +213,11 @@ export default function Profile() {
       </div>
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Seller Details</h2>
             {message && (
               <div className={`p-4 rounded-xl mb-6 flex items-center gap-3 ${message.includes('Error') ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   {message.includes('Error') ? (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   ) : (
@@ -231,7 +231,7 @@ export default function Profile() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Name / Company Name *</label>
-                  <input type="text" value={user?.name || ''} onChange={(e) => setUser({ ...user!, name: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" required />
+                  <input type="text" value={user?.name || ''} onChange={(e) => setUser({ ...user!, name: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" required />
                 </div>
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Email</label>
@@ -239,23 +239,23 @@ export default function Profile() {
                 </div>
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Company Code / Certificate Nr.</label>
-                  <input type="text" value={user?.company_code || ''} onChange={(e) => setUser({ ...user!, company_code: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., 1060539" />
+                  <input type="text" value={user?.company_code || ''} onChange={(e) => setUser({ ...user!, company_code: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., 1060539" />
                 </div>
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">VAT Code</label>
-                  <input type="text" value={user?.vat_code || ''} onChange={(e) => setUser({ ...user!, vat_code: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., LT100001234567" />
+                  <input type="text" value={user?.vat_code || ''} onChange={(e) => setUser({ ...user!, vat_code: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., LT100001234567" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Address</label>
-                  <input type="text" value={user?.address || ''} onChange={(e) => setUser({ ...user!, address: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., Gedimino pr. 1, Vilnius" />
+                  <input type="text" value={user?.address || ''} onChange={(e) => setUser({ ...user!, address: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., Gedimino pr. 1, Vilnius" />
                 </div>
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Phone</label>
-                  <input type="text" value={user?.phone || ''} onChange={(e) => setUser({ ...user!, phone: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., +370 600 00000" />
+                  <input type="text" value={user?.phone || ''} onChange={(e) => setUser({ ...user!, phone: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., +370 600 00000" />
                 </div>
                 <div>
                   <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Website</label>
-                  <input type="text" value={user?.website || ''} onChange={(e) => setUser({ ...user!, website: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., www.example.com" />
+                  <input type="text" value={user?.website || ''} onChange={(e) => setUser({ ...user!, website: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., www.example.com" />
                 </div>
               </div>
               <div className="border-t border-gray-200 dark:border-gray-700/60 mt-8 pt-8">
@@ -263,11 +263,11 @@ export default function Profile() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Bank Name</label>
-                    <input type="text" value={user?.bank_name || ''} onChange={(e) => setUser({ ...user!, bank_name: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., Swedbank" />
+                    <input type="text" value={user?.bank_name || ''} onChange={(e) => setUser({ ...user!, bank_name: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., Swedbank" />
                   </div>
                   <div>
                     <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Bank Account (IBAN)</label>
-                    <input type="text" value={user?.bank_account || ''} onChange={(e) => setUser({ ...user!, bank_account: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., LT737300010120429092" />
+                    <input type="text" value={user?.bank_account || ''} onChange={(e) => setUser({ ...user!, bank_account: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., LT737300010120429092" />
                   </div>
                 </div>
               </div>
@@ -276,12 +276,12 @@ export default function Profile() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Invoice Series</label>
-                    <input type="text" value={user?.invoice_series || ''} onChange={(e) => setUser({ ...user!, invoice_series: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., INV or 2FDP" />
+                    <input type="text" value={user?.invoice_series || ''} onChange={(e) => setUser({ ...user!, invoice_series: e.target.value })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., INV or 2FDP" />
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">This prefix will be used for your invoice numbers</p>
                   </div>
                   <div>
                     <label className="block text-gray-500 dark:text-gray-400 text-sm mb-2">Next Invoice Number</label>
-                    <input type="number" min="1" value={user?.next_invoice_number || 1} onChange={(e) => setUser({ ...user!, next_invoice_number: parseInt(e.target.value) || 1 })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors" placeholder="e.g., 1" />
+                    <input type="number" min="1" value={user?.next_invoice_number || 1} onChange={(e) => setUser({ ...user!, next_invoice_number: parseInt(e.target.value) || 1 })} className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors" placeholder="e.g., 1" />
                     <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">The number that will be assigned to your next invoice</p>
                   </div>
                 </div>
@@ -367,7 +367,7 @@ export default function Profile() {
               </div>
             </form>
           </div>
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Active Sessions</h2>
@@ -409,11 +409,11 @@ export default function Profile() {
           </div>
         </div>
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Profile Preview</h3>
             <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-700/60 rounded-xl p-4">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-gray-900 rounded-xl flex items-center justify-center text-white text-2xl font-bold">{user?.name?.charAt(0)?.toUpperCase() || '?'}</div>
+                <div className="w-16 h-16 bg-linear-to-br from-blue-600 to-gray-900 rounded-xl flex items-center justify-center text-white text-2xl font-bold">{user?.name?.charAt(0)?.toUpperCase() || '?'}</div>
                 <div>
                   <div className="text-gray-800 dark:text-gray-100 font-semibold text-lg">{user?.name || 'Your Name'}</div>
                   <div className="text-gray-500 dark:text-gray-400 text-sm">{user?.email}</div>
@@ -427,19 +427,19 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+          <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Tips</h3>
             <div className="space-y-4">
               <div className="flex gap-3">
-                <div className="w-8 h-8 bg-blue-500/15 rounded-lg flex items-center justify-center flex-shrink-0"><svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                <div className="w-8 h-8 bg-blue-500/15 rounded-lg flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">Complete your profile to have all details automatically filled in your invoices.</p>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center flex-shrink-0"><svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
+                <div className="w-8 h-8 bg-cyan-500/20 rounded-lg flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">Your bank details will appear on invoices for easy payment by clients.</p>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0"><svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
+                <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center shrink-0"><svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
                 <p className="text-gray-600 dark:text-gray-300 text-sm">Review your active sessions regularly and revoke any you don’t recognize.</p>
               </div>
             </div>

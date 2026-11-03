@@ -187,7 +187,7 @@ export default function NewInvoice() {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div>
@@ -203,7 +203,7 @@ export default function NewInvoice() {
                     if (!e.target.value) setForm({ ...form, client_id: '' })
                   }}
                   onFocus={() => setShowClientDropdown(true)}
-                  className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                  className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                   required={!form.client_id}
                 />
                 {showClientDropdown && (
@@ -249,7 +249,7 @@ export default function NewInvoice() {
                 type="date"
                 value={form.invoice_date}
                 onChange={(e) => setForm({ ...form, invoice_date: e.target.value, due_date: addOneMonth(e.target.value) })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                 required
               />
             </div>
@@ -259,7 +259,7 @@ export default function NewInvoice() {
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                 required
               />
             </div>
@@ -339,7 +339,7 @@ export default function NewInvoice() {
                               onClick={() => copyInvoiceItems(inv.id, `${inv.series} ${inv.number}`)}
                               disabled={repeating}
                               title={`Copy items from ${inv.series} ${inv.number} into this new invoice`}
-                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors hover:border-[var(--t-accent)] disabled:opacity-50"
+                              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors hover:border-(--t-accent) disabled:opacity-50"
                               style={{ background: 'var(--t-bg-card)', border: '1px solid var(--t-border-light)' }}
                             >
                               <span className="font-medium t-text">{inv.series} {inv.number}</span>
@@ -378,13 +378,13 @@ export default function NewInvoice() {
                       placeholder="Description"
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="col-span-5 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="col-span-5 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                       required
                     />
                     <select
                       value={item.unit}
                       onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                     >
                       {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                       {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
@@ -395,7 +395,7 @@ export default function NewInvoice() {
                       onFocus={(e) => e.currentTarget.select()}
                       value={item.quantity}
                       onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                       min="0"
                       step="0.01"
                     />
@@ -405,7 +405,7 @@ export default function NewInvoice() {
                       onFocus={(e) => e.currentTarget.select()}
                       value={item.price}
                       onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="col-span-2 p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                       min="0"
                       step="0.01"
                     />
@@ -446,14 +446,14 @@ export default function NewInvoice() {
                       placeholder="Description"
                       value={item.description}
                       onChange={(e) => updateItem(index, 'description', e.target.value)}
-                      className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                      className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                       required
                     />
                     <div className="grid grid-cols-3 gap-3">
                       <select
                         value={item.unit}
                         onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                       >
                         {INVOICE_UNITS.map(u => <option key={u} value={u}>{u}</option>)}
                         {item.unit && !INVOICE_UNITS.includes(item.unit) && <option value={item.unit}>{item.unit}</option>}
@@ -464,7 +464,7 @@ export default function NewInvoice() {
                       onFocus={(e) => e.currentTarget.select()}
                         value={item.quantity}
                         onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                         min="0"
                         step="0.01"
                       />
@@ -474,7 +474,7 @@ export default function NewInvoice() {
                       onFocus={(e) => e.currentTarget.select()}
                         value={item.price}
                         onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
-                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+                        className="p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
                         min="0"
                         step="0.01"
                       />
@@ -508,7 +508,7 @@ export default function NewInvoice() {
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+              className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
               rows={2}
             />
           </div>

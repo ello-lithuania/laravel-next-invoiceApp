@@ -125,7 +125,7 @@ export default function CommandPalette() {
   let lastGroup = ''
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center pt-[12vh] px-4"
+    <div className="fixed inset-0 z-60 flex items-start justify-center pt-[12vh] px-4"
       style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
       onClick={() => setOpen(false)}
     >
@@ -147,7 +147,7 @@ export default function CommandPalette() {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search invoices, clients, actions…"
-            className="flex-1 bg-transparent outline-none text-sm"
+            className="flex-1 bg-transparent outline-hidden text-sm"
             style={{ color: 'var(--t-text)' }}
           />
           <kbd className="text-[11px] px-1.5 py-0.5 rounded" style={{ color: 'var(--t-text-muted)', background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border)' }}>esc</kbd>

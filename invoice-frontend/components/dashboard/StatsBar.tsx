@@ -108,7 +108,7 @@ export default function StatsBar() {
               <Link
                 key={i}
                 href={it.href}
-                className="group flex items-center gap-2.5 min-w-0 rounded-lg px-2 py-1 -mx-1 transition-colors hover:bg-[var(--t-bg-elevated)]"
+                className="group flex items-center gap-2.5 min-w-0 rounded-lg px-2 py-1 -mx-1 transition-colors hover:bg-(--t-bg-elevated)"
               >
                 <span className="w-1.5 h-8 rounded-full shrink-0 transition-all group-hover:h-9" style={{ background: it.color }} />
                 <div className="min-w-0">

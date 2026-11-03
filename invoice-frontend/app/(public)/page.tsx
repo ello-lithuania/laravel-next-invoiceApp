@@ -111,15 +111,15 @@ export default function Home() {
           </div>
           <h1 className="hero-animate text-5xl md:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
             Invoicing made
-            <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> simple</span>
+            <span className="bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent"> simple</span>
           </h1>
           <p className="hero-animate text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
             Create professional invoices, manage your clients, and get paid faster. Built for freelancers and small businesses.
           </p>
           <div className="hero-animate flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/register" className="group relative inline-flex items-center justify-center">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-              <span className="relative bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-8 py-4 rounded-xl text-lg font-semibold flex items-center gap-2">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-blue-500 to-cyan-400 rounded-xl blur-sm opacity-70 group-hover:opacity-100 transition duration-300"></div>
+              <span className="relative bg-linear-to-r from-blue-500 to-cyan-400 text-white px-8 py-4 rounded-xl text-lg font-semibold flex items-center gap-2">
                 Start for Free
                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -141,19 +141,19 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div className="stat-item text-center">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">10K+</div>
+              <div className="text-4xl md:text-5xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">10K+</div>
               <div className="text-gray-500 dark:text-gray-400">Active Users</div>
             </div>
             <div className="stat-item text-center">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">50K+</div>
+              <div className="text-4xl md:text-5xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">50K+</div>
               <div className="text-gray-500 dark:text-gray-400">Invoices Created</div>
             </div>
             <div className="stat-item text-center">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">€2M+</div>
+              <div className="text-4xl md:text-5xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">€2M+</div>
               <div className="text-gray-500 dark:text-gray-400">Processed</div>
             </div>
             <div className="stat-item text-center">
-              <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">99.9%</div>
+              <div className="text-4xl md:text-5xl font-bold bg-linear-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">99.9%</div>
               <div className="text-gray-500 dark:text-gray-400">Uptime</div>
             </div>
           </div>
@@ -168,35 +168,35 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             <div className="step-item relative">
-              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">1</div>
+              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">1</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Create Account</h3>
                 <p className="text-gray-500 dark:text-gray-400">Sign up for free in less than a minute. No credit card required.</p>
               </div>
-              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-linear-to-r from-blue-500 to-cyan-400"></div>
             </div>
 
             <div className="step-item relative">
-              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">2</div>
+              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">2</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Add Your Details</h3>
                 <p className="text-gray-500 dark:text-gray-400">Enter your business information and customize your profile.</p>
               </div>
-              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-linear-to-r from-blue-500 to-cyan-400"></div>
             </div>
 
             <div className="step-item relative">
-              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">3</div>
+              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">3</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Add Clients</h3>
                 <p className="text-gray-500 dark:text-gray-400">Save your clients’ details for quick invoice creation.</p>
               </div>
-              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-400"></div>
+              <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-linear-to-r from-blue-500 to-cyan-400"></div>
             </div>
 
             <div className="step-item">
-              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">4</div>
+              <div className="bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl h-full">
+                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold text-xl mb-6">4</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">Create & Send</h3>
                 <p className="text-gray-500 dark:text-gray-400">Generate invoices, download as PDF, and send to clients.</p>
               </div>
@@ -213,7 +213,7 @@ export default function Home() {
               <p className="text-xl text-gray-500 dark:text-gray-400 mb-8">We’ve built the simplest invoicing tool for freelancers and small businesses.</p>
               <div className="space-y-6">
                 <div className="benefit-item flex gap-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -224,7 +224,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="benefit-item flex gap-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -235,7 +235,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="benefit-item flex gap-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -246,7 +246,7 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="benefit-item flex gap-4">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-linear-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center shrink-0">
                     <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
@@ -259,11 +259,11 @@ export default function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-3xl blur-2xl"></div>
-              <div className="relative bg-gray-100 dark:bg-slate-800/80 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 rounded-3xl p-8">
+              <div className="absolute -inset-4 bg-linear-to-r from-blue-500/20 to-cyan-500/20 rounded-3xl blur-2xl"></div>
+              <div className="relative bg-gray-100 dark:bg-slate-800/80 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 rounded-3xl p-8">
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <div className="h-10 w-40 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg"></div>
+                    <div className="h-10 w-40 bg-linear-to-r from-blue-500 to-cyan-400 rounded-lg"></div>
                     <div className="text-right">
                       <div className="text-gray-500 dark:text-gray-400 text-sm">Invoice #INV-0042</div>
                       <div className="text-gray-900 dark:text-white font-semibold">€1,250.00</div>
@@ -307,7 +307,7 @@ export default function Home() {
             <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">See what our users have to say about InvoiceApp.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
+            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -317,7 +317,7 @@ export default function Home() {
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-6">“Finally, an invoicing app that doesn’t overcomplicate things. I can create and send invoices in under a minute!”</p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold">MK</div>
+                <div className="w-12 h-12 bg-linear-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold">MK</div>
                 <div>
                   <div className="text-gray-900 dark:text-white font-semibold">Marius K.</div>
                   <div className="text-gray-500 dark:text-gray-400 text-sm">Web Developer</div>
@@ -325,7 +325,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
+            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -335,7 +335,7 @@ export default function Home() {
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-6">“The PDF export looks so professional. My clients are impressed every time. Worth every penny!”</p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">ES</div>
+                <div className="w-12 h-12 bg-linear-to-br from-purple-500 to-pink-400 rounded-full flex items-center justify-center text-white font-bold">ES</div>
                 <div>
                   <div className="text-gray-900 dark:text-white font-semibold">Elena S.</div>
                   <div className="text-gray-500 dark:text-gray-400 text-sm">Graphic Designer</div>
@@ -343,7 +343,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-sm border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
+            <div className="testimonial-card bg-gray-100 dark:bg-slate-800/50 backdrop-blur-xs border border-gray-200 dark:border-slate-700/50 p-8 rounded-xl">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -353,7 +353,7 @@ export default function Home() {
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-6">“I switched from a complicated accounting software. InvoiceApp does exactly what I need, nothing more.”</p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-400 rounded-full flex items-center justify-center text-white font-bold">TP</div>
+                <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-red-400 rounded-full flex items-center justify-center text-white font-bold">TP</div>
                 <div>
                   <div className="text-gray-900 dark:text-white font-semibold">Tomas P.</div>
                   <div className="text-gray-500 dark:text-gray-400 text-sm">Consultant</div>
@@ -370,8 +370,8 @@ export default function Home() {
           <p className="cta-animate text-xl text-gray-500 dark:text-gray-400 mb-10">Join thousands of freelancers who trust InvoiceApp for their invoicing needs.</p>
           <div className="cta-animate">
             <Link href="/register" className="group relative inline-flex items-center justify-center">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-              <span className="relative bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-10 py-5 rounded-xl text-xl font-semibold flex items-center gap-3">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-blue-500 to-cyan-400 rounded-xl blur-sm opacity-70 group-hover:opacity-100 transition duration-300"></div>
+              <span className="relative bg-linear-to-r from-blue-500 to-cyan-400 text-white px-10 py-5 rounded-xl text-xl font-semibold flex items-center gap-3">
                 Create Free Account
                 <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />

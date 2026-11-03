@@ -131,7 +131,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
         )}
         <Link
           href={item.href}
-          className={`block rounded-lg outline-none focus:outline-none transition duration-150 ${
+          className={`block rounded-lg outline-hidden focus:outline-hidden transition duration-150 ${
             // collapsed (lg): vertical icon+label rail; expanded: horizontal row
             sidebarExpanded ? 'pl-4 pr-3 py-2.5' : 'pl-4 pr-3 py-2.5 lg:px-1 lg:py-2'
           } ${isActive ? '' : 'text-gray-800 dark:text-gray-100 hover:text-gray-900 dark:hover:text-white'}`}
@@ -201,9 +201,9 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen, sidebarExpanded }
       <div
         id="sidebar"
         ref={sidebar}
-        className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-[100dvh] overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 p-4 transition-all duration-200 ease-in-out ${
+        className={`flex flex-col absolute z-40 left-0 top-0 lg:static lg:left-auto lg:top-auto lg:translate-x-0 h-dvh overflow-y-scroll lg:overflow-y-auto no-scrollbar shrink-0 p-4 transition-all duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-64'
-        } ${sidebarExpanded ? 'w-56' : 'w-56 lg:w-20'} shadow-sm`}
+        } ${sidebarExpanded ? 'w-56' : 'w-56 lg:w-20'} shadow-xs`}
         style={{ backgroundColor: 'var(--t-bg-sidebar)', backdropFilter: 'blur(12px)' }}
       >
         {/* Header */}
