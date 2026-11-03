@@ -1,12 +1,15 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
 import { clients, Client } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
+import { useApiData } from '@/lib/useApiData'
 import { formatCurrency, formatDate, getErrorMessage } from '@/lib/utils'
+
+const PER_PAGE = 12
 
 function ClientsSkeleton() {
   return (
@@ -29,42 +32,28 @@ function ClientsSkeleton() {
 }
 
 export default function Clients() {
-  const [list, setList] = useState<Client[]>([])
-  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [lastPage, setLastPage] = useState(1)
-  const [total, setTotal] = useState(0)
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; title: string; message: string; onConfirm: () => void }>({ open: false, title: '', message: '', onConfirm: () => {} })
 
-  const PER_PAGE = 12
-
-  // Debounced so typing doesn't fire a request per keystroke.
-  useEffect(() => {
-    const t = setTimeout(loadClients, search ? 300 : 0)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchClients = useCallback(() => {
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+    params.set('per_page', String(PER_PAGE))
+    if (search.trim()) params.set('search', search.trim())
+    return clients.paginated(params.toString())
   }, [page, search])
 
-  const loadClients = async () => {
-    setLoading(true)
-    try {
-      const params = new URLSearchParams()
-      params.set('page', String(page))
-      params.set('per_page', String(PER_PAGE))
-      if (search.trim()) params.set('search', search.trim())
+  // Debounced so typing doesn't fire a request per keystroke.
+  const { data, loading, reload } = useApiData(fetchClients, {
+    errorMessage: 'Failed to load clients',
+    delayMs: search ? 300 : 0,
+  })
+  const list: Client[] = data?.data ?? []
+  const lastPage = data?.last_page ?? 1
+  const total = data?.total ?? 0
 
-      const data = await clients.paginated(params.toString())
-      setList(data.data)
-      setLastPage(data.last_page)
-      setTotal(data.total)
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e, 'Failed to load clients'))
-    }
-    setLoading(false)
-  }
-
-  useRefetchOnReturn(() => loadClients())
+  useRefetchOnReturn(reload)
 
   const handleDelete = (id: number) => {
     setConfirmModal({
@@ -79,7 +68,7 @@ export default function Clients() {
           if (list.length === 1 && page > 1) {
             setPage(page - 1)
           } else {
-            loadClients()
+            reload()
           }
         } catch (e: unknown) {
           toast.error(getErrorMessage(e, 'Failed to delete client'))

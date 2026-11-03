@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { auditLogs, AuditLogEntry } from '@/lib/api'
-import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
+import { useApiData } from '@/lib/useApiData'
 
 const filters = [
   { key: '', label: 'All' },
@@ -34,28 +34,18 @@ function when(iso: string): string {
 
 export default function ActivityLog() {
   const [category, setCategory] = useState('')
-  const [entries, setEntries] = useState<AuditLogEntry[]>([])
   const [page, setPage] = useState(1)
-  const [lastPage, setLastPage] = useState(1)
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    let active = true
-    setLoading(true)
+  const fetchEntries = useCallback(() => {
     const params = new URLSearchParams({ page: String(page), per_page: '25' })
     if (category) params.set('category', category)
-    auditLogs.list(params.toString())
-      .then(res => {
-        if (!active) return
-        setEntries(res.data)
-        setLastPage(res.last_page)
-        setTotal(res.total)
-      })
-      .catch(() => { if (active) toast.error('Failed to load activity log') })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    return auditLogs.list(params.toString())
   }, [category, page])
+
+  const { data, loading } = useApiData(fetchEntries, { errorMessage: 'Failed to load activity log' })
+  const entries: AuditLogEntry[] = data?.data ?? []
+  const lastPage = data?.last_page ?? 1
+  const total = data?.total ?? 0
 
   const changeFilter = (key: string) => { setCategory(key); setPage(1) }
 
