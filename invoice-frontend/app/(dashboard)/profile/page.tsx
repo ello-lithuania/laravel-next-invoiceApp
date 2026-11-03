@@ -120,6 +120,7 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!user) return
     setSaving(true)
     setMessage('')
     try {
@@ -127,7 +128,7 @@ export default function Profile() {
       setUser(data)
       setMessage('Profile saved successfully!')
       setTimeout(() => setMessage(''), 3000)
-    } catch (e) {
+    } catch {
       setMessage('Error saving profile')
     }
     setSaving(false)

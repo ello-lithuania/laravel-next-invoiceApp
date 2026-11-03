@@ -213,7 +213,9 @@ export default function Dashboard() {
     }
   }
 
-  const formatDate = (value: string) => {
+  // A chart point carries either a day (`date`, YYYY-MM-DD) or a month (`month`, YYYY-MM).
+  const formatChartLabel = (value?: string) => {
+    if (!value) return ''
     if (value.length === 10) {
       const date = new Date(value)
       return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
@@ -660,7 +662,7 @@ export default function Dashboard() {
               <Skeleton className="h-80 rounded-xl" />
             ) : statsData?.chart && statsData.chart.length > 0 ? (
               <RevenueChart
-                data={statsData.chart.map(d => ({ ...d, label: formatDate(d.date || d.month) }))}
+                data={statsData.chart.map(d => ({ ...d, label: formatChartLabel(d.date ?? d.month) }))}
                 grid={chartGrid}
                 text={textMuted}
                 tooltipBg={tooltipBg}
