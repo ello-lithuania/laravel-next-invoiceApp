@@ -36,8 +36,10 @@ export function formatCurrency(value: number): string {
 export function addOneMonth(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   if (!y || !m || !d) return dateStr
-  const dt = new Date(y, m - 1, d)
-  dt.setMonth(dt.getMonth() + 1)
+  // `m` is 1-based, so month index `m` is the next month. Clamp the day to that
+  // month's last day: 31 Jan → 28/29 Feb, not 3 Mar (setMonth would overflow).
+  const lastDayOfNextMonth = new Date(y, m + 1, 0).getDate()
+  const dt = new Date(y, m, Math.min(d, lastDayOfNextMonth))
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
 }
 

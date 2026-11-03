@@ -95,10 +95,13 @@ describe('addOneMonth', () => {
     expect(addOneMonth('2026-01-05')).toBe('2026-02-05')
   })
 
-  it('overflows a month-end date into the following month (2026-01-31 -> 2026-03-03)', () => {
-    // Documents current behaviour: JS Date.setMonth turns "31 Feb" into 3 Mar,
-    // so the due date is NOT clamped to the last day of February.
-    expect(addOneMonth('2026-01-31')).toBe('2026-03-03')
+  it.each([
+    ['2026-01-31', '2026-02-28'], // no 31 Feb: last day of February, not 3 March
+    ['2028-01-31', '2028-02-29'], // leap year
+    ['2026-03-31', '2026-04-30'],
+    ['2026-12-31', '2027-01-31'], // December rolls into the next year
+  ])('clamps %s to the last day of the next month (%s)', (input, expected) => {
+    expect(addOneMonth(input)).toBe(expected)
   })
 
   it.each([[''], ['abc'], ['2026-13'], ['2026-00-10']])('returns invalid input %p unchanged', (value) => {
