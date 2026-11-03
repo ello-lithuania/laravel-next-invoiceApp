@@ -324,8 +324,6 @@ export default function TimeTracking() {
     }
   }
 
-  const handleBulkGroup = () => applyBulkGroup(groupValue.trim() || null)
-
   // Select all billable entries in a group and open the convert-to-invoice
   // modal — one click to invoice a whole group, no manual checkbox picking.
   const invoiceGroup = (groupKey: string) => {
@@ -1019,8 +1017,6 @@ export default function TimeTracking() {
                 </tr>
               ) : (
                 orderedEntries.map((entry, i, arr) => {
-                  const hours = entry.duration_seconds / 3600
-                  const total = hours * entry.hourly_rate
                   const gChanged = showGroups && (i === 0 || (arr[i - 1].group_name || '') !== (entry.group_name || ''))
                   const g = gChanged ? groupMeta.get(entry.group_name || '') : null
 
@@ -1104,7 +1100,7 @@ export default function TimeTracking() {
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            Edit to link an invoice (countdown won't work)
+                            Edit to link an invoice (countdown won’t work)
                           </div>
                         )}
                       </td>
@@ -1316,8 +1312,6 @@ export default function TimeTracking() {
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700/60">
               {orderedEntries.map((entry, i, arr) => {
-                const hours = entry.duration_seconds / 3600
-                const total = hours * entry.hourly_rate
                 const gChanged = showGroups && (i === 0 || (arr[i - 1].group_name || '') !== (entry.group_name || ''))
                 const g = gChanged ? groupMeta.get(entry.group_name || '') : null
 

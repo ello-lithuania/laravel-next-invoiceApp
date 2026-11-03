@@ -122,7 +122,7 @@ export default function NewInvoice() {
     try {
       const data = await clientsApi.list()
       setClients(data)
-    } catch (e) {
+    } catch {
       toast.error('Failed to load clients')
     }
     setLoading(false)

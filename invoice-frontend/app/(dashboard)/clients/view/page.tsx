@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { clients, getToken, InvoiceStatus } from '@/lib/api'
+import { clients, InvoiceStatus } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { formatCurrency, getErrorMessage } from '@/lib/utils'
 import StatusBadge from '@/components/StatusBadge'
