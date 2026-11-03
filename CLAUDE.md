@@ -1,7 +1,8 @@
 # InvoiceApp — project guide
 
 Invoice + time-tracking app for a solo Lithuanian freelancer (recurring clients, ~11–13 €/service, EUR).
-Monorepo: **`invoice-api`** (Laravel 11 + Sanctum) and **`invoice-frontend`** (Next.js 16, static export).
+Monorepo: **`invoice-api`** (Laravel 13 + Sanctum, PHP 8.4) and **`invoice-frontend`** (Next.js 16 + React 19, static export).
+Local PHP in PATH is 8.0 (WAMP): run artisan/composer/tests with `/c/wamp64/bin/php/php8.4.15/php.exe`.
 
 ## Build / verify
 - Frontend: `cd invoice-frontend && npm run build` (static export → `out/`). This type-checks + builds; run it to verify FE changes.

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
@@ -77,7 +78,7 @@ class ProfileController extends Controller
         // Random, unguessable filename. These files live under the public
         // storage symlink, so a predictable name (id + timestamp) would let
         // anyone enumerate and download other users' signature images.
-        $filename = 'signature_'.$user->id.'_'.\Illuminate\Support\Str::random(32).'.png';
+        $filename = 'signature_'.$user->id.'_'.Str::random(32).'.png';
         $request->file('signature')->move($signaturesPath, $filename);
 
         $user->update(['signature' => $filename]);
