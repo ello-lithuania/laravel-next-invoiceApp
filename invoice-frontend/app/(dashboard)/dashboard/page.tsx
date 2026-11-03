@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import { stats, invoices, Invoice, ClientBreakdownResponse } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, refreshStats } from '@/lib/utils'
+import { statusColors, formatCurrency, refreshStats, getErrorMessage } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import { useUser } from '@/contexts/UserContext'
 import dynamic from 'next/dynamic'
@@ -185,8 +185,8 @@ export default function Dashboard() {
     try {
       const data = await stats.get(activePeriod)
       setStatsData(data)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load statistics')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load statistics'))
     } finally {
       setStatsLoading(false)
     }
@@ -208,8 +208,8 @@ export default function Dashboard() {
       if (breakdown) setClientBreakdown(breakdown)
       refreshStats() // keep the global stats bar in sync too
       toast.success(`Invoice status changed to ${status}`)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update status')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to update status'))
     }
   }
 

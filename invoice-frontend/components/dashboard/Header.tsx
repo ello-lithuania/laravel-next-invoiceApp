@@ -69,7 +69,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
   }, [])
 
   const handleLogout = async () => {
-    try { await auth.logout() } catch (e: any) { /* logout best-effort */ }
+    try { await auth.logout() } catch { /* logout best-effort */ }
     router.push('/login')
   }
 

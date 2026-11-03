@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { profile, auth, Session } from '@/lib/api'
 import { toast } from 'react-toastify'
 import SamplePdfFrame from '@/components/SamplePdfFrame'
+import { getErrorMessage } from '@/lib/utils'
 
 interface User {
   name: string
@@ -101,8 +102,8 @@ export default function Profile() {
     try {
       const data = await profile.get()
       setUser(data)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load profile')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load profile'))
     }
     setLoading(false)
   }
@@ -111,8 +112,8 @@ export default function Profile() {
     try {
       const data = await auth.sessions()
       setSessions(data)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load sessions')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load sessions'))
     }
     setLoadingSessions(false)
   }

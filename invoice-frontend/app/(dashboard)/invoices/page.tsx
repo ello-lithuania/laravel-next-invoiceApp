@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, refreshStats, formatCurrency, formatDate } from '@/lib/utils'
+import { statusColors, refreshStats, formatCurrency, formatDate, getErrorMessage } from '@/lib/utils'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
@@ -121,8 +121,8 @@ function InvoicesContent() {
     try {
       const data = await clientsApi.list()
       setClients(data)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load clients')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load clients'))
     }
   }
 
@@ -130,8 +130,8 @@ function InvoicesContent() {
     try {
       const data = await invoices.months()
       setMonthOptions(data)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load months')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load months'))
     }
   }
 
@@ -153,8 +153,8 @@ function InvoicesContent() {
       setList(data.data)
       setLastPage(data.last_page)
       setTotal(data.total)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load invoices')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load invoices'))
     }
     setLoading(false)
   }
@@ -174,8 +174,8 @@ function InvoicesContent() {
           loadInvoices()
           loadMonths()
           refreshStats()
-        } catch (e: any) {
-          toast.error(e.message || 'Failed to delete invoice')
+        } catch (e: unknown) {
+          toast.error(getErrorMessage(e, 'Failed to delete invoice'))
         }
       }
     })
@@ -187,8 +187,8 @@ function InvoicesContent() {
       toast.success('Status updated')
       loadInvoices()
       refreshStats()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update status')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to update status'))
     }
   }
 
@@ -206,8 +206,8 @@ function InvoicesContent() {
       // Fetched with the Authorization header (token no longer in the URL).
       const url = await invoices.pdfBlobUrl(inv.id)
       setPdfPreview({ open: true, url, title })
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load PDF')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load PDF'))
     }
   }
 
@@ -237,8 +237,8 @@ function InvoicesContent() {
           loadInvoices()
           loadMonths()
           refreshStats()
-        } catch (e: any) {
-          toast.error(e.message || 'Failed to delete invoices')
+        } catch (e: unknown) {
+          toast.error(getErrorMessage(e, 'Failed to delete invoices'))
         }
       }
     })
@@ -249,8 +249,8 @@ function InvoicesContent() {
       const newInvoice = await invoices.duplicate(id)
       toast.success(`Invoice duplicated as ${newInvoice.series}-${String(newInvoice.number).padStart(4, '0')}`)
       router.push(`/invoices/edit?id=${newInvoice.id}`)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to duplicate invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to duplicate invoice'))
     }
   }
 
@@ -261,8 +261,8 @@ function InvoicesContent() {
       setSelected([])
       loadInvoices()
       refreshStats()
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to update statuses')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to update statuses'))
     }
   }
 

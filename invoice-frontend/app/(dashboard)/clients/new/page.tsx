@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { clients } from '@/lib/api'
 import { toast } from 'react-toastify'
+import { getErrorMessage } from '@/lib/utils'
 
 export default function NewClient() {
   const router = useRouter()
@@ -25,8 +26,8 @@ export default function NewClient() {
       await clients.create(form)
       toast.success('Client created successfully')
       router.push('/clients')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to create client')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to create client'))
     }
     setSaving(false)
   }

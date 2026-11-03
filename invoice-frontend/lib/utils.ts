@@ -13,6 +13,16 @@ export const statusLabels: Record<string, string> = {
   overdue: "Won't pay",
 }
 
+// Turns whatever a `catch` received into a message we can show the user.
+// JS lets you `throw` any value (an Error, a string, an object), so a caught
+// value is `unknown` until we check what it is. ApiError extends Error, so API
+// failures land in the first branch with the server's message.
+export function getErrorMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error && e.message) return e.message
+  if (typeof e === 'string' && e) return e
+  return fallback
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('lt-LT', { style: 'currency', currency: 'EUR' }).format(value)
 }

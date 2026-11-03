@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, ClientHistory, ClientHistoryItem } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, refreshStats, formatDate, INVOICE_UNITS } from '@/lib/utils'
+import { statusColors, formatCurrency, refreshStats, formatDate, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
 
 interface InvoiceItem {
   description: string
@@ -93,8 +93,8 @@ export default function NewInvoice() {
         notes: full.notes || prev.notes,
       }))
       toast.success(`Copied items from ${label}`)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load that invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load that invoice'))
     }
     setRepeating(false)
   }
@@ -140,8 +140,8 @@ export default function NewInvoice() {
       refreshStats()
       toast.success('Invoice created successfully')
       router.push('/invoices')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to create invoice')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to create invoice'))
     }
     setSaving(false)
   }

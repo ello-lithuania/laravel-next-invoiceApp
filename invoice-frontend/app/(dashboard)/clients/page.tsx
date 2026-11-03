@@ -6,7 +6,7 @@ import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, getErrorMessage } from '@/lib/utils'
 
 function ClientsSkeleton() {
   return (
@@ -58,8 +58,8 @@ export default function Clients() {
       setList(data.data)
       setLastPage(data.last_page)
       setTotal(data.total)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load clients')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load clients'))
     }
     setLoading(false)
   }
@@ -81,8 +81,8 @@ export default function Clients() {
           } else {
             loadClients()
           }
-        } catch (e: any) {
-          toast.error(e.message || 'Failed to delete client')
+        } catch (e: unknown) {
+          toast.error(getErrorMessage(e, 'Failed to delete client'))
         }
       }
     })

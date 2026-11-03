@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { clients, getToken } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency } from '@/lib/utils'
+import { statusColors, formatCurrency, getErrorMessage } from '@/lib/utils'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 
@@ -50,8 +50,8 @@ function ClientViewContent() {
     try {
       const data = await clients.get(Number(id))
       setClient(data as unknown as ClientDetail)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to load client')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to load client'))
     }
     setLoading(false)
   }
@@ -62,8 +62,8 @@ function ClientViewContent() {
       await clients.delete(Number(id))
       toast.success('Client deleted')
       router.push('/clients')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to delete client')
+    } catch (e: unknown) {
+      toast.error(getErrorMessage(e, 'Failed to delete client'))
       setDeleting(false)
       setConfirmDelete(false)
     }
