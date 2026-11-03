@@ -1,13 +1,14 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useCallback, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { clients, InvoiceStatus } from '@/lib/api'
+import { api, clients, InvoiceStatus } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { formatCurrency, getErrorMessage } from '@/lib/utils'
 import StatusBadge from '@/components/StatusBadge'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
+import { useApiData } from '@/lib/useApiData'
 
 interface ClientInvoice {
   id: number
@@ -38,24 +39,13 @@ function ClientViewContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const id = searchParams.get('id')
-  const [client, setClient] = useState<ClientDetail | null>(null)
-  const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  useEffect(() => {
-    if (id) loadClient()
-  }, [id])
-
-  const loadClient = async () => {
-    try {
-      const data = await clients.get(Number(id))
-      setClient(data as unknown as ClientDetail)
-    } catch (e: unknown) {
-      toast.error(getErrorMessage(e, 'Failed to load client'))
-    }
-    setLoading(false)
-  }
+  // The detail endpoint also returns the client's invoices and totals, which
+  // the generic `clients.get` type doesn't describe — hence the direct api<T>.
+  const fetchClient = useCallback(() => api<ClientDetail>(`/clients/${Number(id)}`), [id])
+  const { data: client, loading } = useApiData(fetchClient, { errorMessage: 'Failed to load client' })
 
   const handleDelete = async () => {
     setDeleting(true)
