@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import Link from 'next/link'
-import { stats, invoices, Invoice, ClientBreakdownResponse } from '@/lib/api'
+import { stats, invoices, Invoice, ClientBreakdownResponse, InvoiceStatus, isInvoiceStatus } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, refreshStats, getErrorMessage } from '@/lib/utils'
+import { statusColors, statusLabels, formatCurrency, refreshStats, getErrorMessage } from '@/lib/utils'
+import StatusOptions from '@/components/StatusOptions'
 import { Skeleton } from '@/components/Skeleton'
 import { useUser } from '@/contexts/UserContext'
 import dynamic from 'next/dynamic'
@@ -192,7 +193,7 @@ export default function Dashboard() {
     }
   }
 
-  const handleStatusChange = async (id: number, status: string) => {
+  const handleStatusChange = async (id: number, status: InvoiceStatus) => {
     try {
       await invoices.updateStatus(id, status)
       // Refresh everything the status touches — not just the unpaid list, but
@@ -431,14 +432,11 @@ export default function Dashboard() {
                       <td className="px-4 py-3 text-right t-text font-medium tabular-nums">{Number(inv.total).toFixed(2)} €</td>
                       <td className="px-4 py-3">
                         <select
-                          value={inv.status || 'draft'}
-                          onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                          value={inv.status}
+                          onChange={(e) => { const v = e.target.value; if (isInvoiceStatus(v)) handleStatusChange(inv.id, v) }}
+                          className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status]}`}
                         >
-                          <option value="draft">Draft</option>
-                          <option value="sent">Sent</option>
-                          <option value="paid">Paid</option>
-                          <option value="overdue">Won&apos;t pay</option>
+                          <StatusOptions />
                         </select>
                       </td>
                     </tr>
@@ -472,14 +470,11 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <select
-                      value={inv.status || 'draft'}
-                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                      value={inv.status}
+                      onChange={(e) => { const v = e.target.value; if (isInvoiceStatus(v)) handleStatusChange(inv.id, v) }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status]}`}
                     >
-                      <option value="draft">Draft</option>
-                      <option value="sent">Sent</option>
-                      <option value="paid">Paid</option>
-                      <option value="overdue">Won&apos;t pay</option>
+                      <StatusOptions />
                     </select>
                   </div>
                 )
@@ -778,17 +773,16 @@ export default function Dashboard() {
           <div className="t-card prism-card p-6 reveal">
             <h2 className="text-lg font-semibold t-text mb-4">Invoice Status Overview</h2>
             {(() => {
-              const statusCounts = unpaidInvoices.reduce((acc, inv) => {
-                const s = inv.status || 'draft'
-                acc[s] = (acc[s] || 0) + 1
+              const statusCounts = unpaidInvoices.reduce<Partial<Record<InvoiceStatus, number>>>((acc, inv) => {
+                acc[inv.status] = (acc[inv.status] ?? 0) + 1
                 return acc
-              }, {} as Record<string, number>)
+              }, {})
               const total = unpaidInvoices.length || 1
               // "Won't pay" (overdue) invoices are excluded from unpaidInvoices,
               // so this overview only covers the actionable unpaid statuses.
               const statuses = [
-                { key: 'draft', label: 'Draft', color: '#9ca3af', count: statusCounts['draft'] || 0 },
-                { key: 'sent', label: 'Sent', color: accent, count: statusCounts['sent'] || 0 },
+                { key: 'draft', label: statusLabels.draft, color: '#9ca3af', count: statusCounts.draft ?? 0 },
+                { key: 'sent', label: statusLabels.sent, color: accent, count: statusCounts.sent ?? 0 },
               ]
               return (
                 <div className="space-y-4">

@@ -2,9 +2,10 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { clients, getToken } from '@/lib/api'
+import { clients, getToken, InvoiceStatus } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, getErrorMessage } from '@/lib/utils'
+import { formatCurrency, getErrorMessage } from '@/lib/utils'
+import StatusBadge from '@/components/StatusBadge'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 
@@ -15,7 +16,7 @@ interface ClientInvoice {
   invoice_date: string
   due_date: string
   total: number
-  status?: string
+  status: InvoiceStatus
 }
 
 interface ClientDetail {
@@ -231,9 +232,7 @@ function ClientViewContent() {
                         <td className="px-6 py-3 text-gray-500 dark:text-gray-400 text-sm">{inv.invoice_date?.split('T')[0]}</td>
                         <td className="px-6 py-3 text-right text-gray-800 dark:text-gray-100 font-medium tabular-nums text-sm">{Number(inv.total).toFixed(2)} €</td>
                         <td className="px-6 py-3">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[inv.status || 'draft']}`}>
-                            {(inv.status || 'draft').charAt(0).toUpperCase() + (inv.status || 'draft').slice(1)}
-                          </span>
+                          <StatusBadge status={inv.status} className="px-2.5 py-0.5 text-xs" />
                         </td>
                         <td className="px-6 py-3">
                           <div className="flex items-center justify-end gap-1">
@@ -260,9 +259,7 @@ function ClientViewContent() {
                     </div>
                     <div className="text-right">
                       <p className="text-gray-800 dark:text-gray-100 font-medium text-sm tabular-nums">{Number(inv.total).toFixed(2)} €</p>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[inv.status || 'draft']}`}>
-                        {(inv.status || 'draft').charAt(0).toUpperCase() + (inv.status || 'draft').slice(1)}
-                      </span>
+                      <StatusBadge status={inv.status} />
                     </div>
                   </Link>
                 ))}

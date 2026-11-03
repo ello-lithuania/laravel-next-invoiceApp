@@ -187,6 +187,19 @@ export interface Client {
   last_invoice_date?: string | null
 }
 
+// The one list of invoice statuses (DB enum `invoices.status`). `as const` keeps
+// the exact strings, so InvoiceStatus is 'draft' | 'sent' | 'paid' | 'overdue'
+// instead of plain string. Add a status here and TypeScript points at every
+// label/colour map that's missing it.
+export const INVOICE_STATUSES = ['draft', 'sent', 'paid', 'overdue'] as const
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number]
+
+// A <select> gives us a plain string; this checks it really is a status.
+// The `value is InvoiceStatus` return type tells TypeScript so after the check.
+export function isInvoiceStatus(value: string): value is InvoiceStatus {
+  return (INVOICE_STATUSES as readonly string[]).includes(value)
+}
+
 export interface InvoiceItem {
   id?: number
   invoice_id?: number
@@ -207,7 +220,7 @@ export interface Invoice {
   due_date: string
   notes?: string
   total: number
-  status: 'draft' | 'sent' | 'paid' | 'overdue'
+  status: InvoiceStatus
   client?: Client
   items?: InvoiceItem[]
 }
@@ -218,7 +231,7 @@ export interface TrackableInvoice {
   number: number
   client_id: number
   client?: Client
-  status: 'draft' | 'sent' | 'paid' | 'overdue'
+  status: InvoiceStatus
   invoice_date: string
   total_hours: number
   worked_hours: number
@@ -400,7 +413,7 @@ export const invoices = {
     api<Invoice>('/invoices', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: number, data: { client_id: number; invoice_date: string; due_date: string; notes?: string; items: Omit<InvoiceItem, 'id' | 'invoice_id' | 'total'>[] }) => 
     api<Invoice>(`/invoices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  updateStatus: (id: number, status: string) =>
+  updateStatus: (id: number, status: InvoiceStatus) =>
     api<Invoice>(`/invoices/${id}/status`, { method: 'POST', body: JSON.stringify({ status }) }),
   delete: (id: number) => 
     api<{ message: string }>(`/invoices/${id}`, { method: 'DELETE' }),
@@ -415,7 +428,7 @@ export const invoices = {
     apiBlobUrl(`/sample-invoice-pdf?template=${encodeURIComponent(template)}`),
   bulkDelete: (ids: number[]) =>
     api<{ message: string }>('/invoices/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
-  bulkUpdateStatus: (ids: number[], status: string) =>
+  bulkUpdateStatus: (ids: number[], status: InvoiceStatus) =>
     api<{ message: string }>('/invoices/bulk-status', { method: 'POST', body: JSON.stringify({ ids, status }) }),
   duplicate: (id: number) =>
     api<Invoice>(`/invoices/${id}/duplicate`, { method: 'POST' }),

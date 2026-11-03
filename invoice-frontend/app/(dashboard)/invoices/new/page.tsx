@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { invoices, clients as clientsApi, ClientHistory, ClientHistoryItem } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, formatCurrency, refreshStats, formatDate, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
+import { formatCurrency, refreshStats, formatDate, INVOICE_UNITS, getErrorMessage } from '@/lib/utils'
+import StatusBadge from '@/components/StatusBadge'
 
 interface InvoiceItem {
   description: string
@@ -344,7 +345,7 @@ export default function NewInvoice() {
                               <span className="font-medium t-text">{inv.series} {inv.number}</span>
                               <span className="t-text-muted">{formatDate(inv.invoice_date)}</span>
                               <span className="font-semibold tabular-nums t-text">{formatCurrency(Number(inv.total))}</span>
-                              <span className={`px-2 py-0.5 rounded-full font-medium ${statusColors[inv.status || 'draft']}`}>{inv.status}</span>
+                              <StatusBadge status={inv.status} className="px-2 py-0.5" />
                             </button>
                           ))}
                         </div>
