@@ -259,7 +259,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
                         colorTheme === t.id ? 'ring-2 scale-105' : 'hover:scale-105'
                       }`}
                       style={{
-                        ...(colorTheme === t.id ? { '--tw-ring-color': 'var(--t-accent)' } as any : {}),
+                        ...(colorTheme === t.id ? { '--tw-ring-color': 'var(--t-accent)' } as React.CSSProperties : {}),
                       }}
                     >
                       <div className={`theme-swatch-${t.id} w-full h-full flex items-center justify-center`}>

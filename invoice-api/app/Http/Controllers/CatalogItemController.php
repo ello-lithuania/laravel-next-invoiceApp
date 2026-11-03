@@ -30,6 +30,7 @@ class CatalogItemController extends Controller
                 'unit' => $data['unit'] ?? $existing->unit,
                 'price' => $data['price'] ?? $existing->price,
             ]);
+
             return response()->json($existing, 200);
         }
 

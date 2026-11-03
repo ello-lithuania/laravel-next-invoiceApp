@@ -3,11 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\TimeEntry;
-use App\Models\Invoice;
 use App\Support\Audit;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class TimeEntryController extends Controller
 {
@@ -27,7 +26,7 @@ class TimeEntryController extends Controller
                 // because they're still being worked on
                 $query->where(function ($q) {
                     $q->where('is_invoiced', false)
-                      ->orWhere('is_prepaid', true);
+                        ->orWhere('is_prepaid', true);
                 });
             }
         }
@@ -35,7 +34,7 @@ class TimeEntryController extends Controller
         if ($request->has('month') && $request->month) {
             $date = Carbon::createFromFormat('Y-m', $request->month);
             $query->whereYear('started_at', $date->year)
-                  ->whereMonth('started_at', $date->month);
+                ->whereMonth('started_at', $date->month);
         }
 
         return response()->json(
@@ -52,7 +51,7 @@ class TimeEntryController extends Controller
                 'required',
                 'exists:clients,id',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!$user->clients()->where('id', $value)->exists()) {
+                    if (! $user->clients()->where('id', $value)->exists()) {
                         $fail('Invalid client.');
                     }
                 },
@@ -66,14 +65,14 @@ class TimeEntryController extends Controller
                 'nullable',
                 'integer',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !$user->invoices()->where('id', $value)->exists()) {
+                    if ($value && ! $user->invoices()->where('id', $value)->exists()) {
                         $fail('Invalid invoice.');
                     }
                 },
             ],
         ]);
 
-        $isPrepaid = !empty($validated['is_prepaid']) && !empty($validated['invoice_id']);
+        $isPrepaid = ! empty($validated['is_prepaid']) && ! empty($validated['invoice_id']);
         $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
 
         $entry = $user->timeEntries()->create([
@@ -99,7 +98,7 @@ class TimeEntryController extends Controller
         }
 
         // Don't allow editing converted (non-prepaid) invoiced entries
-        if ($timeEntry->is_invoiced && !$timeEntry->is_prepaid) {
+        if ($timeEntry->is_invoiced && ! $timeEntry->is_prepaid) {
             return response()->json(['message' => 'Cannot edit converted entry'], 400);
         }
 
@@ -110,7 +109,7 @@ class TimeEntryController extends Controller
                 'required',
                 'exists:clients,id',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!$user->clients()->where('id', $value)->exists()) {
+                    if (! $user->clients()->where('id', $value)->exists()) {
                         $fail('Invalid client.');
                     }
                 },
@@ -124,14 +123,14 @@ class TimeEntryController extends Controller
                 'nullable',
                 'integer',
                 function ($attribute, $value, $fail) use ($user) {
-                    if ($value && !$user->invoices()->where('id', $value)->exists()) {
+                    if ($value && ! $user->invoices()->where('id', $value)->exists()) {
                         $fail('Invalid invoice.');
                     }
                 },
             ],
         ]);
 
-        $isPrepaid = !empty($validated['is_prepaid']) && !empty($validated['invoice_id']);
+        $isPrepaid = ! empty($validated['is_prepaid']) && ! empty($validated['invoice_id']);
         $invoiceId = $isPrepaid ? $validated['invoice_id'] : null;
         $previousSeconds = $timeEntry->duration_seconds;
 
@@ -233,7 +232,7 @@ class TimeEntryController extends Controller
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        if (!$timeEntry->is_running) {
+        if (! $timeEntry->is_running) {
             return response()->json(['message' => 'Timer is not running'], 400);
         }
 
@@ -341,7 +340,7 @@ class TimeEntryController extends Controller
 
             Audit::log('invoice.created', [
                 'subject' => $invoice,
-                'description' => "Created invoice {$series}-{$nextNumber} from " . $entries->count() . ' time entry(ies)',
+                'description' => "Created invoice {$series}-{$nextNumber} from ".$entries->count().' time entry(ies)',
                 'meta' => ['total' => $total, 'time_entry_ids' => $entries->pluck('id')->all()],
             ]);
 
@@ -361,7 +360,7 @@ class TimeEntryController extends Controller
             ->where('is_running', false)
             ->delete();
 
-        return response()->json(['message' => $deleted . ' time entry(ies) deleted']);
+        return response()->json(['message' => $deleted.' time entry(ies) deleted']);
     }
 
     public function bulkUpdateGroup(Request $request)
@@ -379,7 +378,7 @@ class TimeEntryController extends Controller
             ->update(['group_name' => $group]);
 
         return response()->json([
-            'message' => $updated . ' entr' . ($updated === 1 ? 'y' : 'ies') . ' updated',
+            'message' => $updated.' entr'.($updated === 1 ? 'y' : 'ies').' updated',
             'group_name' => $group,
         ]);
     }

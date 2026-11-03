@@ -1,20 +1,20 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CatalogItemController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\InvoiceController;
-use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\TimeEntryController;
-use App\Http\Controllers\CatalogItemController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -44,7 +44,7 @@ Route::post('/reset-password', function (Request $request) {
         $request->only('email', 'password', 'password_confirmation', 'token'),
         function ($user, $password) {
             $user->forceFill([
-                'password' => Hash::make($password)
+                'password' => Hash::make($password),
             ])->setRememberToken(Str::random(60));
             $user->save();
             event(new PasswordReset($user));

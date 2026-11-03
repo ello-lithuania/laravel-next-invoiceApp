@@ -13,7 +13,7 @@ class ActivityController extends Controller
             ->latest()
             ->take(10)
             ->get()
-            ->map(fn($c) => [
+            ->map(fn ($c) => [
                 'type' => 'client',
                 'id' => $c->id,
                 'title' => $c->name,
@@ -26,10 +26,10 @@ class ActivityController extends Controller
             ->latest()
             ->take(10)
             ->get()
-            ->map(fn($i) => [
+            ->map(fn ($i) => [
                 'type' => 'invoice',
                 'id' => $i->id,
-                'title' => $i->series . ' ' . $i->number,
+                'title' => $i->series.' '.$i->number,
                 'subtitle' => $i->client?->name,
                 'total' => $i->total,
                 'date' => $i->created_at,

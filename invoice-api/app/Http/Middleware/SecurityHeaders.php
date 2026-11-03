@@ -24,7 +24,7 @@ class SecurityHeaders
         // The API only returns JSON and PDF streams (the latter are fetched as
         // blobs by the SPA, so this CSP never governs their rendering). Locking
         // it to 'none' means nothing executes if a response is opened directly.
-        if (!$response->headers->has('Content-Security-Policy')) {
+        if (! $response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
         }
 

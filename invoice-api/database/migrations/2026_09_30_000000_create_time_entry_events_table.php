@@ -36,7 +36,9 @@ return new class extends Migration
                     'updated_at' => $entry->created_at,
                 ];
             }
-            if ($rows) DB::table('time_entry_events')->insert($rows);
+            if ($rows) {
+                DB::table('time_entry_events')->insert($rows);
+            }
         });
     }
 

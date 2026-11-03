@@ -151,7 +151,7 @@ export default function Profile() {
       setSignaturePreview(result.signature_url)
       setMessage('Signature uploaded!')
       setTimeout(() => setMessage(''), 3000)
-    } catch (e) {
+    } catch {
       setMessage('Error uploading signature')
       setSignaturePreview(null)
       setTimeout(() => setMessage(''), 3000)
@@ -168,7 +168,7 @@ export default function Profile() {
       setSignaturePreview(null)
       setMessage('Signature deleted')
       setTimeout(() => setMessage(''), 3000)
-    } catch (e) {
+    } catch {
       setMessage('Error deleting signature')
       setTimeout(() => setMessage(''), 3000)
     }
@@ -181,7 +181,7 @@ export default function Profile() {
       setSessions(sessions.filter(s => s.id !== id))
       setMessage('Session revoked')
       setTimeout(() => setMessage(''), 3000)
-    } catch (e) {
+    } catch {
       setMessage('Error revoking session')
       setTimeout(() => setMessage(''), 3000)
     }
@@ -192,7 +192,7 @@ export default function Profile() {
     try {
       await auth.logoutAll()
       window.location.href = '/login'
-    } catch (e) {
+    } catch {
       setMessage('Error logging out')
       setTimeout(() => setMessage(''), 3000)
     }
@@ -440,7 +440,7 @@ export default function Profile() {
               </div>
               <div className="flex gap-3">
                 <div className="w-8 h-8 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0"><svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg></div>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">Review your active sessions regularly and revoke any you don't recognize.</p>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Review your active sessions regularly and revoke any you don’t recognize.</p>
               </div>
             </div>
           </div>

@@ -11,14 +11,6 @@ import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
 import StatusOptions from '@/components/StatusOptions'
 
-interface PaginatedResponse {
-  data: InvoiceType[]
-  current_page: number
-  last_page: number
-  per_page: number
-  total: number
-}
-
 const statusOptions = [
   { value: '', label: 'All statuses' },
   ...INVOICE_STATUSES.map((s) => ({ value: s, label: statusLabels[s] })),

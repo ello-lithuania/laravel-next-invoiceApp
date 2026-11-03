@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class StatsController extends Controller
 {
@@ -15,7 +14,7 @@ class StatsController extends Controller
 
         // Start at the beginning of the month N-1 months back so each window
         // spans exactly N calendar months (e.g. "3 Months" = 3 bars, not 4).
-        $startDate = match($period) {
+        $startDate = match ($period) {
             '1m' => Carbon::now()->startOfMonth(),
             '3m' => Carbon::now()->startOfMonth()->subMonths(2),
             '6m' => Carbon::now()->startOfMonth()->subMonths(5),
@@ -74,6 +73,7 @@ class StatsController extends Controller
             ->get()
             ->map(function ($row) use ($yearTotal) {
                 $total = (float) $row->total;
+
                 return [
                     'name' => $row->name,
                     'total' => $total,
@@ -245,7 +245,7 @@ class StatsController extends Controller
                     $bestIdx = $idx;
                 }
                 $isCurrentIncomplete = $currentMonth !== null && ($idx + 1) === $currentMonth;
-                if (!$isCurrentIncomplete && $m['total'] < $worstVal) {
+                if (! $isCurrentIncomplete && $m['total'] < $worstVal) {
                     $worstVal = $m['total'];
                     $worstIdx = $idx;
                 }

@@ -7,9 +7,9 @@ use App\Models\InvoiceItem;
 use App\Models\TimeEntry;
 use App\Support\Audit;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class InvoiceController extends Controller
 {
@@ -23,7 +23,7 @@ class InvoiceController extends Controller
             // function and force a full scan + filesort.
             $date = Carbon::createFromFormat('Y-m', $request->month)->startOfMonth();
             $query->where('invoice_date', '>=', $date->toDateString())
-                  ->where('invoice_date', '<', $date->copy()->addMonth()->toDateString());
+                ->where('invoice_date', '<', $date->copy()->addMonth()->toDateString());
         }
 
         if ($request->has('client_id') && $request->client_id) {
@@ -38,11 +38,11 @@ class InvoiceController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('series', 'like', "%{$search}%")
-                  ->orWhere('number', 'like', "%{$search}%")
-                  ->orWhere('notes', 'like', "%{$search}%")
-                  ->orWhereHas('client', function ($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
+                    ->orWhere('number', 'like', "%{$search}%")
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
             });
         }
 
@@ -51,15 +51,15 @@ class InvoiceController extends Controller
         // direction would break the query.
         $sortBy = $request->get('sort_by', 'invoice_date');
         $allowedSorts = ['invoice_date', 'due_date', 'number', 'total', 'status', 'created_at', 'client_name'];
-        if (!in_array($sortBy, $allowedSorts, true)) {
+        if (! in_array($sortBy, $allowedSorts, true)) {
             $sortBy = 'invoice_date';
         }
         $sortDir = strtolower($request->get('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         if ($sortBy === 'client_name') {
             $query->join('clients', 'invoices.client_id', '=', 'clients.id')
-                  ->orderBy('clients.name', $sortDir)
-                  ->select('invoices.*');
+                ->orderBy('clients.name', $sortDir)
+                ->select('invoices.*');
         } else {
             $query->orderBy($sortBy, $sortDir);
         }
@@ -79,7 +79,7 @@ class InvoiceController extends Controller
                 'required',
                 'exists:clients,id',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!$user->clients()->where('id', $value)->exists()) {
+                    if (! $user->clients()->where('id', $value)->exists()) {
                         $fail('Invalid client.');
                     }
                 },
@@ -142,6 +142,7 @@ class InvoiceController extends Controller
         if ($invoice->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
+
         return $invoice->load('client', 'items');
     }
 
@@ -158,7 +159,7 @@ class InvoiceController extends Controller
                 'required',
                 'exists:clients,id',
                 function ($attribute, $value, $fail) use ($user) {
-                    if (!$user->clients()->where('id', $value)->exists()) {
+                    if (! $user->clients()->where('id', $value)->exists()) {
                         $fail('Invalid client.');
                     }
                 },
@@ -246,12 +247,12 @@ class InvoiceController extends Controller
     {
         $invoice = Invoice::find($id);
 
-        if (!$invoice || $invoice->user_id !== $request->user()->id) {
+        if (! $invoice || $invoice->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:draft,sent,paid,overdue'
+            'status' => 'required|in:draft,sent,paid,overdue',
         ]);
 
         $oldStatus = $invoice->status;
@@ -271,7 +272,7 @@ class InvoiceController extends Controller
         $user = $request->user();
         $template = $request->query('template', $user->invoice_template ?? 'classic');
 
-        $invoice = new \stdClass();
+        $invoice = new \stdClass;
         $invoice->series = 'INV';
         $invoice->number = 1;
         $invoice->invoice_date = \Carbon\Carbon::now();
@@ -279,7 +280,7 @@ class InvoiceController extends Controller
         $invoice->total = 1850.00;
         $invoice->notes = 'Thank you for your business!';
 
-        $invoice->user = new \stdClass();
+        $invoice->user = new \stdClass;
         $invoice->user->name = $user->name ?: 'John Doe';
         $invoice->user->company_code = $user->company_code ?: 'IVP-123456';
         $invoice->user->vat_code = $user->vat_code ?: '';
@@ -289,28 +290,28 @@ class InvoiceController extends Controller
         $invoice->user->bank_account = $user->bank_account ?: 'LT12 7300 0101 2345 6789';
         $invoice->user->signature = $user->signature;
 
-        $invoice->client = new \stdClass();
+        $invoice->client = new \stdClass;
         $invoice->client->name = 'UAB "Sample Client"';
         $invoice->client->company_code = '301234567';
         $invoice->client->vat_code = 'LT100001234567';
         $invoice->client->address = 'Gedimino pr. 1, Vilnius';
         $invoice->client->phone = '+370 600 98765';
 
-        $item1 = new \stdClass();
+        $item1 = new \stdClass;
         $item1->description = 'Website development & design';
         $item1->unit = 'val.';
         $item1->quantity = 40;
         $item1->price = 35.00;
         $item1->total = 1400.00;
 
-        $item2 = new \stdClass();
+        $item2 = new \stdClass;
         $item2->description = 'SEO optimization';
         $item2->unit = 'vnt.';
         $item2->quantity = 1;
         $item2->price = 250.00;
         $item2->total = 250.00;
 
-        $item3 = new \stdClass();
+        $item3 = new \stdClass;
         $item3->description = 'Hosting setup & configuration';
         $item3->unit = 'vnt.';
         $item3->quantity = 1;
@@ -319,7 +320,7 @@ class InvoiceController extends Controller
 
         $invoice->items = collect([$item1, $item2, $item3]);
 
-        $viewName = match($template) {
+        $viewName = match ($template) {
             'minimal' => 'invoice-minimal',
             'modern' => 'invoice-modern',
             default => 'invoice',
@@ -340,7 +341,7 @@ class InvoiceController extends Controller
         $invoice->load(['user', 'client', 'items']);
 
         $template = $request->query('template', $user->invoice_template ?? 'classic');
-        $viewName = match($template) {
+        $viewName = match ($template) {
             'minimal' => 'invoice-minimal',
             'modern' => 'invoice-modern',
             default => 'invoice',
@@ -438,7 +439,7 @@ class InvoiceController extends Controller
         $user = $request->user();
         $clientId = (int) $request->get('client_id');
 
-        if (!$clientId || !$user->clients()->where('id', $clientId)->exists()) {
+        if (! $clientId || ! $user->clients()->where('id', $clientId)->exists()) {
             return response()->json(['message' => 'Invalid client.'], 422);
         }
 
@@ -460,8 +461,8 @@ class InvoiceController extends Controller
         // the first time we see a key its price is the most recent one used.
         $seen = [];
         foreach ($rows as $row) {
-            $key = mb_strtolower(trim($row->description)) . '|' . mb_strtolower(trim($row->unit));
-            if (!isset($seen[$key])) {
+            $key = mb_strtolower(trim($row->description)).'|'.mb_strtolower(trim($row->unit));
+            if (! isset($seen[$key])) {
                 $seen[$key] = [
                     'description' => $row->description,
                     'unit' => $row->unit,
@@ -509,11 +510,11 @@ class InvoiceController extends Controller
         });
 
         Audit::log('invoice.bulk_deleted', [
-            'description' => count($ids) . ' invoice(s) deleted',
+            'description' => count($ids).' invoice(s) deleted',
             'meta' => ['ids' => $ids],
         ]);
 
-        return response()->json(['message' => count($ids) . ' invoice(s) deleted']);
+        return response()->json(['message' => count($ids).' invoice(s) deleted']);
     }
 
     public function bulkUpdateStatus(Request $request)
@@ -533,7 +534,7 @@ class InvoiceController extends Controller
             'meta' => ['ids' => $validated['ids'], 'status' => $validated['status']],
         ]);
 
-        return response()->json(['message' => $updated . ' invoice(s) updated']);
+        return response()->json(['message' => $updated.' invoice(s) updated']);
     }
 
     public function duplicate(Request $request, Invoice $invoice)
