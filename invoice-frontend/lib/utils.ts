@@ -1,4 +1,8 @@
-export const statusColors: Record<string, string> = {
+import type { InvoiceStatus } from './api'
+
+// Record<InvoiceStatus, …> must have a key for every status: forget one and
+// TypeScript reports it here, instead of a badge silently rendering unstyled.
+export const statusColors: Record<InvoiceStatus, string> = {
   draft: 'bg-gray-500/20 text-gray-600 dark:text-gray-300',
   sent: 'bg-blue-500/15 text-blue-500',
   paid: 'bg-green-500/20 text-green-400',
@@ -6,7 +10,7 @@ export const statusColors: Record<string, string> = {
   overdue: 'bg-red-500/25 text-red-600 dark:text-red-400 font-semibold',
 }
 
-export const statusLabels: Record<string, string> = {
+export const statusLabels: Record<InvoiceStatus, string> = {
   draft: 'Draft',
   sent: 'Sent',
   paid: 'Paid',
@@ -50,10 +54,6 @@ export function formatDate(value?: string | null): string {
 // unit that's no longer offered (e.g. "pcs" before it became "vnt.") — the
 // selects keep such a value as an extra option instead of silently dropping it.
 export const INVOICE_UNITS = ['h', 'vnt.', 'mėn.', 'm²', 'm', 'kg']
-
-export function formatStatus(status: string): string {
-  return status.charAt(0).toUpperCase() + status.slice(1)
-}
 
 // Force a file download from a (blob) URL with an explicit filename. Opening a
 // blob in a new tab loses the name (the browser saves it as a random blob id),

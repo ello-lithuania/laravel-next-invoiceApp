@@ -2,13 +2,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType } from '@/lib/api'
+import { invoices, clients as clientsApi, Invoice as InvoiceType, Client as ClientType, INVOICE_STATUSES, InvoiceStatus, isInvoiceStatus } from '@/lib/api'
 import { toast } from 'react-toastify'
-import { statusColors, refreshStats, formatCurrency, formatDate, getErrorMessage } from '@/lib/utils'
+import { statusColors, statusLabels, refreshStats, formatCurrency, formatDate, getErrorMessage } from '@/lib/utils'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
 import { Skeleton } from '@/components/Skeleton'
 import ConfirmModal from '@/components/ConfirmModal'
 import SearchableSelect from '@/components/SearchableSelect'
+import StatusOptions from '@/components/StatusOptions'
 
 interface PaginatedResponse {
   data: InvoiceType[]
@@ -20,10 +21,7 @@ interface PaginatedResponse {
 
 const statusOptions = [
   { value: '', label: 'All statuses' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'sent', label: 'Sent' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'overdue', label: "Won't pay" },
+  ...INVOICE_STATUSES.map((s) => ({ value: s, label: statusLabels[s] })),
 ]
 
 function InvoicesSkeleton() {
@@ -181,7 +179,7 @@ function InvoicesContent() {
     })
   }
 
-  const handleStatusChange = async (id: number, status: string) => {
+  const handleStatusChange = async (id: number, status: InvoiceStatus) => {
     try {
       await invoices.updateStatus(id, status)
       toast.success('Status updated')
@@ -254,7 +252,7 @@ function InvoicesContent() {
     }
   }
 
-  const handleBulkStatus = async (status: string) => {
+  const handleBulkStatus = async (status: InvoiceStatus) => {
     try {
       await invoices.bulkUpdateStatus(selected, status)
       toast.success(`${selected.length} invoice(s) updated to ${status}`)
@@ -406,15 +404,12 @@ function InvoicesContent() {
           <span className="text-sm font-medium text-blue-700 dark:text-blue-300">{selected.length} selected</span>
           <div className="flex items-center gap-2 ml-auto">
             <select
-              onChange={(e) => { if (e.target.value) { handleBulkStatus(e.target.value); e.target.value = '' } }}
+              onChange={(e) => { const v = e.target.value; if (isInvoiceStatus(v)) { handleBulkStatus(v); e.target.value = '' } }}
               className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
               defaultValue=""
             >
               <option value="" disabled>Change status...</option>
-              <option value="draft">Draft</option>
-              <option value="sent">Sent</option>
-              <option value="paid">Paid</option>
-              <option value="overdue">Won&apos;t pay</option>
+              <StatusOptions />
             </select>
             <button
               onClick={handleBulkDelete}
@@ -531,14 +526,11 @@ function InvoicesContent() {
                   <td className="px-6 py-4 text-right text-gray-800 dark:text-gray-100 font-medium tabular-nums">{formatCurrency(Number(inv.total))}</td>
                   <td className="px-6 py-4">
                     <select
-                      value={inv.status || 'draft'}
-                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                      value={inv.status}
+                      onChange={(e) => { const v = e.target.value; if (isInvoiceStatus(v)) handleStatusChange(inv.id, v) }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status]}`}
                     >
-                      <option value="draft">Draft</option>
-                      <option value="sent">Sent</option>
-                      <option value="paid">Paid</option>
-                      <option value="overdue">Won&apos;t pay</option>
+                      <StatusOptions />
                     </select>
                   </td>
                   <td className="px-6 py-4">
@@ -651,14 +643,11 @@ function InvoicesContent() {
                   </div>
                   <div className="flex items-center justify-between">
                     <select
-                      value={inv.status || 'draft'}
-                      onChange={(e) => handleStatusChange(inv.id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status || 'draft']}`}
+                      value={inv.status}
+                      onChange={(e) => { const v = e.target.value; if (isInvoiceStatus(v)) handleStatusChange(inv.id, v) }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${statusColors[inv.status]}`}
                     >
-                      <option value="draft">Draft</option>
-                      <option value="sent">Sent</option>
-                      <option value="paid">Paid</option>
-                      <option value="overdue">Won&apos;t pay</option>
+                      <StatusOptions />
                     </select>
                     <div className="flex items-center gap-4">
                       <button onClick={() => previewPdf(inv)} className="text-green-400 hover:text-green-300 text-sm transition-colors">PDF</button>
