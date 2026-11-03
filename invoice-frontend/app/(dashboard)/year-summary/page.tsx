@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect, type ReactNode } from 'react'
-import { stats, YearSummaryData } from '@/lib/api'
+import { useState, useCallback, type ReactNode } from 'react'
+import { stats } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { Skeleton } from '@/components/Skeleton'
 import { triggerDownload, getErrorMessage } from '@/lib/utils'
 import { useRefetchOnReturn } from '@/lib/useRefetchOnReturn'
+import { useApiData } from '@/lib/useApiData'
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -83,59 +84,30 @@ function YearSummarySkeleton() {
 }
 
 export default function YearSummary() {
-  const [year, setYear] = useState<number | null>(null)
-  const [data, setData] = useState<YearSummaryData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [availableYears, setAvailableYears] = useState<number[]>([])
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [clientPage, setClientPage] = useState(1)
 
-  useEffect(() => {
-    init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  const { data: years, loading: yearsLoading } = useApiData(stats.availableYears, {
+    errorMessage: 'Failed to load available years',
+  })
+  const availableYears = years ?? []
+  // Until the year list arrives the current year is fetched in parallel with it
+  // (no list -> summary waterfall). If the latest year with data is a different
+  // one, `year` switches to it and the summary reloads.
+  const year = selectedYear ?? availableYears[0] ?? new Date().getFullYear()
 
-  // Fetch the year list and the (current-year) summary in parallel instead of
-  // waterfalling list → summary. If the most recent year with data isn't the
-  // current year, fall back to loading that year's summary.
-  const init = async () => {
-    setLoading(true)
-    const current = new Date().getFullYear()
-    try {
-      const [years, res] = await Promise.all([
-        stats.availableYears(),
-        stats.yearSummary(current),
-      ])
-      setAvailableYears(years)
-      const selected = years.length > 0 ? years[0] : current
-      setYear(selected)
-      if (selected === current) {
-        setData(res.data)
-        setLoading(false)
-      } else {
-        await loadData(selected)
-      }
-    } catch {
-      setLoading(false)
-    }
-  }
+  const fetchSummary = useCallback(() => stats.yearSummary(year), [year])
+  const { data: summary, loading: summaryLoading, reload } = useApiData(fetchSummary, {
+    errorMessage: 'Failed to load year summary',
+  })
+  const data = summary?.data
+  const loading = yearsLoading || summaryLoading
 
-  const loadData = async (y: number) => {
-    setLoading(true)
-    try {
-      const res = await stats.yearSummary(y)
-      setData(res.data)
-    } catch {
-      toast.error('Failed to load year summary')
-    }
-    setLoading(false)
-  }
-
-  useRefetchOnReturn(() => { if (year) loadData(year) })
+  useRefetchOnReturn(reload)
 
   const changeYear = (y: number) => {
-    setYear(y)
+    setSelectedYear(y)
     setClientPage(1)
-    loadData(y)
   }
 
   // Open a blob in a new tab (token travels in the Authorization header, not
@@ -144,7 +116,7 @@ export default function YearSummary() {
     // Download → forced <a download> with a real name; View → open in a tab.
     const win = download ? null : window.open('', '_blank')
     try {
-      const url = await stats.yearSummaryPdfBlobUrl(year!, download)
+      const url = await stats.yearSummaryPdfBlobUrl(year, download)
       if (download) {
         triggerDownload(url, `metine-suvestine-${year}.pdf`)
         setTimeout(() => URL.revokeObjectURL(url), 10000)
