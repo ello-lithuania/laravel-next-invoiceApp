@@ -137,8 +137,8 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
               style={{ background: 'var(--t-bg-input)', border: '1px solid var(--t-border)', color: 'var(--t-text)' }}
             />
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              <kbd className="px-2 py-1 text-[11px] font-medium rounded shadow-sm" style={{ color: 'var(--t-text-muted)', background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border)' }}>⌘</kbd>
-              <kbd className="px-2 py-1 text-[11px] font-medium rounded shadow-sm" style={{ color: 'var(--t-text-muted)', background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border)' }}>K</kbd>
+              <kbd className="px-2 py-1 text-[11px] font-medium rounded shadow-xs" style={{ color: 'var(--t-text-muted)', background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border)' }}>⌘</kbd>
+              <kbd className="px-2 py-1 text-[11px] font-medium rounded shadow-xs" style={{ color: 'var(--t-text-muted)', background: 'var(--t-bg-elevated)', border: '1px solid var(--t-border)' }}>K</kbd>
             </div>
           </form>
         </div>
@@ -263,7 +263,7 @@ export default function Header({ sidebarOpen, setSidebarOpen, sidebarExpanded, s
                       }}
                     >
                       <div className={`theme-swatch-${t.id} w-full h-full flex items-center justify-center`}>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded backdrop-blur-sm text-white/90 bg-black/30">{t.name}</span>
+                        <span className="text-xs font-medium px-2 py-0.5 rounded backdrop-blur-xs text-white/90 bg-black/30">{t.name}</span>
                       </div>
                       {colorTheme === t.id && (
                         <div className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center" style={{ background: 'var(--t-accent)' }}>

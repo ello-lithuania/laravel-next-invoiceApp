@@ -41,7 +41,7 @@ export default function RevenueChart({ data, grid, text, tooltipBg, tooltipBorde
           <Tooltip
             contentStyle={{ backgroundColor: tooltipBg, border: `1px solid ${tooltipBorder}`, borderRadius: '8px' }}
             labelStyle={{ color: '#fff' }}
-            formatter={(value?: number) => [formatCurrency(value ?? 0), 'Amount']}
+            formatter={(value) => [formatCurrency(Number(value ?? 0)), 'Amount']}
           />
           <Bar dataKey="total" name="Amount" fill={bar} radius={[4, 4, 0, 0]} />
         </BarChart>

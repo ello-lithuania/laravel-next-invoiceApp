@@ -33,7 +33,7 @@ function InvoicesSkeleton() {
         <Skeleton className="h-12 flex-1 min-w-[200px] rounded-xl" />
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
         <table className="w-full">
           <thead className="text-xs uppercase text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50">
             <tr className="border-b border-gray-200 dark:border-gray-700/60">
@@ -338,7 +338,7 @@ function InvoicesContent() {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="Search by series, number, client or notes..."
-            className="w-full pl-10 pr-9 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full pl-10 pr-9 py-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
           />
           {searchInput && (
             <button
@@ -374,7 +374,7 @@ function InvoicesContent() {
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); handleFilterChange() }}
-            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-none transition-colors"
+            className="w-full p-3 bg-white dark:bg-gray-900/30 border border-gray-200 dark:border-gray-700/60 rounded-lg text-gray-800 dark:text-gray-100 focus:border-blue-500 focus:outline-hidden transition-colors"
           >
             {statusOptions.map(s => (
               <option key={s.value} value={s.value}>{s.label}</option>
@@ -419,7 +419,7 @@ function InvoicesContent() {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card overflow-hidden">
         {/* Desktop table */}
         <div className="hidden md:block">
         <table className="w-full">
@@ -689,7 +689,7 @@ function InvoicesContent() {
                       onClick={() => setPage(pageNum)}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         page === pageNum
-                          ? 'bg-gradient-to-r from-blue-600 via-blue-700 to-gray-900 text-white shadow-sm'
+                          ? 'bg-linear-to-r from-blue-600 via-blue-700 to-gray-900 text-white shadow-xs'
                           : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }`}
                     >
@@ -718,7 +718,7 @@ function InvoicesContent() {
     {/* PDF Preview Modal */}
       {pdfPreview.open && (
         <div className="fixed inset-0 z-50 flex flex-col">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={closePdfPreview} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" onClick={closePdfPreview} />
           <div className="relative bg-white dark:bg-gray-800 flex flex-col flex-1 overflow-hidden">
             <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-gray-200 dark:border-gray-700/60 shrink-0">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Invoice {pdfPreview.title}</h3>

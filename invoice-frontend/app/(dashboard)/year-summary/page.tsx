@@ -398,11 +398,11 @@ export default function YearSummary() {
                 <div key={rank} className="space-y-1.5">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)' }}>{rank}</span>
+                      <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)' }}>{rank}</span>
                       <span className="font-medium text-sm truncate text-gray-800 dark:text-gray-100">{c.name}</span>
                       <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">({c.invoice_count} inv.)</span>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 shrink-0">
                       <span className="font-semibold tabular-nums text-sm text-gray-800 dark:text-gray-100">{fmt(c.total)} €</span>
                       <span className="text-sm font-bold tabular-nums w-14 text-right" style={{ color: 'var(--t-accent)' }}>{pct.toFixed(1)}%</span>
                     </div>

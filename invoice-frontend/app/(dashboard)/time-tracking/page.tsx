@@ -671,7 +671,7 @@ export default function TimeTracking() {
 
       {/* New / Edit Entry Form */}
       {showForm && (
-        <div ref={formRef} className="scroll-mt-24 bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
+        <div ref={formRef} className="scroll-mt-24 bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-6">
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
             {editingId ? 'Edit Time Entry' : 'New Time Entry'}
           </h2>
@@ -969,7 +969,7 @@ export default function TimeTracking() {
       </div>
 
       {/* Entries Table */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 overflow-hidden">
         {/* Desktop */}
         <div className="hidden md:block">
           <table className="w-full">
@@ -1471,7 +1471,7 @@ export default function TimeTracking() {
 
       {/* Total summary for selected */}
       {selectedIds.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-4">
+        <div className="bg-white dark:bg-gray-800 shadow-xs rounded-xl border border-gray-200 dark:border-gray-700/60 prism-card p-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="text-sm text-gray-600 dark:text-gray-300">
               <span className="font-medium">{selectedIds.length}</span> entries selected

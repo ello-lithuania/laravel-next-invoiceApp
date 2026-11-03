@@ -669,13 +669,13 @@ export default function Dashboard() {
                   <div key={i} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)' }}>
+                        <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'var(--t-bg-elevated)', color: 'var(--t-text-secondary)' }}>
                           {i + 1}
                         </span>
                         <span className="t-text font-medium text-sm truncate">{c.name}</span>
                         <span className="text-xs t-text-muted whitespace-nowrap">({c.count} sf)</span>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="t-text font-semibold tabular-nums text-sm">{formatCurrency(c.total)}</span>
                         <span className="text-sm font-bold tabular-nums w-14 text-right" style={{ color: 'var(--t-accent)' }}>
                           {c.percentage.toFixed(1)}%
